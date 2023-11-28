@@ -44,14 +44,10 @@ class BaseDataset(ABC):
     def __init__(
         self,
         sequence_list: Optional[List[str]] = None,
-        image_load: bool = False,
         image_shape: Union[None, List[int], Tuple[int, int]] = None,
         image_bgr_to_rgb: bool = True
     ):
         self._sequence_list = sequence_list
-
-        # Image configuration
-        self._image_load = image_load
 
         if image_shape is not None:
             assert isinstance(image_shape, tuple) or isinstance(image_shape, list), \
@@ -78,6 +74,19 @@ class BaseDataset(ABC):
         if self._image_shape is not None:
             image = cv2.resize(image, self._image_shape, interpolation=cv2.INTER_NEAREST)
         return image
+
+    @abstractmethod
+    def load_scene_image_by_frame_index(self, scene_name: str, frame_index: int) -> np.ndarray:
+        """
+        Loads scene image chosen by frame
+
+        Args:
+            scene_name: Scene name
+            frame_index: Frame index
+
+        Returns:
+            Loaded image
+        """
 
     @abstractmethod
     def __len__(self) -> int:

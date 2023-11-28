@@ -9,6 +9,9 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple, List, Union, Optional
+
+import numpy as np
+
 from motrack.datasets.catalog import DATASET_CATALOG
 
 import pandas as pd
@@ -55,7 +58,6 @@ class MOTDataset(BaseDataset):
         self,
         path: str,
         sequence_list: Optional[List[str]] = None,
-        image_load: bool = False,
         image_shape: Union[None, List[int], Tuple[int, int]] = None,
         image_bgr_to_rgb: bool = True,
         skip_corrupted: bool = False,
@@ -66,14 +68,12 @@ class MOTDataset(BaseDataset):
         Args:
             path: Path to dataset
             sequence_list: Sequence filter by defined list
-            image_load: Load images (optional - default: False)
             image_shape: Resize images (optional - default: no resize)
             image_bgr_to_rgb: Convert BGR to RGB
             skip_corrupted: Skip corrupted scenes (otherwise error is raised)
         """
         super().__init__(
             sequence_list=sequence_list,
-            image_load=image_load,
             image_shape=image_shape,
             image_bgr_to_rgb=image_bgr_to_rgb
         )
@@ -120,6 +120,12 @@ class MOTDataset(BaseDataset):
             data.bbox[3] = data.bbox[3] / scene_info.imheight
 
         return data
+
+    def load_scene_image_by_frame_index(self, scene_name: str, frame_index: int) -> np.ndarray:
+        # noinspection PyTypeChecker
+        scene_info: SceneInfo = self.get_scene_info(scene_name)
+        image_path = self._get_image_path(scene_info, frame_index)
+        return self.load_image(image_path)
 
     def get_object_data_by_frame_index(
         self,
