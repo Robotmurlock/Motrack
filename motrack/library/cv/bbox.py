@@ -398,22 +398,3 @@ class PredBBox(BBox):
         image = cv2.putText(image, annot, (y1 + 2, x1 - 4),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
         return image
-
-
-# noinspection PyUnresolvedReferences
-def main():
-    import os
-    from nodetracker.common.project import ASSETS_PATH, PLAYGROUND_PATH
-    image = cv2.imread(os.path.join(ASSETS_PATH, 'image.jpg'))
-
-    bbox = BBox.from_xyxy(0.1, 0.1, 0.4, 0.9)
-    image = bbox.draw(image)
-    crop = bbox.crop(image)
-
-    Path(PLAYGROUND_PATH).mkdir(parents=True, exist_ok=True)
-    cv2.imwrite(os.path.join(PLAYGROUND_PATH, 'test.jpg'), image)
-    cv2.imwrite(os.path.join(PLAYGROUND_PATH, 'test_crop.jpg'), crop)
-
-
-if __name__ == '__main__':
-    main()

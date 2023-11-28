@@ -3,7 +3,7 @@ Implementation of SparseTrack.
 """
 from typing import Optional, Dict, Any
 
-from nodetracker.tracker.trackers.byte import ByteTracker
+from motrack.tracker.trackers.algorithms.byte import ByteTracker
 
 
 class SparseTracker(ByteTracker):

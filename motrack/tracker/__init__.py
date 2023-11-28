@@ -1,10 +1,13 @@
 """
 Tracker. Supports:
 - SORT
-- Association algorithms (Hungarian)
+- ByteTrack
+- SparseTrack
 """
-from nodetracker.tracker.matching import AssociationAlgorithm, HungarianAlgorithmIOU
-from nodetracker.tracker.trackers.base import Tracker
-from nodetracker.tracker.trackers.sort import SortTracker
-from nodetracker.tracker.trackers.factory import tracker_factory
-from nodetracker.tracker.tracklet import Tracklet, TrackletState
+from motrack.tracker.matching import AssociationAlgorithm, HungarianAlgorithmIOU
+from motrack.tracker.trackers.algorithms.base import Tracker
+from motrack.tracker.trackers.algorithms.byte import ByteTracker
+from motrack.tracker.trackers.algorithms.sort import SortTracker
+from motrack.tracker.trackers.algorithms.sparse import SparseTracker
+from motrack.tracker.trackers.factory import tracker_factory
+from motrack.tracker.tracklet import Tracklet, TrackletState

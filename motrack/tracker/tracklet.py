@@ -1,11 +1,11 @@
 """
 Tracklet Dataclass.
 """
+import enum
 from multiprocessing import Value, Lock
 from typing import Tuple, ClassVar, Optional, List
-from nodetracker.library.cv.bbox import PredBBox
-import enum
 
+from motrack.library.cv.bbox import PredBBox
 
 _TRACKLET_DEFAULT_MAX_HISTORY = 8
 

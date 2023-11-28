@@ -1,5 +1,6 @@
-from nodetracker.tracker.tracklet import Tracklet
 from typing import List, Tuple
+
+from motrack.tracker.tracklet import Tracklet
 
 
 def remove_duplicates(threshold: float, tracklets_lhs: List[Tracklet], tracklets_rhs: List[Tracklet]) -> Tuple[List[Tracklet], List[Tracklet]]:

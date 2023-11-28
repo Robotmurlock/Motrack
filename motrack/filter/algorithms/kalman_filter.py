@@ -2,8 +2,8 @@ from typing import Tuple, Optional
 
 import numpy as np
 
-from motrack.filter.base import State
-from motrack.filter.base import StateModelFilter
+from motrack.filter.algorithms.base import State
+from motrack.filter.algorithms.base import StateModelFilter
 from motrack.filter.catalog import FILTER_CATALOG
 from motrack.library.kalman_filter.botsort_kf import BotSortKalmanFilter
 

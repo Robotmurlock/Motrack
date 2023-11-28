@@ -7,10 +7,10 @@ import numpy as np
 from abc import ABC
 import torch
 
-from nodetracker.filter import filter_factory
-from nodetracker.library.cv.bbox import PredBBox, BBox
-from nodetracker.tracker.trackers.base import Tracker
-from nodetracker.tracker.tracklet import Tracklet
+from motrack.filter import filter_factory
+from motrack.library.cv.bbox import PredBBox, BBox
+from motrack.tracker.trackers.base import Tracker
+from motrack.tracker.tracklet import Tracklet
 
 
 class MotionBasedTracker(Tracker, ABC):

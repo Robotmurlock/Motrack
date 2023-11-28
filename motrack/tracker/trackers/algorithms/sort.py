@@ -3,13 +3,11 @@ Implementation of Sort tracker with a custom filter.
 """
 import copy
 from typing import Optional, Dict, Any, List, Tuple
-import numpy as np
-import torch
 
-from nodetracker.library.cv.bbox import PredBBox
-from nodetracker.tracker.matching import association_algorithm_factory
-from nodetracker.tracker.trackers.motion import MotionBasedTracker
-from nodetracker.tracker.tracklet import Tracklet, TrackletState
+from motrack.library.cv.bbox import PredBBox
+from motrack.tracker.matching import association_factory
+from motrack.tracker.trackers.algorithms.motion import MotionBasedTracker
+from motrack.tracker.tracklet import Tracklet, TrackletState
 
 
 class SortTracker(MotionBasedTracker):
@@ -51,7 +49,7 @@ class SortTracker(MotionBasedTracker):
         )
 
         matcher_params = {} if matcher_params is None else matcher_params
-        self._matcher = association_algorithm_factory(name=matcher_algorithm, params=matcher_params)
+        self._matcher = association_factory(name=matcher_algorithm, params=matcher_params)
 
         # Parameters
         self._remember_threshold = remember_threshold

@@ -5,8 +5,8 @@ import ultralytics
 
 from motrack.library.cv.bbox import PredBBox, LabelType
 from motrack.object_detection.algorithms.base import ObjectDetectionInference
-from motrack.utils.lookup import LookupTable
 from motrack.object_detection.catalog import OBJECT_DETECTION_CATALOG
+from motrack.utils.lookup import LookupTable
 
 
 @OBJECT_DETECTION_CATALOG.register('yolov8')

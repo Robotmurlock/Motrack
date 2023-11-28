@@ -2,7 +2,7 @@ from typing import Tuple
 
 import numpy as np
 
-from motrack.filter.base import StateModelFilter, State
+from motrack.filter.algorithms.base import StateModelFilter, State
 from motrack.filter.catalog import FILTER_CATALOG
 
 
