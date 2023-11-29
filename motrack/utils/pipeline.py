@@ -40,19 +40,19 @@ def task(task_name: str) -> Callable:
         """
 
         def wrap(cfg: DictConfig):
-            # Extracting `output_dir` from optional `cfg.paths.output_dir`.
-            output_dir = None
-            paths = cfg.get('paths')
+            # Extracting `master_path` from optional `cfg.path.master`.
+            master_path = None
+            paths = cfg.get('path')
             if paths is not None:
-                output_dir = paths.get('master')
-            output_dir = project.OUTPUTS_PATH if output_dir is None else output_dir
-            Path(output_dir).mkdir(parents=True, exist_ok=True)
+                master_path = paths.get('master')
+            master_path = project.OUTPUTS_PATH if master_path is None else master_path
+            Path(master_path).mkdir(parents=True, exist_ok=True)
 
             # Print config
             rich.print_config_tree(cfg, resolve=True, save_to_file=True)
 
             # Store config history
-            store_run_history_config(output_dir, cfg, task_name=task_name)
+            store_run_history_config(master_path, cfg, task_name=task_name)
 
             # execute the task
             start_time = time.time()
@@ -77,7 +77,7 @@ def store_run_history_config(output_dir: str, cfg: DictConfig, task_name: str) -
         cfg: Task config
         task_name: Task name
     """
-    config_dirpath = os.path.join(output_dir, cfg.dataset_name, cfg.experiment_name)
+    config_dirpath = os.path.join(output_dir, cfg.dataset.type, cfg.experiment, cfg.eval.split)
     dt = datetime.now().strftime(formats.DATETIME_FORMAT)
     config_path = os.path.join(config_dirpath, f'{dt}_{task_name}.yaml')
     Path(config_dirpath).mkdir(parents=True, exist_ok=True)

@@ -1,15 +1,12 @@
 from typing import List, Optional
 
 import numpy as np
-import torch
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.object_detection.algorithms.base import ObjectDetectionInference
+from motrack.object_detection.catalog import OBJECT_DETECTION_CATALOG
 from motrack.object_detection.yolox import YOLOXPredictor
 from motrack.utils.lookup import LookupTable
-
-
-from motrack.object_detection.catalog import OBJECT_DETECTION_CATALOG
 
 
 @OBJECT_DETECTION_CATALOG.register('yolox')
@@ -41,7 +38,6 @@ class YOLOXInference(ObjectDetectionInference):
         h, w, _ = image.shape
 
         output, _ = self._yolox.predict(image)
-        output = torch.from_numpy(output)
 
         # Filter small bboxes
         bboxes = output[:, :4]
@@ -52,13 +48,14 @@ class YOLOXInference(ObjectDetectionInference):
         bboxes = output[:, :4]
         bboxes[:, [0, 2]] /= w
         bboxes[:, [1, 3]] /= h
-        bboxes[:, 2:] -= bboxes[:, :2]  # xyxy to xywh
 
         # Process classes
         class_indices = output[:, 6]
-        classes = [self._lookup.inverse_lookup(int(cls_index)) for cls_index in class_indices]
+        classes = [self._lookup.inverse_lookup(int(cls_index)) for cls_index in class_indices] \
+            if self._lookup is not None else class_indices
 
         # Process confidences
         confidences = output[:, 4]
+
 
         return self.pack_bboxes(bboxes, classes, confidences)

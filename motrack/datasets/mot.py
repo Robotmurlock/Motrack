@@ -60,8 +60,6 @@ class MOTDataset(BaseDataset):
         sequence_list: Optional[List[str]] = None,
         image_shape: Union[None, List[int], Tuple[int, int]] = None,
         image_bgr_to_rgb: bool = True,
-        skip_corrupted: bool = False,
-        allow_missing_annotations: bool = False,
         test: bool = False
     ) -> None:
         """
@@ -70,18 +68,17 @@ class MOTDataset(BaseDataset):
             sequence_list: Sequence filter by defined list
             image_shape: Resize images (optional - default: no resize)
             image_bgr_to_rgb: Convert BGR to RGB
-            skip_corrupted: Skip corrupted scenes (otherwise error is raised)
         """
         super().__init__(
+            test=test,
             sequence_list=sequence_list,
             image_shape=image_shape,
             image_bgr_to_rgb=image_bgr_to_rgb
         )
 
         self._path = path
-        self._allow_missing_annotations = allow_missing_annotations
 
-        self._scene_info_index, self._n_digits = self._index_dataset(path, sequence_list, skip_corrupted, test=test)
+        self._scene_info_index, self._n_digits = self._index_dataset(path, sequence_list, test=test)
         self._data_labels, self._n_labels, self._frame_to_data_index_lookup = self._parse_labels(self._scene_info_index, test=test)
 
     @property
@@ -124,7 +121,7 @@ class MOTDataset(BaseDataset):
     def load_scene_image_by_frame_index(self, scene_name: str, frame_index: int) -> np.ndarray:
         # noinspection PyTypeChecker
         scene_info: SceneInfo = self.get_scene_info(scene_name)
-        image_path = self._get_image_path(scene_info, frame_index)
+        image_path = self._get_image_path(scene_info, frame_index + 1)
         return self.load_image(image_path)
 
     def get_object_data_by_frame_index(
@@ -187,7 +184,6 @@ class MOTDataset(BaseDataset):
     def _index_dataset(
         path: str,
         sequence_list: Optional[List[str]],
-        skip_corrupted: bool,
         test: bool = False
     ) -> Tuple[SceneInfoIndex, int]:
         """
@@ -196,7 +192,6 @@ class MOTDataset(BaseDataset):
         Args:
             path: Path to dataset
             sequence_list: Filter scenes
-            skip_corrupted: Skips incomplete scenes
             test: Is it test split
 
         Returns:
@@ -222,12 +217,7 @@ class MOTDataset(BaseDataset):
             for filename in files_to_check:
                 if filename not in scene_files:
                     msg = f'Ground truth file "{filename}" not found on path "{scene_directory}". Contents: {scene_files}'
-                    if not skip_corrupted:
-                        raise FileNotFoundError(msg)
-
-                    logger.warning(f'Skipping scene "{scene_name}". Reason: `{msg}`')
-                    skip_scene = True
-                    break
+                    raise FileNotFoundError(msg)
 
             if 'img1' in scene_files:
                 # Check number of digits used in image name (e.g. DanceTrack and MOT20 have different convention)
@@ -292,10 +282,6 @@ class MOTDataset(BaseDataset):
             object_groups = df.groupby('object_global_id')
             for object_global_id, df_grp in tqdm(object_groups, desc=f'Parsing {scene_name}', unit='pedestrian'):
                 df_grp = df_grp.drop(columns='object_global_id', axis=1).set_index('frame_id')
-
-                if not self._allow_missing_annotations:
-                    assert df_grp.index.max() - df_grp.index.min() + 1 == df_grp.index.shape[0], \
-                        f'Object {object_global_id} has missing data points!'
 
                 data[object_global_id] = [None for _ in range(seqlength)]
                 for frame_id, row in df_grp.iterrows():

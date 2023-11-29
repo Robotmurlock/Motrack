@@ -5,13 +5,15 @@ import copy
 from typing import Optional, Dict, Any, List, Tuple
 
 from motrack.library.cv.bbox import PredBBox
-from motrack.tracker.matching import association_algorithm_factory
+from motrack.tracker.matching import association_factory
 from motrack.tracker.trackers.algorithms.motion import MotionBasedTracker
+from motrack.tracker.trackers.catalog import TRACKER_CATALOG
+from motrack.tracker.trackers.utils import remove_duplicates
 from motrack.tracker.tracklet import Tracklet, TrackletState
 from motrack.utils.collections import unpack_n
-from motrack.tracker.trackers.utils import remove_duplicates
 
 
+@TRACKER_CATALOG.register('byte')
 class ByteTracker(MotionBasedTracker):
     """
     ByteTrack algorithm.
@@ -59,7 +61,7 @@ class ByteTracker(MotionBasedTracker):
                 'fuse_score': True
             }
 
-        self._high_match = association_algorithm_factory(high_matcher_algorithm, high_matcher_params)
+        self._high_match = association_factory(high_matcher_algorithm, high_matcher_params)
 
         if low_matcher_algorithm == 'default':
             assert low_matcher_params is None
@@ -68,7 +70,7 @@ class ByteTracker(MotionBasedTracker):
                 'match_threshold': 0.5
             }
 
-        self._low_match = association_algorithm_factory(low_matcher_algorithm, low_matcher_params)
+        self._low_match = association_factory(low_matcher_algorithm, low_matcher_params)
 
         if new_matcher_algorithm == 'default':
             assert new_matcher_params is None
@@ -78,7 +80,7 @@ class ByteTracker(MotionBasedTracker):
                 'fuse_score': True
             }
 
-        self._new_match = association_algorithm_factory(new_matcher_algorithm, new_matcher_params)
+        self._new_match = association_factory(new_matcher_algorithm, new_matcher_params)
 
         # Parameters
         self._initialization_threshold = initialization_threshold

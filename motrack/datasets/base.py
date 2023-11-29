@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional, Union, Tuple
@@ -43,10 +44,12 @@ class BaseDataset(ABC):
     """
     def __init__(
         self,
+        test: bool = False,
         sequence_list: Optional[List[str]] = None,
         image_shape: Union[None, List[int], Tuple[int, int]] = None,
         image_bgr_to_rgb: bool = True
     ):
+        self._test = test
         self._sequence_list = sequence_list
 
         if image_shape is not None:
@@ -68,7 +71,11 @@ class BaseDataset(ABC):
         Returns:
             Loaded image
         """
+        if not os.path.exists(path):
+            raise FileNotFoundError(f'Failed to load image! File not found "{path}".')
         image = cv2.imread(path)
+        assert image is not None, 'Invalid Program State!'
+
         if self._image_bgr_to_rgb:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         if self._image_shape is not None:

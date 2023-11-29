@@ -5,11 +5,10 @@ from typing import Tuple, Optional
 
 import numpy as np
 from abc import ABC
-import torch
 
 from motrack.filter import filter_factory
 from motrack.library.cv.bbox import PredBBox, BBox
-from motrack.tracker.trackers.base import Tracker
+from motrack.tracker.trackers.algorithms.base import Tracker
 from motrack.tracker.tracklet import Tracklet
 
 
@@ -38,7 +37,7 @@ class MotionBasedTracker(Tracker, ABC):
         self._filter_states = {}
 
     @staticmethod
-    def _raw_to_bbox(tracklet: Tracklet, raw: torch.Tensor, conf: Optional[float] = None) -> PredBBox:
+    def _raw_to_bbox(tracklet: Tracklet, raw: np.ndarray, conf: Optional[float] = None) -> PredBBox:
         """
         Converts raw tensor to PredBBox for tracked object.
 
@@ -50,9 +49,9 @@ class MotionBasedTracker(Tracker, ABC):
         Returns:
             PredBBox
         """
-        bbox_raw = raw.numpy().tolist()
+        bbox_raw = raw.tolist()
         return PredBBox.create(
-            bbox=BBox.from_yxwh(*bbox_raw, clip=False),
+            bbox=BBox.from_xywh(*bbox_raw, clip=False),
             label=tracklet.bbox.label,
             conf=tracklet.bbox.conf if conf is None else conf
         )
@@ -65,11 +64,11 @@ class MotionBasedTracker(Tracker, ABC):
             tracklet_id: Tracklet id
             detection: Initial object detection
         """
-        measurement = torch.from_numpy(detection.as_numpy_yxwh(dtype=np.float32))
+        measurement = detection.as_numpy_yxwh(dtype=np.float32)
         state = self._filter.initiate(measurement)
         self._filter_states[tracklet_id] = state
 
-    def _predict(self, tracklet: Tracklet) -> Tuple[PredBBox, torch.Tensor, torch.Tensor]:
+    def _predict(self, tracklet: Tracklet) -> Tuple[PredBBox, np.ndarray, np.ndarray]:
         """
         Estimates object prior position
 
@@ -87,7 +86,7 @@ class MotionBasedTracker(Tracker, ABC):
         bbox = self._raw_to_bbox(tracklet, prior_mean)
         return bbox, prior_mean, prior_std
 
-    def _update(self, tracklet: Tracklet, detection: PredBBox) -> Tuple[PredBBox, torch.Tensor, torch.Tensor]:
+    def _update(self, tracklet: Tracklet, detection: PredBBox) -> Tuple[PredBBox, np.ndarray, np.ndarray]:
         """
         Estimates object posterior position based on the matched detection.
 
@@ -97,7 +96,7 @@ class MotionBasedTracker(Tracker, ABC):
         Returns:
             Motion model posterior estimation
         """
-        measurement = torch.from_numpy(detection.as_numpy_yxwh())
+        measurement = detection.as_numpy_yxwh()
 
         state = self._filter_states[tracklet.id]
         state = self._filter.update(state, measurement)
@@ -106,7 +105,7 @@ class MotionBasedTracker(Tracker, ABC):
         bbox = self._raw_to_bbox(tracklet, posterior_mean, conf=detection.conf)
         return bbox, posterior_mean, posterior_std
 
-    def _missing(self, tracklet: Tracklet) -> Tuple[PredBBox, torch.Tensor, torch.Tensor]:
+    def _missing(self, tracklet: Tracklet) -> Tuple[PredBBox, np.ndarray, np.ndarray]:
         """
         Estimates object posterior position for unmatched tracklets (with any detections)
 

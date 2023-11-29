@@ -6,14 +6,15 @@ from motrack.datasets.catalog import DATASET_CATALOG
 from motrack.datasets.mot import MOTDataset
 
 
-def dataset_factory(name: str, path: str, params: dict) -> BaseDataset:
+def dataset_factory(dataset_type: str, path: str, params: dict, test: bool = False) -> BaseDataset:
     """
     Dataset factory.
 
     Args:
-        name: Dataset name (type)
+        dataset_type: Dataset name (type)
         path: Path is mandatory parameter
         params: Dataset creation parameters
+        test: If True then ground truth annotations are not required
 
     Returns:
         Created dataset object
@@ -21,4 +22,8 @@ def dataset_factory(name: str, path: str, params: dict) -> BaseDataset:
     if 'path' in params:
         raise ValueError('Key "path" must not be used in the params!')
     params['path'] = path
-    return DATASET_CATALOG[name](**params)
+    if 'test' in params:
+        raise ValueError('Key "test" must not be used in the params!')
+    params['test'] = test
+
+    return DATASET_CATALOG[dataset_type](**params)

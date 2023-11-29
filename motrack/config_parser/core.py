@@ -19,8 +19,8 @@ class PathConfig:
     - master: location where all final and intermediate results are stored
     - assets: location where datasets can be found
     """
-    master: str
-    assets: str
+    master: str = project.MASTER_PATH
+    assets: str = project.ASSETS_PATH
 
     @classmethod
     def default(cls) -> 'PathConfig':
@@ -42,7 +42,7 @@ class DatasetConfig:
     - name: Dataset name
     - path: Path to the dataset
     """
-    name: str
+    type: str
     path: str
     params: dict = field(default_factory=dict)
 
@@ -130,7 +130,7 @@ class GlobalConfig:
         """
         Path where tracker results can be found.
         """
-        return os.path.join(self.path.assets, self.dataset.name, self.experiment)
+        return os.path.join(self.path.master, self.dataset.type, self.algorithm.name, self.experiment, self.eval.split)
 
     def __post_init__(self):
         """

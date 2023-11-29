@@ -116,9 +116,10 @@ def postprocess(cfg: GlobalConfig) -> None:
     tracker_postprocess_output = os.path.join(cfg.experiment_path, 'postprocess')
 
     dataset = dataset_factory(
-        name=cfg.dataset.name,
+        dataset_type=cfg.dataset.type,
         path=cfg.dataset.fullpath,
-        params=cfg.dataset.params
+        params=cfg.dataset.params,
+        test=cfg.eval.split == 'test'
     )
 
     scene_names = dataset.scenes
@@ -146,7 +147,7 @@ def postprocess(cfg: GlobalConfig) -> None:
         tracklets_to_keep = {k for k, v in tracklet_presence_counter.items() if v >= cfg.postprocess.min_tracklet_length}
         tracklet_frame_bboxes = dict(tracklet_frame_bboxes)
 
-        clip = cfg.dataset.name != 'MOT17'
+        clip = cfg.dataset.type != 'MOT17'
         with TrackerInferenceReader(tracker_all_output, scene_name, image_height=imheight, image_width=imwidth) as tracker_all_inf_reader, \
             TrackerInferenceWriter(tracker_postprocess_output, scene_name, image_height=imheight, image_width=imwidth, clip=clip) as tracker_inf_writer:
 
@@ -193,7 +194,7 @@ def postprocess(cfg: GlobalConfig) -> None:
                     last_all_read = tracker_all_inf_reader.read()
 
 
-@hydra.main(config_path=CONFIGS_PATH, config_name='default', version_base='1.1')
+@hydra.main(config_path=CONFIGS_PATH, config_name='movesort', version_base='1.1')
 def main(cfg: DictConfig):
     # noinspection PyTypeChecker
     postprocess(cfg)

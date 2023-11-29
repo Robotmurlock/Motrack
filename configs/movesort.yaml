@@ -1,0 +1,11 @@
+defaults:
+  - global_config
+  - dataset: dancetrack.yaml
+  - eval: val.yaml
+  - object_detection: yolox_dancetrack.yaml
+  - algorithm: movesort.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'baseline'

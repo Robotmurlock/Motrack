@@ -10,7 +10,6 @@ from motrack.tracker.tracklet import Tracklet
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 
 
-ASSOCIATION_CATALOG.register('dcm')
 class DCM(AssociationAlgorithm):
     """
     SparseTrack DCM: https://arxiv.org/pdf/2306.05238.pdf
@@ -92,6 +91,7 @@ class DCM(AssociationAlgorithm):
         return matches, unmatched_tracklet_indices, unmatched_detection_indices
 
 
+@ASSOCIATION_CATALOG.register('dcm')
 class DCMIoU(DCM):
     """
     SparseTrack DCM (original): https://arxiv.org/pdf/2306.05238.pdf
@@ -114,7 +114,7 @@ class DCMIoU(DCM):
         )
 
 
-ASSOCIATION_CATALOG.register('move-dcm')
+@ASSOCIATION_CATALOG.register('move-dcm')
 class MoveDCM(DCM):
     """
     DCM + Move

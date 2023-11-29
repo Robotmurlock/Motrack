@@ -18,7 +18,7 @@ def distance(name: str, x: np.ndarray, y: np.ndarray) -> float:
     raise AssertionError('Invalid Program State!')
 
 
-ASSOCIATION_CATALOG.register('move')
+@ASSOCIATION_CATALOG.register('move')
 class Move(HungarianAlgorithmIOU):
     DISTANCE_OPTIONS = ['l1', 'l2']
 

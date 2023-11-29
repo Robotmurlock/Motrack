@@ -3,6 +3,9 @@ import scipy
 from typing import Tuple, List
 
 
+INF = 999_999
+
+
 def hungarian(cost_matrix: np.ndarray) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
     """
     Performs Hungarian algorithm on arbitrary `cost_matrix`.

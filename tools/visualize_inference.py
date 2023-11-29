@@ -9,7 +9,6 @@ from collections import Counter
 import cv2
 import hydra
 import numpy as np
-import torch
 from omegaconf import DictConfig
 from tqdm import tqdm
 
@@ -66,9 +65,10 @@ def visualize_inference(cfg: GlobalConfig) -> None:
     logger.info(f'Visualizing tracker inference on path "{tracker_output_option}".')
 
     dataset = dataset_factory(
-        name=cfg.dataset.name,
+        dataset_type=cfg.dataset.type,
         path=cfg.dataset.fullpath,
-        params=cfg.dataset.params
+        params=cfg.dataset.params,
+        test=cfg.eval.split == 'test'
     )
 
     scene_names = dataset.scenes
@@ -117,8 +117,7 @@ def visualize_inference(cfg: GlobalConfig) -> None:
 
                 mp4_writer.write(frame)
 
-@torch.no_grad()
-@hydra.main(config_path=CONFIGS_PATH, config_name='default', version_base='1.1')
+@hydra.main(config_path=CONFIGS_PATH, config_name='movesort', version_base='1.1')
 def main(cfg: DictConfig):
     # noinspection PyTypeChecker
     visualize_inference(cfg)

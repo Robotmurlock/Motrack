@@ -4,8 +4,10 @@ Implementation of SparseTrack.
 from typing import Optional, Dict, Any
 
 from motrack.tracker.trackers.algorithms.byte import ByteTracker
+from motrack.tracker.trackers.catalog import TRACKER_CATALOG
 
 
+@TRACKER_CATALOG.register('sparse')
 class SparseTracker(ByteTracker):
     """
     SparseTrack = ByteTrack + DCM

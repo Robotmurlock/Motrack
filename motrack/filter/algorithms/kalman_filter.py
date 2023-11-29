@@ -7,7 +7,8 @@ from motrack.filter.algorithms.base import StateModelFilter
 from motrack.filter.catalog import FILTER_CATALOG
 from motrack.library.kalman_filter.botsort_kf import BotSortKalmanFilter
 
-FILTER_CATALOG.register('bot-sort')
+
+@FILTER_CATALOG.register('bot-sort')
 class BotSortKalmanWrapFilter(StateModelFilter):
     """
     Wrapper for BotSortKalman filter for StateModelFilter interface.

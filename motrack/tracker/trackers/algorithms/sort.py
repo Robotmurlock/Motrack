@@ -7,9 +7,11 @@ from typing import Optional, Dict, Any, List, Tuple
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching import association_factory
 from motrack.tracker.trackers.algorithms.motion import MotionBasedTracker
+from motrack.tracker.trackers.catalog import TRACKER_CATALOG
 from motrack.tracker.tracklet import Tracklet, TrackletState
 
 
+@TRACKER_CATALOG.register('sort')
 class SortTracker(MotionBasedTracker):
     """
     Baseline Sort tracker components:

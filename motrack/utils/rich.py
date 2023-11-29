@@ -15,16 +15,20 @@ log = logging.getLogger('RichUtils')
 
 @rank_zero_only
 def print_config_tree(
-        cfg: DictConfig,
-        print_order: Sequence[str] = (
-                "datamodule",
-                "model_config",
-                "callbacks",
-                "trainer",
-                "paths",
-        ),
-        resolve: bool = False,
-        save_to_file: bool = False,
+    cfg: DictConfig,
+    print_order: Sequence[str] = (
+        'experiment',
+        'path',
+        'dataset',
+        'eval',
+        'object_detection',
+        'algorithm',
+        'filter',
+        'postprocess',
+        'visualize'
+    ),
+    resolve: bool = False,
+    save_to_file: bool = False,
 ) -> None:
     """Prints content of DictConfig using Rich library and its tree structure.
     Args:
@@ -33,7 +37,7 @@ def print_config_tree(
         resolve (bool, optional): Whether to resolve reference fields of DictConfig.
         save_to_file (bool, optional): Whether to export config to the hydra output folder.
     """
-    Path(cfg.paths.output_dir).mkdir(parents=True, exist_ok=True)
+    Path(cfg.path.master).mkdir(parents=True, exist_ok=True)
 
     style = "dim"
     tree = rich.tree.Tree("CONFIG", style=style, guide_style=style)
@@ -68,36 +72,5 @@ def print_config_tree(
 
     # save config tree to file
     if save_to_file:
-        with open(Path(cfg.paths.output_dir, "config_tree.log"), "w") as file:
+        with open(Path(cfg.path.master, "config_tree.log"), "w") as file:
             rich.print(tree, file=file)
-
-
-@rank_zero_only
-def enforce_tags(cfg: DictConfig, save_to_file: bool = False) -> None:
-    """Prompts user to input tags from command line if no tags are provided in config."""
-
-    if not cfg.get("tags"):
-        if "id" in HydraConfig().cfg.hydra.job:
-            raise ValueError("Specify tags before launching a multirun!")
-
-        log.warning("No tags provided in config. Prompting user to input tags...")
-        tags = Prompt.ask("Enter a list of comma separated tags", default="dev")
-        tags = [t.strip() for t in tags.split(",") if t != ""]
-
-        with open_dict(cfg):
-            cfg.tags = tags
-
-        log.info(f"Tags: {cfg.tags}")
-
-    if save_to_file:
-        Path(cfg.paths.output_dir).mkdir(parents=True, exist_ok=True)
-        with open(Path(cfg.paths.output_dir, "tags.log"), "w", encoding="utf-8") as file:
-            rich.print(cfg.tags, file=file)
-
-
-if __name__ == "__main__":
-    from hydra import compose, initialize
-
-    with initialize(version_base="1.2", config_path="../../configs"):
-        cfg = compose(config_name="train.yaml", return_hydra_config=False, overrides=[])
-        print_config_tree(cfg, resolve=False, save_to_file=False)

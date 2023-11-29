@@ -32,9 +32,10 @@ def inference(cfg: GlobalConfig) -> None:
     logger.info(f'Saving tracker inference on path "{cfg.experiment_path}".')
 
     dataset = dataset_factory(
-        name=cfg.dataset.name,
+        dataset_type=cfg.dataset.type,
         path=cfg.dataset.fullpath,
-        params=cfg.dataset.params
+        params=cfg.dataset.params,
+        test=cfg.eval.split == 'test'
     )
 
     od_inference = object_detection_inference_factory(
@@ -56,7 +57,7 @@ def inference(cfg: GlobalConfig) -> None:
             params=cfg.algorithm.params
         )
 
-        clip = cfg.dataset.name != 'MOT17'
+        clip = cfg.dataset.type != 'MOT17'
         with TrackerInferenceWriter(tracker_active_output, scene_name, image_height=imheight, image_width=imwidth, clip=clip) as tracker_active_inf_writer, \
             TrackerInferenceWriter(tracker_all_output, scene_name, image_height=imheight, image_width=imwidth, clip=clip) as tracker_all_inf_writer:
             tracklets: List[Tracklet] = []
@@ -86,7 +87,7 @@ def inference(cfg: GlobalConfig) -> None:
     with open(tracker_config_path, 'w', encoding='utf-8') as f:
         yaml.safe_dump(asdict(cfg), f)
 
-@hydra.main(config_path=CONFIGS_PATH, config_name='default', version_base='1.1')
+@hydra.main(config_path=CONFIGS_PATH, config_name='movesort', version_base='1.1')
 def main(cfg: DictConfig):
     # noinspection PyTypeChecker
     inference(cfg)

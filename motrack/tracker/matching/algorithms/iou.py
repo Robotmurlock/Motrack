@@ -13,7 +13,7 @@ LabelType = Union[int, str]
 LabelGatingType = Union[LabelType, List[Tuple[LabelType, LabelType]]]
 
 
-ASSOCIATION_CATALOG.register('iou')
+@ASSOCIATION_CATALOG.register('iou')
 class HungarianAlgorithmIOU(AssociationAlgorithm):
     """
     Solves the linear sum assignment problem from given cost matrix based on IOU scores.

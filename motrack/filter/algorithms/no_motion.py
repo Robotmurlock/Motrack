@@ -6,7 +6,7 @@ from motrack.filter.algorithms.base import StateModelFilter, State
 from motrack.filter.catalog import FILTER_CATALOG
 
 
-FILTER_CATALOG.register('no_motion')
+@FILTER_CATALOG.register('no_motion')
 class NoMotionFilter(StateModelFilter):
     """
     Baseline filter trusts fully detector and is completely certain in detector accuracy.

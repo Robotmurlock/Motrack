@@ -8,7 +8,7 @@ from motrack.tracker.tracklet import Tracklet
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 
 
-ASSOCIATION_CATALOG.register('biou')
+@ASSOCIATION_CATALOG.register('biou')
 class HungarianBIoU(HungarianAlgorithmIOU):
     """
     BIoU matching algorithm. Ref: https://arxiv.org/pdf/2211.14317.pdf
@@ -57,7 +57,7 @@ class HungarianBIoU(HungarianAlgorithmIOU):
         return hungarian(cost_matrix)
 
 
-ASSOCIATION_CATALOG.register('cbiou')
+@ASSOCIATION_CATALOG.register('cbiou')
 class HungarianCBIoU(AssociationAlgorithm):
     """
     C-BIoU matching algorithm. Ref: https://arxiv.org/pdf/2211.14317.pdf
