@@ -64,7 +64,7 @@ class MotionBasedTracker(Tracker, ABC):
             tracklet_id: Tracklet id
             detection: Initial object detection
         """
-        measurement = detection.as_numpy_yxwh(dtype=np.float32)
+        measurement = detection.as_numpy_xywh(dtype=np.float32)
         state = self._filter.initiate(measurement)
         self._filter_states[tracklet_id] = state
 
@@ -96,7 +96,7 @@ class MotionBasedTracker(Tracker, ABC):
         Returns:
             Motion model posterior estimation
         """
-        measurement = detection.as_numpy_yxwh()
+        measurement = detection.as_numpy_xywh()
 
         state = self._filter_states[tracklet.id]
         state = self._filter.update(state, measurement)

@@ -24,7 +24,6 @@ def load_npy(path: str) -> np.ndarray:
     Returns:
         Loaded numpy array.
     """
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'rb') as f:
         return np.load(f)
 
@@ -37,6 +36,7 @@ def store_npy(data: np.ndarray, path: str) -> None:
         data: Data
         path: Path
     """
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'wb') as f:
         np.save(f, data)
 
@@ -141,7 +141,6 @@ class DetectionManager:
         Returns:
             Scene frame cache path
         """
-        assert self._cache_path is not None, 'Cache path is not set!'
         scene_frame_cache_path = os.path.join(self._cache_path, scene, f'{frame_index:06d}')
         bboxes_cache_path = os.path.join(scene_frame_cache_path, 'bboxes.npy')
         classes_cache_path = os.path.join(scene_frame_cache_path, 'classes.npy')

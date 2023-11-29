@@ -248,7 +248,7 @@ class BBox:
         """
         return np.array([self.upper_left.x, self.upper_left.y, self.bottom_right.x, self.bottom_right.y], dtype=dtype)
 
-    def as_numpy_yxwh(self, dtype: np.dtype = np.float32) -> np.ndarray:
+    def as_numpy_xywh(self, dtype: np.dtype = np.float32) -> np.ndarray:
         """
         Converts Bbox to yxwh numpy array.
 
@@ -258,7 +258,7 @@ class BBox:
         Returns:
             BBox yxwh coords as a numpy array.
         """
-        return np.array([self.upper_left.y, self.upper_left.x, self.width, self.height], dtype=dtype)
+        return np.array([self.upper_left.x, self.upper_left.y, self.width, self.height], dtype=dtype)
 
     def as_numpy_cxywh(self, dtype: np.dtype = np.float32) -> np.ndarray:
         """

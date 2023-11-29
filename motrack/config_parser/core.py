@@ -126,7 +126,6 @@ class GlobalConfig:
     path: PathConfig = field(default_factory=PathConfig)
     postprocess: TrackerPostprocessConfig = field(default_factory=TrackerPostprocessConfig)
     visualize: TrackerVisualizeConfig = field(default_factory=TrackerVisualizeConfig)
-    override: bool = False
 
     @property
     def experiment_path(self) -> str:

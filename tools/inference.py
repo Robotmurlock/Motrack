@@ -27,9 +27,6 @@ logger = logging.getLogger('TrackerEvaluation')
 @pipeline.task('inference')
 def inference(cfg: GlobalConfig) -> None:
     if os.path.exists(cfg.experiment_path):
-        if not cfg.override:
-            raise FileExistsError(f'Path "{cfg.experiment_path}" is already taken!')
-
         user_input = input(f'Experiment on path "{cfg.experiment_path}" already exists. Are you sure you want to override it? [yes/no] ').lower()
         if user_input in ['yes', 'y']:
             shutil.rmtree(cfg.experiment_path)

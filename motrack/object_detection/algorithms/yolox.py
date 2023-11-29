@@ -52,9 +52,7 @@ class YOLOXInference(ObjectDetectionInference):
         bboxes[:, [1, 3]] /= h
 
         # Process classes
-        class_indices = output[:, 6]
-        classes = [self._lookup.inverse_lookup(int(cls_index)) for cls_index in class_indices] \
-            if self._lookup is not None else class_indices
+        classes = output[:, 6]
 
         # Process confidences
         confidences = output[:, 4]
