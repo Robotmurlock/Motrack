@@ -1,9 +1,9 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple, Union, Any
 
 import numpy as np
 import ultralytics
 
-from motrack.library.cv.bbox import PredBBox, LabelType
+from motrack.library.cv.bbox import LabelType
 from motrack.object_detection.algorithms.base import ObjectDetectionInference
 from motrack.object_detection.catalog import OBJECT_DETECTION_CATALOG
 from motrack.utils.lookup import LookupTable
@@ -32,28 +32,27 @@ class YOLOv8Inference(ObjectDetectionInference):
         if self._class_filter is None:
             self._class_filter = []
 
-    def predict(
-        self,
-        image: np.ndarray
-    ) -> List[PredBBox]:
-        h, w, _ = image.shape
-        prediction_raw = self._yolo.predict(
+    def predict_raw(self, image: np.ndarray) -> Any:
+        return self._yolo.predict(
             source=image,
             verbose=self._verbose,
             conf=self._conf,
             classes=self._class_filter
-        )[0]  # Remove batch
+        )
+
+    def postprocess(self, image: np.ndarray, raw: Any) -> Tuple[Union[np.ndarray, List[float]], List[LabelType], Union[np.ndarray, list]]:
+        raw = raw[0]  # Remove batch
+        h, w, _ = image.shape
 
         # Process bboxes
-        bboxes = prediction_raw.boxes.xyxy.detach().cpu()
+        bboxes = raw.boxes.xyxy.detach().cpu().numpy()
         bboxes[:, [0, 2]] /= w
         bboxes[:, [1, 3]] /= h
 
         # Process classes
-        class_indices = prediction_raw.boxes.cls.detach().cpu()
-        classes = [self._lookup.inverse_lookup(int(cls_index)) for cls_index in class_indices.view(-1)]
+        classes = raw.boxes.cls.detach().cpu().numpy()
 
         # Process confidences
-        confidences = prediction_raw.boxes.conf.detach().cpu().view(-1)
+        confidences = raw.boxes.conf.detach().cpu().view(-1).numpy()
 
-        return self.pack_bboxes(bboxes, classes, confidences)
+        return bboxes, classes, confidences

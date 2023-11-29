@@ -1,8 +1,8 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple, Union, Any
 
 import numpy as np
 
-from motrack.library.cv.bbox import PredBBox
+from motrack.library.cv.bbox import LabelType
 from motrack.object_detection.algorithms.base import ObjectDetectionInference
 from motrack.object_detection.catalog import OBJECT_DETECTION_CATALOG
 from motrack.object_detection.yolox import YOLOXPredictor
@@ -34,15 +34,17 @@ class YOLOXInference(ObjectDetectionInference):
         self._conf = conf
         self._min_bbox_area = min_bbox_area
 
-    def predict(self, image: np.ndarray) -> List[PredBBox]:
+    def predict_raw(self, image: np.ndarray) -> Any:
+        output, _ = self._yolox.predict(image)
+        return output
+
+    def postprocess(self, image: np.ndarray, raw: Any) -> Tuple[Union[np.ndarray, List[float]], List[LabelType], Union[np.ndarray, list]]:
         h, w, _ = image.shape
 
-        output, _ = self._yolox.predict(image)
-
         # Filter small bboxes
-        bboxes = output[:, :4]
+        bboxes = raw[:, :4]
         areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
-        output = output[areas >= self._min_bbox_area]
+        output = raw[areas >= self._min_bbox_area]
 
         # Process bboxes
         bboxes = output[:, :4]
@@ -57,5 +59,4 @@ class YOLOXInference(ObjectDetectionInference):
         # Process confidences
         confidences = output[:, 4]
 
-
-        return self.pack_bboxes(bboxes, classes, confidences)
+        return bboxes, classes, confidences

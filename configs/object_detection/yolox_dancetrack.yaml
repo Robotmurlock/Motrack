@@ -5,3 +5,4 @@ params:
   min_bbox_area: 100
   model_path: /media/home/DanceTrack-orig/.other/bytetrack_models/bytetrack_model.pth.tar
 lookup_path: /media/home/DanceTrack-orig/.other/.lookup.json
+oracle: true

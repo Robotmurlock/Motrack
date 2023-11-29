@@ -66,8 +66,8 @@ class TrackerInferenceWriter:
             bbox = copy.deepcopy(bbox)
             bbox.clip()
 
-        left = round(bbox.upper_left.y * self._image_width)
-        top = round(bbox.upper_left.x * self._image_height)
+        left = round(bbox.upper_left.x * self._image_width)
+        top = round(bbox.upper_left.y * self._image_height)
         width = round(bbox.width * self._image_width)
         height = round(bbox.height * self._image_height)
 

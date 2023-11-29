@@ -16,16 +16,24 @@ from motrack.common.project import CONFIGS_PATH
 from motrack.config_parser import GlobalConfig
 from motrack.datasets import dataset_factory
 from motrack.evaluation.io import TrackerInferenceWriter
-from motrack.object_detection import object_detection_inference_factory
+from motrack.object_detection import DetectionManager
 from motrack.tracker import tracker_factory, Tracklet
 from motrack.utils import pipeline
+import shutil
 
 logger = logging.getLogger('TrackerEvaluation')
 
 
 @pipeline.task('inference')
 def inference(cfg: GlobalConfig) -> None:
-    assert not os.path.exists(cfg.experiment_path), f'Path "{cfg.experiment_path}" is already taken!'
+    if os.path.exists(cfg.experiment_path):
+        if not cfg.override:
+            raise FileExistsError(f'Path "{cfg.experiment_path}" is already taken!')
+
+        user_input = input(f'Experiment on path "{cfg.experiment_path}" already exists. Are you sure you want to override it? [yes/no] ').lower()
+        if user_input in ['yes', 'y']:
+            shutil.rmtree(cfg.experiment_path)
+
     tracker_active_output = os.path.join(cfg.experiment_path, 'active')
     tracker_all_output = os.path.join(cfg.experiment_path, 'all')
 
@@ -38,10 +46,13 @@ def inference(cfg: GlobalConfig) -> None:
         test=cfg.eval.split == 'test'
     )
 
-    od_inference = object_detection_inference_factory(
-        name=cfg.object_detection.type,
-        params=cfg.object_detection.params,
-        lookup=cfg.object_detection.load_lookup() if cfg.object_detection.lookup_path is not None else None
+    detection_manager = DetectionManager(
+        inference_name=cfg.object_detection.type,
+        inference_params=cfg.object_detection.params,
+        lookup=cfg.object_detection.load_lookup() if cfg.object_detection.lookup_path is not None else None,
+        dataset=dataset,
+        cache_path=cfg.object_detection.cache_path,
+        oracle=cfg.object_detection.oracle
     )
 
     scene_names = dataset.scenes
@@ -62,10 +73,8 @@ def inference(cfg: GlobalConfig) -> None:
             TrackerInferenceWriter(tracker_all_output, scene_name, image_height=imheight, image_width=imwidth, clip=clip) as tracker_all_inf_writer:
             tracklets: List[Tracklet] = []
             for index in tqdm(range(scene_length), desc=f'Simulating "{scene_name}"', unit='frame'):
-                image = dataset.load_scene_image_by_frame_index(scene_name, index)
-
                 # Perform OD inference
-                detection_bboxes = od_inference.predict(image)
+                detection_bboxes = detection_manager.predict(scene_name, index)
 
                 # Perform tracking step
                 active_tracklets, tracklets = tracker.track(
