@@ -34,8 +34,8 @@ class ByteTracker(MotionBasedTracker):
     """
     def __init__(
         self,
-        filter_name: str,
-        filter_params: dict,
+        filter_name: str = 'bot-sort',
+        filter_params: Optional[dict] = None,
         high_matcher_algorithm: str = 'default',
         high_matcher_params: Optional[Dict[str, Any]] = None,
         low_matcher_algorithm: str = 'default',
@@ -49,6 +49,9 @@ class ByteTracker(MotionBasedTracker):
         duplicate_iou_threshold: float = 0.85,
         use_observation_if_lost: bool = False
     ):
+        if filter_params is None:
+            filter_params = {}
+
         super().__init__(
             filter_name=filter_name,
             filter_params=filter_params

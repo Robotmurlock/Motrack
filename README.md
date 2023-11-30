@@ -7,12 +7,62 @@ leverage the tracking-by-detection paradigm.
 It supports a range of tracker algorithms and object detections, 
 making it ideal for applications in various domains.
 
+## Usage
+
+Pseudocode for tracker utilization:
+
+```python
+from motrack.object_detection import YOLOv8Inference
+from motrack.tracker import ByteTracker
+
+tracker = ByteTracker()  # Default parameters
+all_tracklets = []
+yolo = YOLOv8Inference(...)
+
+video_frames = read_video(video_path)
+
+for i, image in enumerate(video_frames):
+  detections = yolo.predict_bboxes(image)
+  active_tracklets, all_tracklets =
+    tracker.track(all_tracklets, detections, i)
+
+  foo_bar(active_tracklets)
+```
+
+This library offers flexibility to use any custom object detector.
+
+Implementation of custom tracker:
+
+```python
+from typing import List, Tuple
+
+from motrack.library.cv.bbox import PredBBox
+from motrack.tracker import Tracker, Tracklet
+
+
+class MyTracker(Tracker):
+  def track(
+    self,
+    tracklets: List[Tracklet],
+    detections: List[PredBBox],
+    frame_index: int,
+    inplace: bool = True
+  ) -> Tuple[List[Tracklet], List[Tracklet]]:
+    ... Tracker logic ...
+
+    return active_tracklets, all_tracklets
+```
+
+Similarly, custom object detection inference, filter, association method
+or dataset can also be implemented and seamlessly combined
+with other components.
+
 ## Features
 - **Tracker Algorithms Support**: 
   - SORT
   - ByteTrack
   - SparseTrack
-- **Object Detection Integration**:
+- **Object Detection Inference**:
   - YOLOX
   - YOLOv8
 - **Kalman Filter**:

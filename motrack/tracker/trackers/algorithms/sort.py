@@ -21,8 +21,8 @@ class SortTracker(MotionBasedTracker):
     """
     def __init__(
         self,
-        filter_name: str,
-        filter_params: dict,
+        filter_name: str = 'bot-sort',
+        filter_params: Optional[dict] = None,
         matcher_algorithm: str = 'hungarian_iou',
         matcher_params: Optional[Dict[str, Any]] = None,
         remember_threshold: int = 1,
@@ -45,6 +45,9 @@ class SortTracker(MotionBasedTracker):
             new_tracklet_detection_threshold: Threshold to accept new tracklet
             use_observation_if_lost: When re-finding tracklet, use observation instead of estimation
         """
+        if filter_params is None:
+            filter_params = {}
+
         super().__init__(
             filter_name=filter_name,
             filter_params=filter_params,
