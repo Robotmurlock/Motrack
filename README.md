@@ -1,2 +1,3 @@
-# PyTorch-Tracking-by-Detection
-PyTorch tracking by detection framework supporting various algorithms.
+# Motrack
+
+Tracking-by-detection framework supporting various algorithms. 
