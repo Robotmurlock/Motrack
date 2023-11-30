@@ -100,7 +100,9 @@ class ByteTracker(MotionBasedTracker):
 
 
     def track(self, tracklets: List[Tracklet], detections: List[PredBBox], frame_index: int, inplace: bool = True) \
-            -> Tuple[List[Tracklet], List[Tracklet]]:
+            -> List[Tracklet]:
+        tracklets = [t for t in tracklets if t.state != TrackletState.DELETED]  # Remove deleted tracklets
+
         # (0) Estimate priors for all tracklets
         prior_tracklet_estimates = [self._predict(t) for t in tracklets]
         prior_tracklet_bboxes = [bbox for bbox, _, _ in prior_tracklet_estimates]
@@ -171,10 +173,13 @@ class ByteTracker(MotionBasedTracker):
             tracklet_bbox, _, _ = self._update(tracklets[tracklet_index], det_bbox)
             new_bbox = det_bbox if self._use_observation_if_lost and tracklet.state != TrackletState.ACTIVE \
                 else tracklet_bbox
-            tracklets[tracklet_index] = tracklet.update(new_bbox, frame_index, state=TrackletState.ACTIVE)
+
+            new_state = TrackletState.ACTIVE
+            if tracklet.state == TrackletState.NEW and tracklet.total_matches + 1 < self._initialization_threshold:
+                new_state = TrackletState.NEW
+            tracklets[tracklet_index] = tracklet.update(new_bbox, frame_index, state=new_state)
 
         # (8) Delete new unmatched and long-lost tracklets
-        tracklets_indices_to_delete: List[int] = []
         for tracklet_index in range(len(tracklets)):
             tracklet = tracklets[tracklet_index]
             if tracklet.state == TrackletState.ACTIVE:
@@ -183,22 +188,15 @@ class ByteTracker(MotionBasedTracker):
             if (tracklet.state == TrackletState.LOST
                 and tracklet.number_of_unmatched_frames(frame_index) > self._remember_threshold) \
                     or tracklet.state == TrackletState.NEW:
-                tracklets_indices_to_delete.append(tracklet_index)
+                tracklet.state = TrackletState.DELETED
                 self._delete(tracklet.id)
             else:
                 tracklet_bbox, _, _ = self._missing(tracklet)
                 tracklets[tracklet_index] = tracklet.update(tracklet_bbox, tracklet.frame_index, state=TrackletState.LOST)
 
         # (9) Delete duplicate between ACTIVE and LOST tracklets
-        # all_tracklets = [t for i, t in enumerate(tracklets) if i not in tracklets_indices_to_delete] + new_tracklets
-        filtered_tracklets = [t for i, t in enumerate(tracklets) if i not in tracklets_indices_to_delete]
-        active_tracklets = [t for t in filtered_tracklets if t.state == TrackletState.ACTIVE]
-        lost_tracklets = [t for t in filtered_tracklets if t.state == TrackletState.LOST]
+        deleted_tracklets = [t for t in tracklets if t.state == TrackletState.DELETED]
+        active_tracklets = [t for t in tracklets if t.state == TrackletState.ACTIVE]
+        lost_tracklets = [t for t in tracklets if t.state == TrackletState.LOST]
         active_tracklets, lost_tracklets = remove_duplicates(self._duplicate_iou_threshold, active_tracklets, lost_tracklets)
-        all_tracklets = active_tracklets + lost_tracklets + new_tracklets
-
-        # Filter active tracklets
-        active_tracklets = [t for t in tracklets if t.total_matches >= self._initialization_threshold]
-        active_tracklets = [t for t in active_tracklets if t.state == TrackletState.ACTIVE]
-
-        return active_tracklets, all_tracklets
+        return active_tracklets + lost_tracklets + new_tracklets + deleted_tracklets

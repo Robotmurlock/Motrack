@@ -9,7 +9,7 @@ from tqdm import tqdm
 from motrack.datasets import BaseDataset
 from motrack.evaluation.io import TrackerInferenceWriter
 from motrack.object_detection import DetectionManager
-from motrack.tracker import Tracklet, Tracker
+from motrack.tracker import Tracklet, Tracker, TrackletState
 
 
 def run_tracker_inference(
@@ -53,11 +53,12 @@ def run_tracker_inference(
                 detection_bboxes = detection_manager.predict(scene_name, index)
 
                 # Perform tracking step
-                active_tracklets, tracklets = tracker.track(
+                tracklets = tracker.track(
                     tracklets=tracklets,
                     detections=detection_bboxes,
                     frame_index=index + 1  # Counts from 1 instead of 0
                 )
+                active_tracklets = [t for t in tracklets if t.state == TrackletState.ACTIVE]
 
                 # Save inference
                 for tracklet in active_tracklets:

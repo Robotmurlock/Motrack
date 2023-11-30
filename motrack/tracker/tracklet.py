@@ -21,7 +21,8 @@ class TrackletState(enum.Enum):
     """
     NEW = enum.auto()
     ACTIVE = enum.auto()
-    LOST = enum.auto
+    LOST = enum.auto()
+    DELETED = enum.auto()
 
 
 class Tracklet:
@@ -240,7 +241,7 @@ class Tracklet:
         if state is not None:
             self._state = state
 
-        if self._state == TrackletState.ACTIVE:
+        if self._state in [TrackletState.NEW, TrackletState.ACTIVE]:
             self._total_matches += 1
 
         return self

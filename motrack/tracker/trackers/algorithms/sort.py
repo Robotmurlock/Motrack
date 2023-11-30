@@ -2,7 +2,7 @@
 Implementation of Sort tracker with a custom filter.
 """
 import copy
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching import association_factory
@@ -63,7 +63,9 @@ class SortTracker(MotionBasedTracker):
         self._use_observation_if_lost = use_observation_if_lost
 
     def track(self, tracklets: List[Tracklet], detections: List[PredBBox], frame_index: int, inplace: bool = True) \
-            -> Tuple[List[Tracklet], List[Tracklet]]:
+            -> List[Tracklet]:
+        tracklets = [t for t in tracklets if t.state != TrackletState.DELETED]  # Remove deleted tracklets
+
         # Estimate priors for all tracklets
         prior_tracklet_estimates = [self._predict(t) for t in tracklets]
         prior_tracklet_bboxes = [bbox for bbox, _, _ in prior_tracklet_estimates]
@@ -78,7 +80,11 @@ class SortTracker(MotionBasedTracker):
             tracklet_bbox, _, _ = self._update(tracklets[tracklet_index], det_bbox)
             new_bbox = det_bbox if self._use_observation_if_lost and tracklet.state != TrackletState.ACTIVE \
                 else tracklet_bbox
-            tracklets[tracklet_index] = tracklet.update(new_bbox, frame_index, state=TrackletState.ACTIVE)
+
+            new_state = TrackletState.ACTIVE
+            if tracklet.state == TrackletState.NEW and tracklet.total_matches + 1 < self._initialization_threshold:
+                new_state = TrackletState.NEW
+            tracklets[tracklet_index] = tracklet.update(new_bbox, frame_index, state=new_state)
 
         # Create new tracklets from unmatched detections and initiate filter states
         new_tracklets: List[Tracklet] = []
@@ -94,23 +100,15 @@ class SortTracker(MotionBasedTracker):
             new_tracklets.append(new_tracklet)
             self._initiate(new_tracklet.id, detection)
 
-        # Delete old unmatched tracks
-        tracklets_indices_to_delete: List[int] = []
+        # Delete old and new unmatched tracks
         for tracklet_index in unmatched_tracklets:
             tracklet = tracklets[tracklet_index]
             if tracklet.number_of_unmatched_frames(frame_index) > self._remember_threshold \
                     or tracklet.state == TrackletState.NEW:
-                tracklets_indices_to_delete.append(tracklet_index)
                 self._delete(tracklet.id)
+                tracklet.state = TrackletState.DELETED
             else:
                 tracklet_bbox, _, _ = self._missing(tracklet)
                 tracklets[tracklet_index] = tracklet.update(tracklet_bbox, tracklet.frame_index, state=TrackletState.LOST)
 
-        all_tracklets = [t for i, t in enumerate(tracklets) if i not in tracklets_indices_to_delete] \
-            + new_tracklets
-
-        # Filter active tracklets
-        active_tracklets = [t for t in tracklets if t.total_matches >= self._initialization_threshold]
-        active_tracklets = [t for t in active_tracklets if t.state == TrackletState.ACTIVE]
-
-        return active_tracklets, all_tracklets
+        return tracklets + new_tracklets

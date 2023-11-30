@@ -13,18 +13,18 @@ Pseudocode for tracker utilization:
 
 ```python
 from motrack.object_detection import YOLOv8Inference
-from motrack.tracker import ByteTracker
+from motrack.tracker import ByteTracker, TrackletState
 
 tracker = ByteTracker()  # Default parameters
-all_tracklets = []
+tracklets = []
 yolo = YOLOv8Inference(...)
 
 video_frames = read_video(video_path)
 
 for i, image in enumerate(video_frames):
   detections = yolo.predict_bboxes(image)
-  active_tracklets, all_tracklets =
-    tracker.track(all_tracklets, detections, i)
+  tracklets = tracker.track(tracklets, detections, i)
+  active_tracklets = [t for t in tracklets if t.state == TrackletState.ACTIVE]
 
   foo_bar(active_tracklets)
 ```
@@ -47,10 +47,10 @@ class MyTracker(Tracker):
     detections: List[PredBBox],
     frame_index: int,
     inplace: bool = True
-  ) -> Tuple[List[Tracklet], List[Tracklet]]:
+  ) -> List[Tracklet]:
     ... Tracker logic ...
 
-    return active_tracklets, all_tracklets
+    return tracklets
 ```
 
 Similarly, custom object detection inference, filter, association method

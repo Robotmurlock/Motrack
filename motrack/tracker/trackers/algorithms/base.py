@@ -19,7 +19,7 @@ class Tracker(ABC):
         detections: List[PredBBox],
         frame_index: int,
         inplace: bool = True
-    ) -> Tuple[List[Tracklet], List[Tracklet]]:
+    ) -> List[Tracklet]:
         """
         Performs multi-object-tracking step.
         DISCLAIMER: `inplace=True` is default configuration!
@@ -31,8 +31,7 @@ class Tracker(ABC):
             inplace: Perform inplace transformations on tracklets and bboxes
 
         Returns:
-            - Active tracklets
-            - All tracklets
+            Tracks (active, lost, new, deleted, ...)
         """
         pass
 
