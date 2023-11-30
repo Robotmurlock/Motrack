@@ -4,7 +4,6 @@ YOLOv8 inference support.
 from typing import List, Optional, Tuple, Union, Any
 
 import numpy as np
-import ultralytics
 
 from motrack.library.cv.bbox import LabelType
 from motrack.object_detection.algorithms.base import ObjectDetectionInference
@@ -27,6 +26,11 @@ class YOLOv8Inference(ObjectDetectionInference):
         lookup: Optional[LookupTable] = None,
     ):
         super().__init__(lookup=lookup)
+        try:
+            import ultralytics
+        except ImportError as e:
+            raise ImportError('Please install ultralytics package with "pip3 install ultralytics" in order to use YOLOv8!') from e
+
         self._yolo = ultralytics.YOLO(model_path)
         self._yolo.to(accelerator)
         self._verbose = verbose

@@ -8,7 +8,6 @@ import numpy as np
 from motrack.library.cv.bbox import LabelType
 from motrack.object_detection.algorithms.base import ObjectDetectionInference
 from motrack.object_detection.catalog import OBJECT_DETECTION_CATALOG
-from motrack.object_detection.yolox import YOLOXPredictor
 from motrack.utils.lookup import LookupTable
 
 
@@ -27,6 +26,11 @@ class YOLOXInference(ObjectDetectionInference):
         lookup: Optional[LookupTable] = None
     ):
         super().__init__(lookup=lookup)
+        try:
+            from motrack.object_detection.yolox import YOLOXPredictor
+        except ImportError as e:
+            raise ImportError('Please install PyTorch from "https://pytorch.org/"'
+                              'and YOLOX package from "https://github.com/Megvii-BaseDetection/YOLOX"!') from e
 
         self._yolox = YOLOXPredictor(
             checkpoint_path=model_path,
