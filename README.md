@@ -29,3 +29,13 @@ making it ideal for applications in various domains.
   - Inference: Perform any tracker inference that can directly evaluated with TrackEval framework.
   - Postprocess: Perform offline postprocessing (linear interpolation, etc...) for more accuracy tracklets.
   - Visualize: Visualize tracker inference.
+
+## Installation
+
+Run these commands to install package within your virtual environment or docker container.
+
+```bash
+git clone https://github.com/Robotmurlock/Motrack
+cd Motrack
+pip install -e .
+```
