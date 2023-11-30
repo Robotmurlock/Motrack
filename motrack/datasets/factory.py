@@ -1,9 +1,12 @@
-
+"""
+Dataset factory method.
+Use `DATASET_CATALOG.register` to extend supported dataset formats.
+"""
 from motrack.datasets.base import BaseDataset
 from motrack.datasets.catalog import DATASET_CATALOG
 
 # noinspection PyUnresolvedReferences
-from motrack.datasets.mot import MOTDataset
+from motrack.datasets.mot import MOTDataset  # pylint: disable=unused-import
 
 
 def dataset_factory(dataset_type: str, path: str, params: dict, test: bool = False) -> BaseDataset:

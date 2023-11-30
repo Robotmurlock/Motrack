@@ -1,3 +1,6 @@
+"""
+Implementation of C-BIoU and BIoU association methods.
+"""
 from typing import Optional, List, Tuple
 
 from motrack.library.cv.bbox import PredBBox, BBox

@@ -1,5 +1,5 @@
 """
-Tracker inference.
+Visualize detections. Can be used to visually evaluate detector performance without tracking component.
 """
 import logging
 import os

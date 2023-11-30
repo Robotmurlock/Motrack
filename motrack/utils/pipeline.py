@@ -1,3 +1,6 @@
+"""
+Pipeline (tools scripts) functions.
+"""
 import logging
 import os
 import time
@@ -16,13 +19,6 @@ logger = logging.getLogger('PipelineUtils')
 def task(task_name: str) -> Callable:
     """
     Optional decorator that wraps the task function in extra utilities.
-    Makes multirun more resistant to failure.
-    Utilities:
-    - Calling the `utils.extras()` before the task is started
-    - Calling the `utils.close_loggers()` after the task is finished
-    - Logging the exception if occurs
-    - Logging the task total execution time
-    - Logging the output dir
 
     Args:
         task_name: Task name

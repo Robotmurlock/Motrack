@@ -1,5 +1,5 @@
 """
-MOT Challenge Dataset support
+MOT Challenge Dataset support. Supports: MOT17, MOT20, DanceTrack.
 """
 import configparser
 import copy
@@ -11,13 +11,11 @@ from pathlib import Path
 from typing import Dict, Tuple, List, Union, Optional
 
 import numpy as np
-
-from motrack.datasets.catalog import DATASET_CATALOG
-
 import pandas as pd
 from tqdm import tqdm
 
 from motrack.datasets.base import BaseDataset, BasicSceneInfo, ObjectFrameData
+from motrack.datasets.catalog import DATASET_CATALOG
 from motrack.utils import file_system
 
 CATEGORY = 'pedestrian'

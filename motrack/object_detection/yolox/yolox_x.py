@@ -1,4 +1,6 @@
-# encoding: utf-8
+"""
+Default Exp form the YOLOX inference.
+"""
 import os
 
 from yolox.exp import Exp as MyExp
@@ -11,15 +13,15 @@ class Exp(MyExp):
     Copied from "https://github.com/DanceTrack/DanceTrack/blob/main/ByteTrack/exps/example/dancetrack/yolox_x.py"
     """
     def __init__(self):
-        super(Exp, self).__init__()
+        super().__init__()
         self.num_classes = 1
         self.class_names = ('pedestrian',)
         self.depth = 1.33
         self.width = 1.25
-        self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.train_ann = "train.json"
-        self.val_ann = "val.json"
-        self.test_ann = "test.json"
+        self.exp_name = os.path.split(os.path.realpath(__file__))[1].split('.')[0]
+        self.train_ann = 'train.json'
+        self.val_ann = 'val.json'
+        self.test_ann = 'test.json'
 
         self.input_size = (800, 1440)
         self.test_size = (800, 1440)

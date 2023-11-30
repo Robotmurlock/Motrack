@@ -1,3 +1,6 @@
+"""
+Dynamic tracker catalog.
+"""
 from motrack.utils.patterns import DynamicCatalog
 
 

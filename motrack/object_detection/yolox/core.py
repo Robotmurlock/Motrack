@@ -10,6 +10,9 @@ from motrack.object_detection.yolox.yolox_x import DEFAULT_EXP_PATH, DEFAULT_EXP
 
 
 class YOLOXPredictor:
+    """
+    YOLOX predictor (inference) used for already trained model (loaded from checkpoint).
+    """
     def __init__(
         self,
         checkpoint_path: str,

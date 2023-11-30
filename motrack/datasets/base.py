@@ -1,3 +1,6 @@
+"""
+Dataset interface (base class)
+"""
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -53,7 +56,7 @@ class BaseDataset(ABC):
         self._sequence_list = sequence_list
 
         if image_shape is not None:
-            assert isinstance(image_shape, tuple) or isinstance(image_shape, list), \
+            assert isinstance(image_shape, (list, tuple)), \
                 f'Invalid image shape type "{type(image_shape)}".'
             image_shape = tuple(image_shape)
             assert len(image_shape) == 2, f'Invalid image shape length "{len(image_shape)}"'

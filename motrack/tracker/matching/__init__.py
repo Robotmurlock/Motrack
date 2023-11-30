@@ -1,3 +1,6 @@
+"""
+Tracker association algorithms interface.
+"""
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 from motrack.tracker.matching.algorithms.iou import HungarianAlgorithmIOU
 from motrack.tracker.matching.algorithms.dcm import DCMIoU, MoveDCM

@@ -1,9 +1,13 @@
+"""
+DynamicCatalog allows dynamic extensions of the factory methods.
+"""
 from typing import Callable, Type, List
 
 
 class DynamicCatalog:
     """
     Dynamic catalog that is meant to be used with factory methods.
+    Allows dynamic extension of the package factory method.
     """
     def __init__(self):
         self._catalog = {}

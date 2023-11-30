@@ -1,7 +1,5 @@
 """
-Tracker inference postprocess.
-
-TODO: Refactor
+Tracker inference postprocess (offline). Output can directly be evaluated using the TrackEval repo.
 """
 import logging
 import os
@@ -28,6 +26,17 @@ INF = 999_999
 
 
 def element_distance_from_list(query: int, keys: List[int]) -> int:
+    """
+    Element distance from the list (keys) is equal to the absolute distance
+    to the closest element in the list with the query element
+
+    Args:
+        query: Query element
+        keys: List of keys
+
+    Returns:
+        Distance from the list
+    """
     min_distance = None
     for key in keys:
         distance = abs(query - key)
@@ -37,6 +46,16 @@ def element_distance_from_list(query: int, keys: List[int]) -> int:
 
 
 def find_closest_prev_element(query: int, keys: List[int]) -> int:
+    """
+    Finds element in the list (keys) that is closest but not greater than the query.
+
+    Args:
+        query: Query element
+        keys: List of keys
+
+    Returns:
+        Closest, not greater element
+    """
     value = None
     for key in keys:
         if key > query:
@@ -48,6 +67,16 @@ def find_closest_prev_element(query: int, keys: List[int]) -> int:
 
 
 def find_closest_next_element(query: int, keys: List[int]) -> int:
+    """
+    Finds element in the list (keys) that is closest but not less than the query.
+
+    Args:
+        query: Query element
+        keys: List of keys
+
+    Returns:
+        Closest, not less element
+    """
     value = None
     for key in keys:
         if key < query:
@@ -73,7 +102,7 @@ def interpolate_bbox(start_index: int, start_bbox: PredBBox, end_index: int, end
     Returns:
         Interpolated bounding box at the target index.
     """
-    assert start_index < index < end_index, "The target index must be between start_index and end_index"
+    assert start_index < index < end_index, 'The target index must be between start_index and end_index.'
 
     # Calculate alpha based on the target index
     alpha = (index - start_index) / (end_index - start_index)
@@ -123,7 +152,7 @@ def postprocess(cfg: GlobalConfig) -> None:
     )
 
     scene_names = dataset.scenes
-    scene_names = [scene_name for scene_name in scene_names if re.match(cfg.filter.scene_pattern, scene_name)]
+    scene_names = [scene_name for scene_name in scene_names if re.match(cfg.dataset_filter.scene_pattern, scene_name)]
     for scene_name in tqdm(scene_names, desc='Postprocessing tracker', unit='scene'):
         scene_info = dataset.get_scene_info(scene_name)
         scene_length = scene_info.seqlength

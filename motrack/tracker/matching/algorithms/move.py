@@ -1,3 +1,6 @@
+"""
+Implementation of Move (hybrid) association method.
+"""
 from typing import Optional, List, Tuple
 
 import numpy as np
@@ -10,6 +13,17 @@ from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 
 
 def distance(name: str, x: np.ndarray, y: np.ndarray) -> float:
+    """
+    Calculates distance between two vectors. Supports: L1 and L2.
+
+    Args:
+        name: Distance name
+        x: Vector X
+        y: Vector Y
+
+    Returns:
+        Distance between x and y.
+    """
     if name == 'l1':
         return np.abs(x - y).sum()
     if name == 'l2':
@@ -20,11 +34,10 @@ def distance(name: str, x: np.ndarray, y: np.ndarray) -> float:
 
 @ASSOCIATION_CATALOG.register('move')
 class Move(HungarianAlgorithmIOU):
-    DISTANCE_OPTIONS = ['l1', 'l2']
-
     """
     Combines Hungarian IOU and motion estimation for tracklet and detection matching.
     """
+    DISTANCE_OPTIONS = ['l1', 'l2']
     def __init__(
         self,
         match_threshold: float = 0.30,

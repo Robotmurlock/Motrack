@@ -1,5 +1,5 @@
 """
-RAII wrapper of mp4 writer.
+RAII wrapper of MP4Writer.
 """
 from pathlib import Path
 from typing import Tuple, Optional

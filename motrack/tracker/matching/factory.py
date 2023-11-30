@@ -1,3 +1,7 @@
+"""
+Tracker association factory method.
+Use `ASSOCIATION_CATALOG.register` to extend supported tracker association algorithms.
+"""
 from typing import Dict, Any
 
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm

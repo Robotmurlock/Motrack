@@ -1,3 +1,6 @@
+"""
+Object detection interface.
+"""
 from motrack.object_detection.factory import object_detection_inference_factory
 from motrack.object_detection.algorithms.base import ObjectDetectionInference
 from motrack.object_detection.algorithms.yolox import YOLOXInference

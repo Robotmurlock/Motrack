@@ -1,3 +1,6 @@
+"""
+YOLOv8 inference support.
+"""
 from typing import List, Optional, Tuple, Union, Any
 
 import numpy as np

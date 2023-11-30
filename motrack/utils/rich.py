@@ -1,14 +1,15 @@
+"""
+Pretty (rich) config print.
+"""
+import logging
 from pathlib import Path
 from typing import Sequence
 
 import rich
 import rich.syntax
 import rich.tree
-from hydra.core.hydra_config import HydraConfig
-from omegaconf import DictConfig, OmegaConf, open_dict
+from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.utilities import rank_zero_only
-from rich.prompt import Prompt
-import logging
 
 log = logging.getLogger('RichUtils')
 
@@ -39,15 +40,15 @@ def print_config_tree(
     """
     Path(cfg.path.master).mkdir(parents=True, exist_ok=True)
 
-    style = "dim"
-    tree = rich.tree.Tree("CONFIG", style=style, guide_style=style)
+    style = 'dim'
+    tree = rich.tree.Tree('CONFIG', style=style, guide_style=style)
 
     queue = []
 
     # add fields from `print_order` to queue
     for field in print_order:
         queue.append(field) if field in cfg else log.warning(
-            f"Field '{field}' not found in config. Skipping '{field}' config printing..."
+            f'Field "{field}" not found in config. Skipping "{field}" config printing...'
         )
 
     # add all the other fields to queue (not specified in `print_order`)
@@ -65,12 +66,12 @@ def print_config_tree(
         else:
             branch_content = str(config_group)
 
-        branch.add(rich.syntax.Syntax(branch_content, "yaml"))
+        branch.add(rich.syntax.Syntax(branch_content, 'yaml'))
 
     # print config tree
     rich.print(tree)
 
     # save config tree to file
     if save_to_file:
-        with open(Path(cfg.path.master, "config_tree.log"), "w") as file:
+        with open(Path(cfg.path.master, 'config_tree.log'), 'w', encoding='utf-8') as file:
             rich.print(tree, file=file)

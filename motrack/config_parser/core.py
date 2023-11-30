@@ -1,5 +1,5 @@
 """
-Extension of core config that supports additional parameters for E2E evaluation.
+Tracker config for tools scripts.
 """
 import json
 import os
@@ -41,6 +41,7 @@ class DatasetConfig:
     Dataset config.
     - name: Dataset name
     - path: Path to the dataset
+    - params: Ctor parameters
     """
     type: str
     path: str
@@ -55,12 +56,23 @@ class DatasetConfig:
 
 @dataclass
 class FilterConfig:
+    """
+    Filter (motion model) config.
+    """
     type: str
     params: dict
 
 
 @dataclass
 class ObjectDetectionInferenceConfig:
+    """
+    Object detection config.
+    - type: Architecture
+    - params: Ctor params
+    - lookup_path: Class mappings saved as a json file (in LookupTable format)
+    - cache_path: Use cache for faster inference
+    - oracle: Use GT detections instead running inference
+    """
     type: str
     params: dict
     lookup_path: Optional[str] = None
@@ -111,7 +123,7 @@ class TrackerEvalConfig:
 
 
 @dataclass
-class FilterConfig:
+class DatasetFilterConfig:
     scene_pattern: str = '(.*?)'  # All
 
 
@@ -122,7 +134,7 @@ class GlobalConfig:
     eval: TrackerEvalConfig
     object_detection: ObjectDetectionInferenceConfig
     algorithm: TrackerAlgorithmConfig
-    filter: FilterConfig = field(default_factory=FilterConfig)
+    dataset_filter: DatasetFilterConfig = field(default_factory=DatasetFilterConfig)
     path: PathConfig = field(default_factory=PathConfig)
     postprocess: TrackerPostprocessConfig = field(default_factory=TrackerPostprocessConfig)
     visualize: TrackerVisualizeConfig = field(default_factory=TrackerVisualizeConfig)

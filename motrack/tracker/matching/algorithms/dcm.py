@@ -1,3 +1,6 @@
+"""
+Implementation of SparseTrack DCM association method.
+"""
 from typing import Optional, List, Tuple
 
 import numpy as np

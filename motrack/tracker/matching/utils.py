@@ -1,7 +1,11 @@
-import numpy as np
-import scipy
+"""
+Association methods utilities. Functions:
+- Hungarian algorithm
+"""
 from typing import Tuple, List
 
+import numpy as np
+import scipy
 
 INF = 999_999
 

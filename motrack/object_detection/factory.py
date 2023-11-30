@@ -1,3 +1,7 @@
+"""
+Object detection factory method.
+Use `OBJECT_DETECTION_CATALOG.register` to extend supported object detection algorithms.
+"""
 from typing import Optional
 
 from motrack.object_detection.algorithms.base import ObjectDetectionInference

@@ -1,5 +1,6 @@
 """
 Implementation of ByteTrack.
+Reference: https://arxiv.org/abs/2110.06864
 """
 import copy
 from typing import Optional, Dict, Any, List, Tuple

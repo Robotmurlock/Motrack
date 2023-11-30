@@ -1,5 +1,5 @@
 """
-MP4Reader
+MP4Reader.
 """
 import os
 from typing import Tuple, Union, Generator
@@ -21,7 +21,7 @@ class MP4Reader:
             FileNotFoundError: if video or sync file (meta file) does not exist
         """
         if not os.path.exists(path):
-            raise FileNotFoundError(f"Mp4 file {path} does not exist")
+            raise FileNotFoundError(f'Mp4 file {path} does not exist')
 
         self._path = path
 

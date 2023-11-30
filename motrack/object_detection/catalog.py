@@ -1,3 +1,6 @@
+"""
+Dynamic object detection catalog.
+"""
 from motrack.utils.patterns import DynamicCatalog
 
 

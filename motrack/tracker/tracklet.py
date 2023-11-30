@@ -13,6 +13,12 @@ TrackletHistoryType = List[Tuple[int, PredBBox]]
 
 
 class TrackletState(enum.Enum):
+    """
+    Tracklet state:
+    - NEW: New detected object (not confirmed)
+    - ACTIVE: Active tracklet (confirmed)
+    - LOST: Inactive tracklet (lost due occlusion, etc.)
+    """
     NEW = enum.auto()
     ACTIVE = enum.auto()
     LOST = enum.auto

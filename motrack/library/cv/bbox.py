@@ -1,9 +1,7 @@
 """
 BBox implementation
 """
-import enum
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Optional, List, Tuple, Union
 
 import cv2

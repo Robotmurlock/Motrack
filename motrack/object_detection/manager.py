@@ -3,42 +3,15 @@ DetectionManager makes tracker development easier and faster
 by adding cache and oracle detections options.
 """
 import os
-from pathlib import Path
 from typing import Optional, List, Tuple, Union
 
 import numpy as np
 
 from motrack.datasets import BaseDataset
 from motrack.library.cv.bbox import PredBBox
+from motrack.library.numpy_utils.io import load_npy, store_npy
 from motrack.object_detection.factory import object_detection_inference_factory
 from motrack.utils.lookup import LookupTable
-
-
-def load_npy(path: str) -> np.ndarray:
-    """
-    Loads numpy array from given path.
-
-    Args:
-        path: Path
-
-    Returns:
-        Loaded numpy array.
-    """
-    with open(path, 'rb') as f:
-        return np.load(f)
-
-
-def store_npy(data: np.ndarray, path: str) -> None:
-    """
-    Stores numpy array in path.
-
-    Args:
-        data: Data
-        path: Path
-    """
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'wb') as f:
-        np.save(f, data)
 
 
 class DetectionManager:

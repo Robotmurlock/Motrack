@@ -1,3 +1,6 @@
+"""
+NoMotion filter (just uses the last detection).
+"""
 from typing import Tuple
 
 import numpy as np

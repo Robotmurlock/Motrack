@@ -9,6 +9,7 @@ import scipy.linalg
 from typing import Optional
 
 
+# pylint: disable=pointless-string-statement
 """
 Table for the 0.95 quantile of the chi-square distribution with N degrees of
 freedom (contains values for N=1, ..., 9). Taken from MATLAB/Octave's chi2inv

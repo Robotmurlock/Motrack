@@ -1,5 +1,5 @@
 """
-Tracker inference.
+Tracker inference. Output can directly be evaluated using the TrackEval repo.
 """
 import logging
 import os
@@ -53,7 +53,7 @@ def inference(cfg: GlobalConfig) -> None:
     )
 
     scene_names = dataset.scenes
-    scene_names = [scene_name for scene_name in scene_names if re.match(cfg.filter.scene_pattern, scene_name)]
+    scene_names = [scene_name for scene_name in scene_names if re.match(cfg.dataset_filter.scene_pattern, scene_name)]
     for scene_name in tqdm(scene_names, desc='Simulating tracker', unit='scene'):
         scene_info = dataset.get_scene_info(scene_name)
         scene_length = scene_info.seqlength

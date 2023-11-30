@@ -1,3 +1,6 @@
+"""
+Dynamic LookupTable (class mappings).
+"""
 from typing import Dict, Optional, Iterable, Tuple, List
 
 

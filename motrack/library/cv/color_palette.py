@@ -1,5 +1,5 @@
 """
-Color palette
+Color palette.
 """
 from typing import Tuple
 

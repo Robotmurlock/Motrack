@@ -1,5 +1,6 @@
 """
 Implementation of SparseTrack.
+Reference: https://arxiv.org/abs/2306.05238
 """
 from typing import Optional, Dict, Any
 

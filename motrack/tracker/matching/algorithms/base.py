@@ -1,7 +1,12 @@
+"""
+Association method interface.
+"""
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
-from motrack.tracker.tracklet import Tracklet
+
 from motrack.library.cv.bbox import PredBBox
+from motrack.tracker.tracklet import Tracklet
+
 
 class AssociationAlgorithm(ABC):
     """

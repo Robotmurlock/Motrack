@@ -1,3 +1,6 @@
+"""
+YOLOX inference class.
+"""
 from typing import List, Optional, Tuple, Union, Any
 
 import numpy as np

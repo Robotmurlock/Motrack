@@ -1,3 +1,6 @@
+"""
+TrackEval inference IO support.
+"""
 import copy
 import os
 from dataclasses import dataclass
@@ -43,7 +46,7 @@ class TrackerInferenceWriter:
         Opens writer.
         """
         Path(self._output_path).mkdir(parents=True, exist_ok=True)
-        self._writer: TextIO = open(self._scene_output_path, 'w', encoding='utf-8')
+        self._writer: TextIO = open(self._scene_output_path, 'w', encoding='utf-8')  # pylint: disable=consider-using-with
 
     def close(self) -> None:
         """
@@ -127,7 +130,7 @@ class TrackerInferenceReader:
         """
         Opens reader.
         """
-        self._reader: TextIO = open(self._scene_output_path, 'r', encoding='utf-8')
+        self._reader: TextIO = open(self._scene_output_path, 'r', encoding='utf-8')  # pylint: disable=consider-using-with
 
     def close(self) -> None:
         """

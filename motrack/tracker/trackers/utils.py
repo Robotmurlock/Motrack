@@ -1,9 +1,24 @@
+"""
+Utility tracker functions.
+"""
 from typing import List, Tuple
 
 from motrack.tracker.tracklet import Tracklet
 
 
 def remove_duplicates(threshold: float, tracklets_lhs: List[Tracklet], tracklets_rhs: List[Tracklet]) -> Tuple[List[Tracklet], List[Tracklet]]:
+    """
+    Removes duplicates from two list of trackelts, where older tracklet is always kept.
+    Two tracklets are considered duplicates if they mostly overlap (defined by the threshold).
+
+    Args:
+        threshold: IoU threshold
+        tracklets_lhs: First tracklet list
+        tracklets_rhs: Second tracklet list
+
+    Returns:
+        Updated first and second tracklet lists
+    """
     lhs_exclude: List[int] = []
     rhs_exclude: List[int] = []
 

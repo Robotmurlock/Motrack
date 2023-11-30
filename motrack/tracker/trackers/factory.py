@@ -1,13 +1,14 @@
 """
 Tracker factory method.
+Use `TRACKER_CATALOG.register` to extend supported tracker algorithms.
 """
 from motrack.tracker.trackers.algorithms.base import Tracker
 # noinspection PyUnresolvedReferences
-from motrack.tracker.trackers.algorithms.byte import ByteTracker
+from motrack.tracker.trackers.algorithms.byte import ByteTracker  # pylint: disable=unused-import
 # noinspection PyUnresolvedReferences
-from motrack.tracker.trackers.algorithms.sort import SortTracker
+from motrack.tracker.trackers.algorithms.sort import SortTracker  # pylint: disable=unused-import
 # noinspection PyUnresolvedReferences
-from motrack.tracker.trackers.algorithms.sparse import SparseTracker
+from motrack.tracker.trackers.algorithms.sparse import SparseTracker  # pylint: disable=unused-import
 from motrack.tracker.trackers.catalog import TRACKER_CATALOG
 
 
