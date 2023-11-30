@@ -100,7 +100,7 @@ class TrackerAlgorithmConfig:
 class TrackerVisualizeConfig:
     fps: int = 20
     new_object_length: int = 5
-    option: str = 'active'
+    option: str = 'all'
 
     def __post_init__(self) -> None:
         """

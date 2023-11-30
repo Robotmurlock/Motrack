@@ -35,3 +35,9 @@ class Tracker(ABC):
             - All tracklets
         """
         pass
+
+    def reset_state(self) -> None:
+        """
+        Resets tracker state.
+        """
+        pass

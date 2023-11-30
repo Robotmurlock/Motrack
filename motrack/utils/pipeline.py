@@ -73,7 +73,7 @@ def store_run_history_config(output_dir: str, cfg: DictConfig, task_name: str) -
         cfg: Task config
         task_name: Task name
     """
-    config_dirpath = os.path.join(output_dir, cfg.dataset.type, cfg.experiment, cfg.eval.split)
+    config_dirpath = os.path.join(output_dir, cfg.dataset.type, self.algorithm.name, cfg.experiment, cfg.eval.split, 'run_configs')
     dt = datetime.now().strftime(formats.DATETIME_FORMAT)
     config_path = os.path.join(config_dirpath, f'{dt}_{task_name}.yaml')
     Path(config_dirpath).mkdir(parents=True, exist_ok=True)

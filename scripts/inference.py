@@ -1,0 +1,80 @@
+"""
+Tracker inference. Output can directly be evaluated using the TrackEval repo.
+"""
+import logging
+import os
+import shutil
+from dataclasses import asdict
+
+import hydra
+import yaml
+from omegaconf import DictConfig
+
+from motrack.common.project import CONFIGS_PATH
+from motrack.config_parser import GlobalConfig
+from motrack.datasets import dataset_factory
+from motrack.object_detection import DetectionManager
+from motrack.tracker import tracker_factory
+from motrack.utils import pipeline
+from motrack.tools import run_tracker_inference
+
+logger = logging.getLogger('TrackerInference')
+
+
+@pipeline.task('inference')
+def run_inference(cfg: GlobalConfig) -> None:
+    if os.path.exists(cfg.experiment_path):
+        user_input = input(f'Experiment on path "{cfg.experiment_path}" already exists. Are you sure you want to override it? [yes/no] ').lower()
+        if user_input in ['yes', 'y']:
+            shutil.rmtree(cfg.experiment_path)
+
+    tracker_active_output = os.path.join(cfg.experiment_path, 'active')
+    tracker_all_output = os.path.join(cfg.experiment_path, 'all')
+
+    logger.info(f'Saving tracker inference on path "{cfg.experiment_path}".')
+
+    dataset = dataset_factory(
+        dataset_type=cfg.dataset.type,
+        path=cfg.dataset.fullpath,
+        params=cfg.dataset.params,
+        test=cfg.eval.split == 'test'
+    )
+
+    detection_manager = DetectionManager(
+        inference_name=cfg.object_detection.type,
+        inference_params=cfg.object_detection.params,
+        lookup=cfg.object_detection.load_lookup() if cfg.object_detection.lookup_path is not None else None,
+        dataset=dataset,
+        cache_path=cfg.object_detection.cache_path,
+        oracle=cfg.object_detection.oracle
+    )
+
+    tracker = tracker_factory(
+        name=cfg.algorithm.name,
+        params=cfg.algorithm.params
+    )
+
+    run_tracker_inference(
+        dataset=dataset,
+        tracker=tracker,
+        detection_manager=detection_manager,
+        tracker_active_output=tracker_active_output,
+        tracker_all_output=tracker_all_output,
+        clip=cfg.dataset.type != 'MOT17',
+        scene_pattern=cfg.dataset_filter.scene_pattern
+    )
+
+    # Save tracker config
+    tracker_config_path = os.path.join(cfg.experiment_path, 'config.yaml')
+    with open(tracker_config_path, 'w', encoding='utf-8') as f:
+        yaml.safe_dump(asdict(cfg), f)
+
+
+@hydra.main(config_path=CONFIGS_PATH, config_name='movesort', version_base='1.1')
+def main(cfg: DictConfig):
+    # noinspection PyTypeChecker
+    run_inference(cfg)
+
+
+if __name__ == '__main__':
+    main()
