@@ -23,7 +23,7 @@ class SortTracker(MotionBasedTracker):
         self,
         filter_name: str = 'bot-sort',
         filter_params: Optional[dict] = None,
-        matcher_algorithm: str = 'hungarian_iou',
+        matcher_algorithm: str = 'iou',
         matcher_params: Optional[Dict[str, Any]] = None,
         remember_threshold: int = 1,
         initialization_threshold: int = 3,

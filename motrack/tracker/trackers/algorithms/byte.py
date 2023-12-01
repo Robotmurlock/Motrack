@@ -59,7 +59,7 @@ class ByteTracker(MotionBasedTracker):
 
         if high_matcher_algorithm == 'default':
             assert high_matcher_params is None
-            high_matcher_algorithm = 'hungarian_iou'
+            high_matcher_algorithm = 'iou'
             high_matcher_params = {
                 'match_threshold': 0.2,
                 'fuse_score': True
@@ -69,7 +69,7 @@ class ByteTracker(MotionBasedTracker):
 
         if low_matcher_algorithm == 'default':
             assert low_matcher_params is None
-            low_matcher_algorithm = 'hungarian_iou'
+            low_matcher_algorithm = 'iou'
             low_matcher_params = {
                 'match_threshold': 0.5
             }
@@ -78,7 +78,7 @@ class ByteTracker(MotionBasedTracker):
 
         if new_matcher_algorithm == 'default':
             assert new_matcher_params is None
-            new_matcher_algorithm = 'hungarian_iou'
+            new_matcher_algorithm = 'iou'
             new_matcher_params = {
                 'match_threshold': 0.3,
                 'fuse_score': True

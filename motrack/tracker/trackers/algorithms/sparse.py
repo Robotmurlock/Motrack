@@ -52,7 +52,7 @@ class SparseTracker(ByteTracker):
 
         if new_matcher_algorithm == 'default':
             assert new_matcher_params is None
-            new_matcher_algorithm = 'hungarian_iou'
+            new_matcher_algorithm = 'iou'
             new_matcher_params = {
                 'match_threshold': 0.3,
                 'fuse_score': True
