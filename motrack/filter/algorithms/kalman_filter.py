@@ -79,6 +79,16 @@ class BotSortKalmanWrapFilter(StateModelFilter):
 
         return mean_proj, np.diagonal(covariance_proj, axis1=-2, axis2=-1)
 
+    def affine_transform(self, state: State, warp: np.ndarray) -> State:
+        measurement, covariance = state
+        L = np.kron(np.eye(4, dtype=np.float32), warp[:, :2])
+        T = np.zeros(shape=8, dtype=np.float32)
+        T[0:2] = warp[:, 2]
+        T[2:4] = warp[:, 2]
+        measurement = L @ measurement + T
+        covariance = L @ covariance @ L.T
+        return measurement, covariance
+
 
 def run_test() -> None:
     # TODO: Move to unit tests

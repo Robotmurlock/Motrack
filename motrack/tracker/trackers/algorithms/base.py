@@ -2,7 +2,8 @@
 Definition of tracker interface.
 """
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Optional
+import numpy as np
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.tracklet import Tracklet
@@ -12,13 +13,32 @@ class Tracker(ABC):
     """
     Tracker interface.
     """
+    def __init__(self):
+        self._scene: Optional[str] = None  # Optional for scene specific parameters (etc...)
+
+    def set_scene(self, scene: str) -> None:
+        """
+        Sets scene value
+
+        Args:
+            scene:
+
+        Returns:
+
+        """
+        self._scene = scene
+
+    def get_scene(self) -> Optional[str]:
+        return self._scene
+
     @abstractmethod
     def track(
         self,
         tracklets: List[Tracklet],
         detections: List[PredBBox],
         frame_index: int,
-        inplace: bool = True
+        inplace: bool = True,
+        frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
         """
         Performs multi-object-tracking step.
@@ -29,6 +49,7 @@ class Tracker(ABC):
             detections: Lists of new detections
             frame_index: Current frame number
             inplace: Perform inplace transformations on tracklets and bboxes
+            frame: Pass frame in case CMC or appearance based association is used
 
         Returns:
             Tracks (active, lost, new, deleted, ...)

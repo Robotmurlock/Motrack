@@ -1,15 +1,16 @@
 """
 Implementation of Filter Sort tracker
 """
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 import numpy as np
-from abc import ABC
+from abc import ABC, abstractmethod
 
 from motrack.filter import filter_factory
 from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.trackers.algorithms.base import Tracker
-from motrack.tracker.tracklet import Tracklet
+from motrack.tracker.tracklet import Tracklet, TrackletState
+from motrack.cmc import cmc_factory
 
 
 class MotionBasedTracker(Tracker, ABC):
@@ -23,15 +24,25 @@ class MotionBasedTracker(Tracker, ABC):
         self,
         filter_name: str,
         filter_params: dict,
+        cmc_name: Optional[str] = None,
+        cmc_params: Optional[dict] = None
     ):
         """
         Args:
             filter_name: Filter name
             filter_params: Filter params
+            cmc_name: CMC name
+            cmc_params: CMC params
         """
-
+        super().__init__()
 
         self._filter = filter_factory(filter_name, filter_params)
+
+        if cmc_name is not None:
+            cmc_params = {} if cmc_params is None else cmc_params
+            self._cmc = cmc_factory(cmc_name, cmc_params)
+        else:
+            self._cmc = None
 
         # State
         self._filter_states = {}
@@ -130,3 +141,82 @@ class MotionBasedTracker(Tracker, ABC):
             tracklet_id: Tracklet id
         """
         self._filter_states.pop(tracklet_id)
+
+    def _perform_cmc(self, frame: np.ndarray, frame_index: int, bboxes: List[PredBBox]) -> List[PredBBox]:
+        if self._cmc is None:
+            return bboxes
+
+        warp = self._cmc.apply(frame, frame_index)
+        self._filter_states = {t_id: self._filter.affine_transform(state, warp) for t_id, state in self._filter_states.items()}
+
+        corrected_bboxes: List[PredBBox] = []
+        for bbox in bboxes:
+            bbox = PredBBox.create(
+                bbox=bbox.affine_transform(warp),
+                label=bbox.label,
+                conf=bbox.conf
+            )
+            corrected_bboxes.append(bbox)
+
+        return corrected_bboxes
+
+    def track(
+        self,
+        tracklets: List[Tracklet],
+        detections: List[PredBBox],
+        frame_index: int,
+        inplace: bool = True,
+        frame: Optional[np.ndarray] = None
+    ) -> List[Tracklet]:
+        tracklets, prior_tracklet_bboxes = self._track_predict(tracklets, frame_index, frame=frame)
+        return self._track(tracklets, prior_tracklet_bboxes, detections, frame_index, inplace=inplace, frame=frame)
+
+    def _track_predict(self, tracklets: List[Tracklet], frame_index: int, frame: Optional[np.ndarray] = None):
+        """
+        Performs tracker tracklet filtering motion prediction steps:
+        - Removes DELETED trackelts
+        - Uses filter to obtain prior tracklet position estimates
+        - Optionally performs CMC for prediction corrections
+
+        Args:
+            tracklets: List of tracklets
+            frame_index: Current frame index
+            frame: Current frame image (optional)
+
+        Returns:
+            - Filtered tracklets
+            - Tracklet object position predictions for the current frame
+        """
+        tracklets = [t for t in tracklets if t.state != TrackletState.DELETED]  # Remove deleted tracklets
+
+        # Estimate priors for all tracklets
+        prior_tracklet_estimates = [self._predict(t) for t in tracklets]
+        prior_tracklet_bboxes = [bbox for bbox, _, _ in prior_tracklet_estimates]
+        prior_tracklet_bboxes = self._perform_cmc(frame, frame_index, prior_tracklet_bboxes)
+
+        return tracklets, prior_tracklet_bboxes
+
+    @abstractmethod
+    def _track(
+        self,
+        tracklets: List[Tracklet],
+        prior_tracklet_bboxes: List[PredBBox],
+        detections: List[PredBBox],
+        frame_index: int,
+        inplace: bool = True,
+        frame: Optional[np.ndarray] = None
+    ) -> List[Tracklet]:
+        """
+        Main tracker logic (after prior estimates and CMC).
+
+        Args:
+            tracklets: List of active trackelts
+            prior_tracklet_bboxes: Tracklet prior position bboxes
+            detections: Lists of new detections
+            frame_index: Current frame number
+            inplace: Perform inplace transformations on tracklets and bboxes
+            frame: Pass frame in case CMC or appearance based association is used
+
+        Returns:
+            Tracks (active, lost, new, deleted, ...)
+        """

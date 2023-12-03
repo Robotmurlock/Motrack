@@ -37,6 +37,7 @@ def run_tracker_inference(
     scene_names = [scene_name for scene_name in scene_names if re.match(scene_pattern, scene_name)]
     for scene_name in tqdm(scene_names, desc='Simulating tracker', unit='scene'):
         tracker.reset_state()
+        tracker.set_scene(scene_name)
         tracklets: List[Tracklet] = []
 
         scene_info = dataset.get_scene_info(scene_name)

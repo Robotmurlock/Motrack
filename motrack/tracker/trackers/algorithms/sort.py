@@ -4,6 +4,8 @@ Implementation of Sort tracker with a custom filter.
 import copy
 from typing import Optional, Dict, Any, List
 
+import numpy as np
+
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching import association_factory
 from motrack.tracker.trackers.algorithms.motion import MotionBasedTracker
@@ -62,14 +64,15 @@ class SortTracker(MotionBasedTracker):
         self._new_tracklet_detection_threshold = new_tracklet_detection_threshold
         self._use_observation_if_lost = use_observation_if_lost
 
-    def track(self, tracklets: List[Tracklet], detections: List[PredBBox], frame_index: int, inplace: bool = True) \
-            -> List[Tracklet]:
-        tracklets = [t for t in tracklets if t.state != TrackletState.DELETED]  # Remove deleted tracklets
-
-        # Estimate priors for all tracklets
-        prior_tracklet_estimates = [self._predict(t) for t in tracklets]
-        prior_tracklet_bboxes = [bbox for bbox, _, _ in prior_tracklet_estimates]
-
+    def _track(
+        self,
+        tracklets: List[Tracklet],
+        prior_tracklet_bboxes: List[PredBBox],
+        detections: List[PredBBox],
+        frame_index: int,
+        inplace: bool = True,
+        frame: Optional[np.ndarray] = None
+    ) -> List[Tracklet]:
         # Perform matching
         matches, unmatched_tracklets, unmatched_detections = self._matcher(prior_tracklet_bboxes, detections, tracklets=tracklets)
 
