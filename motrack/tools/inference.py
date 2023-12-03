@@ -19,7 +19,8 @@ def run_tracker_inference(
     tracker_active_output: str,
     tracker_all_output: str,
     clip: bool = True,
-    scene_pattern: str = '(.*?)'
+    scene_pattern: str = '(.*?)',
+    requires_image: bool = False
 ) -> None:
     """
     Performs inference on given dataset with a given tracker and detection manager.
@@ -32,6 +33,7 @@ def run_tracker_inference(
         tracker_all_output: Path where the all tracks are stored
         clip: Clip bounding boxes coordinates to range [0, 1]
         scene_pattern: Filter dataset scenes.
+        requires_image: Load image and pass to tracker
     """
     scene_names = dataset.scenes
     scene_names = [scene_name for scene_name in scene_names if re.match(scene_pattern, scene_name)]
@@ -57,7 +59,8 @@ def run_tracker_inference(
                 tracklets = tracker.track(
                     tracklets=tracklets,
                     detections=detection_bboxes,
-                    frame_index=index + 1  # Counts from 1 instead of 0
+                    frame_index=index + 1,  # Counts from 1 instead of 0
+                    frame=dataset.load_scene_image_by_frame_index(scene_name, index)
                 )
                 active_tracklets = [t for t in tracklets if t.state == TrackletState.ACTIVE]
 

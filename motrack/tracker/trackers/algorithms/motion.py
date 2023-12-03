@@ -146,7 +146,7 @@ class MotionBasedTracker(Tracker, ABC):
         if self._cmc is None:
             return bboxes
 
-        warp = self._cmc.apply(frame, frame_index)
+        warp = self._cmc.apply(frame, frame_index, scene=self._scene)
         self._filter_states = {t_id: self._filter.affine_transform(state, warp) for t_id, state in self._filter_states.items()}
 
         corrected_bboxes: List[PredBBox] = []
@@ -168,8 +168,8 @@ class MotionBasedTracker(Tracker, ABC):
         inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
-        tracklets, prior_tracklet_bboxes = self._track_predict(tracklets, frame_index, frame=frame)
-        return self._track(tracklets, prior_tracklet_bboxes, detections, frame_index, inplace=inplace, frame=frame)
+        tracklets, prior_tracklet_bboxes = self._track_predict(tracklets, frame_index - 1, frame=frame)
+        return self._track(tracklets, prior_tracklet_bboxes, detections, frame_index - 1, inplace=inplace, frame=frame)
 
     def _track_predict(self, tracklets: List[Tracklet], frame_index: int, frame: Optional[np.ndarray] = None):
         """

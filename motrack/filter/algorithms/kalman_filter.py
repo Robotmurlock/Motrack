@@ -84,7 +84,6 @@ class BotSortKalmanWrapFilter(StateModelFilter):
         L = np.kron(np.eye(4, dtype=np.float32), warp[:, :2])
         T = np.zeros(shape=8, dtype=np.float32)
         T[0:2] = warp[:, 2]
-        T[2:4] = warp[:, 2]
         measurement = L @ measurement + T
         covariance = L @ covariance @ L.T
         return measurement, covariance

@@ -94,6 +94,7 @@ class ObjectDetectionInferenceConfig:
 class TrackerAlgorithmConfig:
     name: str
     params: dict
+    requires_image: bool = False
 
 
 @dataclass

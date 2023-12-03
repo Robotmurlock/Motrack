@@ -25,6 +25,8 @@ class SortTracker(MotionBasedTracker):
         self,
         filter_name: str = 'bot-sort',
         filter_params: Optional[dict] = None,
+        cmc_name: Optional[str] = None,
+        cmc_params: Optional[dict] = None,
         matcher_algorithm: str = 'iou',
         matcher_params: Optional[Dict[str, Any]] = None,
         remember_threshold: int = 1,
@@ -53,6 +55,8 @@ class SortTracker(MotionBasedTracker):
         super().__init__(
             filter_name=filter_name,
             filter_params=filter_params,
+            cmc_name=cmc_name,
+            cmc_params=cmc_params
         )
 
         matcher_params = {} if matcher_params is None else matcher_params
