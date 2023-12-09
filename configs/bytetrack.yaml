@@ -2,10 +2,10 @@ defaults:
   - global_config
   - dataset: dancetrack.yaml
   - eval: val.yaml
-  - object_detection: yolox_dancetrack.yaml
-  - algorithm: movesort.yaml
+  - object_detection: yolox_low_conf_dancetrack.yaml
+  - algorithm: bytetrack.yaml
   - path: default.yaml
   - _self_
 
 
-experiment: 'movesort'
+experiment: 'bytetrack'
