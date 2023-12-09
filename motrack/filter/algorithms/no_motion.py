@@ -7,6 +7,7 @@ import numpy as np
 
 from motrack.filter.algorithms.base import StateModelFilter, State
 from motrack.filter.catalog import FILTER_CATALOG
+from motrack.library.numpy_utils.bbox import affine_transform
 
 
 @FILTER_CATALOG.register('no_motion')
@@ -42,3 +43,7 @@ class NoMotionFilter(StateModelFilter):
 
     def singlestep_to_multistep_state(self, state: State) -> State:
         return state.unsqueeze(0)
+
+    def affine_transform(self, state: State, warp: np.ndarray) -> State:
+        measurement = state
+        return affine_transform(measurement, warp)

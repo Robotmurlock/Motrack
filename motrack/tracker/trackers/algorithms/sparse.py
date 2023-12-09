@@ -17,6 +17,8 @@ class SparseTracker(ByteTracker):
         self,
         filter_name: str = 'bot-sort',
         filter_params: Optional[dict] = None,
+        cmc_name: Optional[str] = None,
+        cmc_params: Optional[dict] = None,
         high_matcher_algorithm: str = 'default',
         high_matcher_params: Optional[Dict[str, Any]] = None,
         low_matcher_algorithm: str = 'default',
@@ -61,6 +63,8 @@ class SparseTracker(ByteTracker):
         super().__init__(
             filter_name=filter_name,
             filter_params=filter_params,
+            cmc_name=cmc_name,
+            cmc_params=cmc_params,
             high_matcher_algorithm=high_matcher_algorithm,
             high_matcher_params=high_matcher_params,
             low_matcher_algorithm=low_matcher_algorithm,

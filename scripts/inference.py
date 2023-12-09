@@ -61,7 +61,8 @@ def run_inference(cfg: GlobalConfig) -> None:
         tracker_active_output=tracker_active_output,
         tracker_all_output=tracker_all_output,
         clip=cfg.dataset.type != 'MOT17',
-        scene_pattern=cfg.dataset_filter.scene_pattern
+        scene_pattern=cfg.dataset_filter.scene_pattern,
+        requires_image=cfg.algorithm.requires_image
     )
 
     # Save tracker config

@@ -104,3 +104,17 @@ class StateModelFilter(ABC):
             Multistep state
         """
         pass
+
+    def affine_transform(self, state: State, warp: np.ndarray) -> State:
+        """
+        Applies affine transform to the filter state.
+        This is required only when used with CMC.
+
+        Args:
+            state: Current state
+            warp: Affine transform matrix (warp)
+
+        Returns:
+            Warped state
+        """
+        raise NotImplemented('This filter does not support affine transform!')

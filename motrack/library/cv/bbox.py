@@ -3,6 +3,7 @@ BBox implementation
 """
 from dataclasses import dataclass, field
 from typing import Optional, List, Tuple, Union
+from motrack.library.numpy_utils.bbox import affine_transform
 
 import cv2
 import numpy as np
@@ -329,6 +330,21 @@ class BBox:
         y1, x1, y2, x2 = self.scaled_xyxy_from_image(image)
         # noinspection PyUnresolvedReferences
         return cv2.rectangle(image, (y1, x1), (y2, x2), color, thickness)
+
+    def affine_transform(self, warp: np.ndarray) -> 'BBox':
+        """
+        Performs affine transformation on the bbox (creates new bbox)
+
+        Args:
+            warp: Warp matrix 2x3
+
+        Returns:
+            New transformed bbox
+        """
+        points = self.as_numpy_xyxy()
+        t_points = affine_transform(warp, points)
+        return BBox.from_xyxy(*t_points)
+
 
 
 LabelType = Union[int, str]
