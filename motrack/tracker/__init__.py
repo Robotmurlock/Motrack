@@ -4,7 +4,7 @@ Tracker. Supports:
 - ByteTrack
 - SparseTrack
 """
-from motrack.tracker.matching import AssociationAlgorithm, HungarianAlgorithmIOU
+from motrack.tracker.matching import AssociationAlgorithm, IoUAssociation
 from motrack.tracker.trackers.algorithms.base import Tracker
 from motrack.tracker.trackers.algorithms.byte import ByteTracker
 from motrack.tracker.trackers.algorithms.sort import SortTracker

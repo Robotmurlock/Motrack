@@ -4,8 +4,9 @@ defaults:
   - eval: val.yaml
   - object_detection: yolox_dancetrack.yaml
   - algorithm: movesort.yaml
+  - postprocess: dancetrack.yaml
   - path: default.yaml
   - _self_
 
 
-experiment: 'baseline'
+experiment: 'movesort'

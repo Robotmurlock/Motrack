@@ -142,16 +142,18 @@ class ByteTracker(MotionBasedTracker):
 
         # (4) Mark remaining (unmatched) tracklets as lost
         for t_i in unmatched_tracklet_indices:
-            tracklets[t_i].state = TrackletState.LOST
+            if tracklets[t_i].state == TrackletState.ACTIVE:
+                tracklets[t_i].state = TrackletState.LOST
 
         # (5) Match NEW tracklets with high detections using NewMatchAlgorithm
         remaining_high_detections = [detections[d_i] for d_i in high_unmatched_detections_indices]
         remaining_high_detection_indices = high_unmatched_detections_indices
         tracklets_new_indices, tracklets_new, tracklets_new_bboxes = \
             unpack_n([(i, t, t_bbox) for i, (t, t_bbox) in enumerate(zip(tracklets, prior_tracklet_bboxes)) if t.state == TrackletState.NEW], n=3)
-        new_matches, _, new_unmatched_detections_indices = \
+        new_matches, new_unmatched_tracklets_indices, new_unmatched_detections_indices = \
             self._new_match(tracklets_new_bboxes, remaining_high_detections, tracklets_new)
         new_matches = [(tracklets_new_indices[t_i], high_unmatched_detections_indices[d_i]) for t_i, d_i in new_matches]
+        new_unmatched_tracklets_indices = [tracklets_new_indices[t_i] for t_i in new_unmatched_tracklets_indices]
         new_unmatched_detections_indices = [remaining_high_detection_indices[d_i] for d_i in new_unmatched_detections_indices]
 
         # (6) Initialize new tracklets from unmatched high detections
@@ -187,23 +189,20 @@ class ByteTracker(MotionBasedTracker):
             tracklets[tracklet_index] = tracklet.update(new_bbox, frame_index, state=new_state)
 
         # (8) Delete new unmatched and long-lost tracklets
-        for tracklet_index in range(len(tracklets)):
+        for tracklet_index in unmatched_tracklet_indices + new_unmatched_tracklets_indices:
             tracklet = tracklets[tracklet_index]
-            if tracklet.state == TrackletState.ACTIVE:
-                continue
-
-            if (tracklet.state == TrackletState.LOST
-                and tracklet.number_of_unmatched_frames(frame_index) > self._remember_threshold) \
-                    or tracklet.state == TrackletState.NEW:
+            if (tracklet.number_of_unmatched_frames(frame_index) > self._remember_threshold
+                    or tracklet.state == TrackletState.NEW):
                 tracklet.state = TrackletState.DELETED
                 self._delete(tracklet.id)
             else:
                 tracklet_bbox, _, _ = self._missing(tracklet)
-                tracklets[tracklet_index] = tracklet.update(tracklet_bbox, tracklet.frame_index, state=TrackletState.LOST)
+                tracklets[tracklet_index] = tracklet.update(tracklet_bbox, tracklet.frame_index)
 
         # (9) Delete duplicate between ACTIVE and LOST tracklets
         deleted_tracklets = [t for t in tracklets if t.state == TrackletState.DELETED]
         active_tracklets = [t for t in tracklets if t.state == TrackletState.ACTIVE]
         lost_tracklets = [t for t in tracklets if t.state == TrackletState.LOST]
+        new_tracklets.extend([t for t in tracklets if t.state == TrackletState.NEW])  # Add new tracklets from previous iteration
         active_tracklets, lost_tracklets = remove_duplicates(self._duplicate_iou_threshold, active_tracklets, lost_tracklets)
         return active_tracklets + lost_tracklets + new_tracklets + deleted_tracklets

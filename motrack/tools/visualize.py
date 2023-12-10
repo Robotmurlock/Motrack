@@ -50,8 +50,8 @@ def draw_tracklet(
     thickness = 5 if new else 2
     frame = BBox.draw(bbox, frame, color=color, thickness=thickness)
     left, top, _, _ = bbox.scaled_xyxy_from_image(frame)
-    text = f'id={tracklet_id}, age={tracklet_age}, conf={100 * bbox.conf:.0f}%'
-    return draw_text(frame, text, round(left), round(top), color=color)
+    text = ['id={tracklet_id}', f'age={tracklet_age}', f'conf={100 * bbox.conf:.0f}%']
+    return draw_text(frame, text, left, top, color=color)
 
 
 def run_visualize_tracker_inference(

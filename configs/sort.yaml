@@ -3,10 +3,10 @@ defaults:
   - dataset: dancetrack.yaml
   - eval: val.yaml
   - object_detection: yolox_dancetrack.yaml
-  - algorithm: movesort_gmc.yaml
+  - algorithm: sort.yaml
   - postprocess: dancetrack.yaml
   - path: default.yaml
   - _self_
 
 
-experiment: 'movesort_with_gmc'
+experiment: 'sort'

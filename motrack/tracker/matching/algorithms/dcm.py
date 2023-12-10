@@ -7,7 +7,7 @@ import numpy as np
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
-from motrack.tracker.matching.algorithms.iou import HungarianAlgorithmIOU, LabelGatingType
+from motrack.tracker.matching.algorithms.iou import IoUAssociation, LabelGatingType
 from motrack.tracker.matching.algorithms.move import Move
 from motrack.tracker.tracklet import Tracklet
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
@@ -40,7 +40,7 @@ class DCM(AssociationAlgorithm):
         if n_bboxes == 0:
             return masks
 
-        neg_bottoms = [-bbox.bottom_right.x for bbox in bboxes]  # Pedestrian bbox bottom line
+        neg_bottoms = [-bbox.bottom_right.y for bbox in bboxes]  # Pedestrian bbox bottom line
         min_bottom, max_bottom = min(neg_bottoms), max(neg_bottoms)
         depths_range = np.linspace(min_bottom, max_bottom, self._levels + 1, endpoint=True)
 
@@ -106,7 +106,7 @@ class DCMIoU(DCM):
         fuse_score: bool = False,
         label_gating: Optional[LabelGatingType] = None
     ):
-        matcher = HungarianAlgorithmIOU(
+        matcher = IoUAssociation(
             match_threshold=match_threshold,
             label_gating=label_gating,
             fuse_score=fuse_score

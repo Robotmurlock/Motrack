@@ -7,7 +7,7 @@ import numpy as np
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
-from motrack.tracker.matching.utils import hungarian
+from motrack.tracker.matching.utils import hungarian, greedy
 from motrack.tracker.tracklet import Tracklet
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 
@@ -17,7 +17,7 @@ LabelGatingType = Union[LabelType, List[Tuple[LabelType, LabelType]]]
 
 
 @ASSOCIATION_CATALOG.register('iou')
-class HungarianAlgorithmIOU(AssociationAlgorithm):
+class IoUAssociation(AssociationAlgorithm):
     """
     Solves the linear sum assignment problem from given cost matrix based on IOU scores.
     """
@@ -26,6 +26,7 @@ class HungarianAlgorithmIOU(AssociationAlgorithm):
         match_threshold: float = 0.30,
         fuse_score: bool = False,
         label_gating: Optional[LabelGatingType] = None,
+        fast_linear_assignment: bool = False,
         *args, **kwargs
     ):
         """
@@ -35,6 +36,8 @@ class HungarianAlgorithmIOU(AssociationAlgorithm):
             fuse_score: Fuse score with iou
             label_gating: Define which object labels can be matched
                 - If not defined, matching is label agnostic
+            fast_linear_assignment: Use greedy algorithm for linear assignment
+                - This might be more efficient in case of large cost matrix
         """
         super().__init__(*args, **kwargs)
 
@@ -42,6 +45,7 @@ class HungarianAlgorithmIOU(AssociationAlgorithm):
         self._fuse_score = fuse_score
 
         self._label_gating = set([tuple(e) for e in label_gating]) if label_gating is not None else None
+        self._fast_linear_assignment = fast_linear_assignment
 
     def _can_match(self, tracklet_label: LabelType, det_label: LabelType) -> bool:
         """
@@ -106,4 +110,6 @@ class HungarianAlgorithmIOU(AssociationAlgorithm):
         tracklets: Optional[List[Tracklet]] = None
     ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
         cost_matrix = self._form_iou_cost_matrix(tracklet_estimations, detections)
+        if self._fast_linear_assignment:
+            return greedy(cost_matrix)
         return hungarian(cost_matrix)

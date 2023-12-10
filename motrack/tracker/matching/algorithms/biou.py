@@ -5,14 +5,14 @@ from typing import Optional, List, Tuple
 
 from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
-from motrack.tracker.matching.algorithms.iou import HungarianAlgorithmIOU, LabelGatingType
+from motrack.tracker.matching.algorithms.iou import IoUAssociation, LabelGatingType
 from motrack.tracker.matching.utils import hungarian
 from motrack.tracker.tracklet import Tracklet
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 
 
 @ASSOCIATION_CATALOG.register('biou')
-class HungarianBIoU(HungarianAlgorithmIOU):
+class HungarianBIoU(IoUAssociation):
     """
     BIoU matching algorithm. Ref: https://arxiv.org/pdf/2211.14317.pdf
     """
@@ -43,7 +43,7 @@ class HungarianBIoU(HungarianAlgorithmIOU):
         h *= (1 + 2 * self._b)
 
         return PredBBox.create(
-            bbox=BBox.from_cxyhw(center.x, center.y, h, w),
+            bbox=BBox.from_cxywh(center.x, center.y, w, h),
             label=bbox.label,
             conf=bbox.conf
         )
