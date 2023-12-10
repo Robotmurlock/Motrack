@@ -58,24 +58,36 @@ or dataset can also be implemented and seamlessly combined
 with other components.
 
 ## Features
-- **Tracker Algorithms Support**: 
-  - SORT
-  - ByteTrack
-  - SparseTrack
-- **Object Detection Inference**:
-  - YOLOX
-  - YOLOv8
-- **Kalman Filter**:
-  - Bot-Sort Kalman filter implementation
-- **Association Methods**:
-  - IoU (SORT)
-  - Move
-  - CBIoU
-  - DCM
-  - And more...
-- **Dataset Format Support**:
-  - MOT: MOT17, MOT20, DanceTrack 
-- **Tools**:
+
+### Supported tracker algorithms
+
+| Method Name     | Description                                            |
+|-----------------|--------------------------------------------------------|
+| SORT            | [arxiv: Simple Online and Realtime Tracking](https://arxiv.org/pdf/1602.00763.pdf)    | 
+| MoveSORT        | SORT with improved association method                  |
+| ByteTrack       | [arxiv: ByteTrack: Multi-Object Tracking by Associating Every Detection Box](https://arxiv.org/abs/2110.06864)   |
+| Bot-SORT        | [arxiv: BoT-SORT: Robust Associations Multi-Pedestrian Tracking](https://arxiv.org/abs/2206.14651)    |
+| SparseTrack     | [arxiv: SparseTrack: Multi-Object Tracking by Performing Scene Decomposition based on Pseudo-Depth](https://arxiv.org/abs/2306.05238) |
+
+Evaluation of these methods on different datasets can be found in [evaluation.md](https://github.com/Robotmurlock/Motrack)
+
+### Supported object detection algorithms
+
+| Method Name | Description                                                                        |
+|-------------|------------------------------------------------------------------------------------|
+| YOLOX       | [arxiv: Simple Online and Realtime Tracking](https://arxiv.org/pdf/1602.00763.pdf) | 
+| YOLOv8      | [github: Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics)                             |
+
+### Supported datasets
+
+Currently supported datasets are: MOT17, MOT20, DanceTrack.
+
+Any custom dataset can be added by extending the base dataset.
+
+### Tools
+
+List of script tools:
+
   - Inference: Perform any tracker inference that can directly evaluated with TrackEval framework.
   - Postprocess: Perform offline postprocessing (linear interpolation, etc...) for more accuracy tracklets.
   - Visualize: Visualize tracker inference.
@@ -88,4 +100,4 @@ Run these commands to install package within your virtual environment or docker 
 pip install motrack
 ```
 
-Package page can be found [here](https://pypi.org/project/motrack/).
+Package page can be found on [PyPI](https://pypi.org/project/motrack/).

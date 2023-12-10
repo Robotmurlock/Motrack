@@ -6,7 +6,7 @@ from typing import Optional, List, Tuple
 import numpy as np
 
 from motrack.library.cv.bbox import PredBBox
-from motrack.tracker.matching.algorithms.iou import HungarianAlgorithmIOU, LabelGatingType
+from motrack.tracker.matching.algorithms.iou import IoUAssociation, LabelGatingType
 from motrack.tracker.matching.utils import hungarian
 from motrack.tracker.tracklet import Tracklet, TrackletState
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
@@ -33,7 +33,7 @@ def distance(name: str, x: np.ndarray, y: np.ndarray) -> float:
 
 
 @ASSOCIATION_CATALOG.register('move')
-class Move(HungarianAlgorithmIOU):
+class Move(IoUAssociation):
     """
     Combines Hungarian IOU and motion estimation for tracklet and detection matching.
     """

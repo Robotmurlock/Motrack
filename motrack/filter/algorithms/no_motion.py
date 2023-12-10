@@ -10,7 +10,7 @@ from motrack.filter.catalog import FILTER_CATALOG
 from motrack.library.numpy_utils.bbox import affine_transform
 
 
-@FILTER_CATALOG.register('no_motion')
+@FILTER_CATALOG.register('no-motion')
 class NoMotionFilter(StateModelFilter):
     """
     Baseline filter trusts fully detector and is completely certain in detector accuracy.

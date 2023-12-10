@@ -4,6 +4,7 @@ defaults:
   - eval: val.yaml
   - object_detection: yolox_low_conf_dancetrack.yaml
   - algorithm: bytetrack.yaml
+  - postprocess: dancetrack.yaml
   - path: default.yaml
   - _self_
 

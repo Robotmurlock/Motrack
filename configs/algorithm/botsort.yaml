@@ -11,3 +11,9 @@ params:
   cmc_name: gmc-from-file
   cmc_params:
     dirpath: /media/home/GMC_files/DanceTrack
+  high_matcher_algorithm: iou
+  high_matcher_params:
+    match_threshold: 0.3
+  low_matcher_algorithm: iou
+  low_matcher_params:
+    match_threshold: 0.5

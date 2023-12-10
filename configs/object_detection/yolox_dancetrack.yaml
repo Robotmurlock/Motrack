@@ -3,7 +3,8 @@ params:
   accelerator: cuda:0
   conf: 0.6
   min_bbox_area: 100
+  # Model source: https://github.com/ifzhang/ByteTrack, ByteTrack_ablation
   model_path: /media/home/DanceTrack-orig/.other/bytetrack_models/bytetrack_model.pth.tar
 lookup_path: /media/home/DanceTrack-orig/.other/.lookup.json
 oracle: false
-cache_path: '/tmp/motrack/dancetrack_yolox'
+cache_path: '/tmp/motrack/dancetrack_yolox'  # Inference on the second run is 10-20 times faster

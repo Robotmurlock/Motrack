@@ -9,6 +9,8 @@ from motrack.tracker.trackers.algorithms.byte import ByteTracker  # pylint: disa
 from motrack.tracker.trackers.algorithms.sort import SortTracker  # pylint: disable=unused-import
 # noinspection PyUnresolvedReferences
 from motrack.tracker.trackers.algorithms.sparse import SparseTracker  # pylint: disable=unused-import
+# noinspection PyUnresolvedReferences
+from motrack.tracker.trackers.algorithms.fast import FastTracker  # pylint: disable=unused-import
 from motrack.tracker.trackers.catalog import TRACKER_CATALOG
 
 
