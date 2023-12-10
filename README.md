@@ -69,7 +69,7 @@ with other components.
 | Bot-SORT        | [arxiv: BoT-SORT: Robust Associations Multi-Pedestrian Tracking](https://arxiv.org/abs/2206.14651)    |
 | SparseTrack     | [arxiv: SparseTrack: Multi-Object Tracking by Performing Scene Decomposition based on Pseudo-Depth](https://arxiv.org/abs/2306.05238) |
 
-Evaluation of these methods on different datasets can be found in [evaluation.md](https://github.com/Robotmurlock/Motrack)
+Evaluation of these methods on different datasets can be found in [evaluation.md](https://github.com/Robotmurlock/Motrack/blob/main/docs/evaluation.md)
 
 ### Supported object detection algorithms
 
