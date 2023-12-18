@@ -11,9 +11,10 @@ from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.trackers.algorithms.base import Tracker
 from motrack.tracker.tracklet import Tracklet, TrackletState
 from motrack.cmc import cmc_factory
+from motrack.reid import reid_inference_factory
 
 
-class MotionBasedTracker(Tracker, ABC):
+class MotionReIDBasedTracker(Tracker, ABC):
     """
     Baseline Sort tracker components:
     - ReID: HungarianIOU
@@ -25,7 +26,9 @@ class MotionBasedTracker(Tracker, ABC):
         filter_name: str,
         filter_params: dict,
         cmc_name: Optional[str] = None,
-        cmc_params: Optional[dict] = None
+        cmc_params: Optional[dict] = None,
+        reid_name: Optional[str] = None,
+        reid_params: Optional[str] = None
     ):
         """
         Args:
@@ -33,16 +36,22 @@ class MotionBasedTracker(Tracker, ABC):
             filter_params: Filter params
             cmc_name: CMC name
             cmc_params: CMC params
+            reid_name: ReID name
+            reid_params: ReID params
         """
         super().__init__()
 
         self._filter = filter_factory(filter_name, filter_params)
 
+        self._cmc = None
         if cmc_name is not None:
             cmc_params = {} if cmc_params is None else cmc_params
             self._cmc = cmc_factory(cmc_name, cmc_params)
-        else:
-            self._cmc = None
+
+        self._reid = None
+        if reid_name is not None:
+            reid_params = {} if reid_params is None else reid_params
+            self._reid = reid_inference_factory(reid_name, reid_params)
 
         # State
         self._filter_states = {}
@@ -160,6 +169,13 @@ class MotionBasedTracker(Tracker, ABC):
 
         return corrected_bboxes
 
+
+    def _extract_reid_features(self, frame: np.ndarray, frame_index: int, bboxes: List[PredBBox]) -> Optional[np.ndarray]:
+        if self._reid is None:
+            return None
+
+        return self._reid.extract_objects_features(frame, bboxes, frame_index=frame_index, scene=self._scene)
+
     def track(
         self,
         tracklets: List[Tracklet],
@@ -168,8 +184,11 @@ class MotionBasedTracker(Tracker, ABC):
         inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
-        tracklets, prior_tracklet_bboxes = self._track_predict(tracklets, frame_index - 1, frame=frame)
-        return self._track(tracklets, prior_tracklet_bboxes, detections, frame_index - 1, inplace=inplace, frame=frame)
+        frame_index -= 1
+        tracklets, prior_tracklet_bboxes = self._track_predict(tracklets, frame_index, frame=frame)
+        objects_features = self._extract_reid_features(frame, frame_index, prior_tracklet_bboxes)
+        return self._track(tracklets, prior_tracklet_bboxes, detections, frame_index,
+                           objects_features=objects_features, inplace=inplace, frame=frame)
 
     def _track_predict(self, tracklets: List[Tracklet], frame_index: int, frame: Optional[np.ndarray] = None):
         """
@@ -203,6 +222,7 @@ class MotionBasedTracker(Tracker, ABC):
         prior_tracklet_bboxes: List[PredBBox],
         detections: List[PredBBox],
         frame_index: int,
+        object_features: Optional[np.ndarray] = None,
         inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
@@ -214,6 +234,7 @@ class MotionBasedTracker(Tracker, ABC):
             prior_tracklet_bboxes: Tracklet prior position bboxes
             detections: Lists of new detections
             frame_index: Current frame number
+            object_features: Object appearance features
             inplace: Perform inplace transformations on tracklets and bboxes
             frame: Pass frame in case CMC or appearance based association is used
 

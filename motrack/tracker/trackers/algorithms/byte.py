@@ -9,7 +9,7 @@ import numpy as np
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching import association_factory
-from motrack.tracker.trackers.algorithms.motion import MotionBasedTracker
+from motrack.tracker.trackers.algorithms.motion import MotionReIDBasedTracker
 from motrack.tracker.trackers.catalog import TRACKER_CATALOG
 from motrack.tracker.trackers.utils import remove_duplicates
 from motrack.tracker.tracklet import Tracklet, TrackletState
@@ -17,7 +17,7 @@ from motrack.utils.collections import unpack_n
 
 
 @TRACKER_CATALOG.register('byte')
-class ByteTracker(MotionBasedTracker):
+class ByteTracker(MotionReIDBasedTracker):
     """
     ByteTrack algorithm.
 
@@ -111,9 +111,12 @@ class ByteTracker(MotionBasedTracker):
         prior_tracklet_bboxes: List[PredBBox],
         detections: List[PredBBox],
         frame_index: int,
+        object_features: Optional[np.ndarray] = None,
         inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
+        _ = object_features  # Not used
+
         # (1) Split detections into low and high
         high_detections = [d for d in detections if d.conf >= self._detection_threshold]
         high_det_indices = [i for i, d in enumerate(detections) if d.conf >= self._detection_threshold]

@@ -2,7 +2,7 @@
 Interface for re-identification appearance extractor
 """
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -14,21 +14,28 @@ class BaseReID(ABC):
     Interface for re-identification appearance extractor
     """
     @abstractmethod
-    def extract_features(self, image: np.ndarray) -> np.ndarray:
+    def extract_features(self, frame: np.ndarray, frame_index: int, scene: Optional[str] = None) -> np.ndarray:
         """
-        Extracts object appearance features for given image.
-
-        Returns:
-            Object image appearance features
-        """
-
-    def extract_objects_features(self, image: np.ndarray, bboxes: List[BBox]) -> np.ndarray:
-        """
-        Performs object appearance features for given image and list of objects' bounding boxes.
+        Extracts object appearance features for given frame.
 
         Args:
-            image: Raw image
+            frame: Raw frame
+            frame_index: Frame number (index)
+            scene: Scene name (optional, for caching)
+
+        Returns:
+            Object frame appearance features
+        """
+
+    def extract_objects_features(self, frame: np.ndarray, bboxes: List[BBox], frame_index: int, scene: Optional[str] = None) -> np.ndarray:
+        """
+        Performs object appearance features for given frame and list of objects' bounding boxes.
+
+        Args:
+            frame: Raw frame
             bboxes: Detected bounding boxes
+            frame_index: Frame number (index)
+            scene: Scene name (optional, for caching)
 
         Returns:
             Array of object appearance features for each detected object
@@ -36,8 +43,8 @@ class BaseReID(ABC):
         objects_features: List[np.ndarray] = []
 
         for bbox in bboxes:
-            crop = bbox.crop(image)
-            object_features = self.extract_features(crop)
+            crop = bbox.crop(frame)
+            object_features = self.extract_features(crop, frame_index=frame_index, scene=scene)
             objects_features.append(object_features)
 
         return np.concatenate(objects_features, 0)

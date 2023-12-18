@@ -2,6 +2,8 @@
 Inference support for FastReId framework.
 Reference: https://github.com/JDAI-CV/fast-reid
 """
+from typing import Optional
+
 import cv2
 import numpy as np
 
@@ -21,23 +23,23 @@ class FastReIDOnnx(BaseReID):
         self._height = height
         self._width = width
 
-    def _preprocess(self, image: np.ndarray) -> np.ndarray:
+    def _preprocess(self, frame: np.ndarray) -> np.ndarray:
         """
-        Preprocesses the input image. Ref: https://github.com/JDAI-CV/fast-reid/blob/master/tools/deploy/onnx_inference.py
+        Preprocesses the input frame. Ref: https://github.com/JDAI-CV/fast-reid/blob/master/tools/deploy/onnx_inference.py
 
         Args:
-            image: Object crop
+            frame: Object crop
 
         Returns:
-            Image features (not normalized)
+            frame features (not normalized)
         """
         # the model expects RGB inputs
-        image = image[:, :, ::-1]
+        frame = frame[:, :, ::-1]
 
-        # Apply pre-processing to image.
-        img = cv2.resize(image, (self._width, self._height), interpolation=cv2.INTER_CUBIC)
-        img = img.astype(np.float32).transpose(2, 0, 1)[np.newaxis]  # (1, 3, h, w)
-        return img
+        # Apply pre-processing to frame.
+        frame = cv2.resize(frame, (self._width, self._height), interpolation=cv2.INTER_CUBIC)
+        frame = frame.astype(np.float32).transpose(2, 0, 1)[np.newaxis]  # (1, 3, h, w)
+        return frame
 
     # noinspection PyMethodMayBeStatic
     def _postprocess(self, features: np.ndarray) -> np.ndarray:
@@ -53,7 +55,7 @@ class FastReIDOnnx(BaseReID):
         norm = np.linalg.norm(features, ord=2, axis=1, keepdims=True)
         return features / (norm + np.finfo(np.float32).eps)
 
-    def extract_features(self, image: np.ndarray) -> np.ndarray:
-        image = self._preprocess(image)
-        features = self._ort_session.run(None, {self._input_name: image})[0]
+    def extract_features(self, frame: np.ndarray, frame_index: int, scene: Optional[str] = None) -> np.ndarray:
+        frame = self._preprocess(frame)
+        features = self._ort_session.run(None, {self._input_name: frame})[0]
         return self._postprocess(features)

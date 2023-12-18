@@ -8,13 +8,13 @@ import numpy as np
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching import association_factory
-from motrack.tracker.trackers.algorithms.motion import MotionBasedTracker
+from motrack.tracker.trackers.algorithms.motion import MotionReIDBasedTracker
 from motrack.tracker.trackers.catalog import TRACKER_CATALOG
 from motrack.tracker.tracklet import Tracklet, TrackletState
 
 
 @TRACKER_CATALOG.register('sort')
-class SortTracker(MotionBasedTracker):
+class SortTracker(MotionReIDBasedTracker):
     """
     Baseline Sort tracker components:
     - ReID: HungarianIOU
@@ -74,9 +74,12 @@ class SortTracker(MotionBasedTracker):
         prior_tracklet_bboxes: List[PredBBox],
         detections: List[PredBBox],
         frame_index: int,
+        object_features: Optional[np.ndarray] = None,
         inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
+        _ = object_features  # Not used
+
         # Perform matching
         matches, unmatched_tracklets, unmatched_detections = self._matcher(prior_tracklet_bboxes, detections, tracklets=tracklets)
 
