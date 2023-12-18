@@ -6,8 +6,10 @@ import cv2
 import numpy as np
 
 from motrack.reid.algorithms.base import BaseReID
+from motrack.reid.catalog import REID_CATALOG
 
 
+@REID_CATALOG.register('fastreid-onnx')
 class FastReIDOnnx(BaseReID):
     """
     FastReIDOnnx framework support for any models exported in ONNX format.
