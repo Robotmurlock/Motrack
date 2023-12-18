@@ -62,6 +62,7 @@ setup(
         'tqdm'
     ],  # Optional
     extras_require={  # Optional
-        'yolov8': ['ultralytics']
+        'yolov8': ['ultralytics'],
+        'reid': ['onnxruntime']
     }
 )
