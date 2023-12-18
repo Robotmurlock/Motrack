@@ -19,6 +19,8 @@ class FastTracker(SortTracker):
         filter_params: Optional[dict] = None,
         cmc_name: Optional[str] = None,
         cmc_params: Optional[dict] = None,
+        reid_name: Optional[str] = None,
+        reid_params: Optional[str] = None,
         matcher_algorithm: str = 'default',
         matcher_params: Optional[Dict[str, Any]] = None,
         remember_threshold: int = 1,
@@ -30,6 +32,10 @@ class FastTracker(SortTracker):
         Args:
             filter_name: Filter name
             filter_params: Filter params
+            cmc_name: CMC name
+            cmc_params: CMC params
+            reid_name: ReID name
+            reid_params: ReID params
 
             matcher_algorithm: Choose matching algorithm (e.g. Hungarian IOU)
             matcher_params: Matching algorithm parameters
@@ -58,6 +64,8 @@ class FastTracker(SortTracker):
             matcher_params=matcher_params,
             cmc_name=cmc_name,
             cmc_params=cmc_params,
+            reid_name=reid_name,
+            reid_params=reid_params,
             remember_threshold=remember_threshold,
             initialization_threshold=initialization_threshold,
             new_tracklet_detection_threshold=new_tracklet_detection_threshold,

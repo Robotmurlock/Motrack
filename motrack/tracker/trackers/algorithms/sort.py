@@ -8,7 +8,7 @@ import numpy as np
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching import association_factory
-from motrack.tracker.trackers.algorithms.motion import MotionReIDBasedTracker
+from motrack.tracker.trackers.algorithms.motion_reid import MotionReIDBasedTracker
 from motrack.tracker.trackers.catalog import TRACKER_CATALOG
 from motrack.tracker.tracklet import Tracklet, TrackletState
 
@@ -27,6 +27,8 @@ class SortTracker(MotionReIDBasedTracker):
         filter_params: Optional[dict] = None,
         cmc_name: Optional[str] = None,
         cmc_params: Optional[dict] = None,
+        reid_name: Optional[str] = None,
+        reid_params: Optional[str] = None,
         matcher_algorithm: str = 'iou',
         matcher_params: Optional[Dict[str, Any]] = None,
         remember_threshold: int = 1,
@@ -38,6 +40,10 @@ class SortTracker(MotionReIDBasedTracker):
         Args:
             filter_name: Filter name
             filter_params: Filter params
+            cmc_name: CMC name
+            cmc_params: CMC params
+            reid_name: ReID name
+            reid_params: ReID params
 
             matcher_algorithm: Choose matching algorithm (e.g. Hungarian IOU)
             matcher_params: Matching algorithm parameters
@@ -56,7 +62,11 @@ class SortTracker(MotionReIDBasedTracker):
             filter_name=filter_name,
             filter_params=filter_params,
             cmc_name=cmc_name,
-            cmc_params=cmc_params
+            cmc_params=cmc_params,
+            reid_name=reid_name,
+            reid_params=reid_params,
+
+            new_tracklet_detection_threshold=new_tracklet_detection_threshold
         )
 
         matcher_params = {} if matcher_params is None else matcher_params
@@ -65,7 +75,6 @@ class SortTracker(MotionReIDBasedTracker):
         # Parameters
         self._remember_threshold = remember_threshold
         self._initialization_threshold = initialization_threshold
-        self._new_tracklet_detection_threshold = new_tracklet_detection_threshold
         self._use_observation_if_lost = use_observation_if_lost
 
     def _track(
@@ -74,14 +83,13 @@ class SortTracker(MotionReIDBasedTracker):
         prior_tracklet_bboxes: List[PredBBox],
         detections: List[PredBBox],
         frame_index: int,
-        object_features: Optional[np.ndarray] = None,
+        objects_features: Optional[np.ndarray] = None,
         inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
-        _ = object_features  # Not used
-
         # Perform matching
-        matches, unmatched_tracklets, unmatched_detections = self._matcher(prior_tracklet_bboxes, detections, tracklets=tracklets)
+        matches, unmatched_tracklets, unmatched_detections = self._matcher(prior_tracklet_bboxes, detections,
+                                                                           object_features=objects_features, tracklets=tracklets)
 
         # Update matched tracklets
         for tracklet_index, det_index in matches:
@@ -97,18 +105,12 @@ class SortTracker(MotionReIDBasedTracker):
             tracklets[tracklet_index] = tracklet.update(new_bbox, frame_index, state=new_state)
 
         # Create new tracklets from unmatched detections and initiate filter states
-        new_tracklets: List[Tracklet] = []
-        for det_index in unmatched_detections:
-            detection = detections[det_index]
-            if self._new_tracklet_detection_threshold is not None and detection.conf < self._new_tracklet_detection_threshold:
-                continue
-
-            new_tracklet = Tracklet(
-                bbox=detection if inplace else copy.deepcopy(detection),
-                frame_index=frame_index
-            )
-            new_tracklets.append(new_tracklet)
-            self._initiate(new_tracklet.id, detection)
+        new_tracklets = self._create_new_tracklets(
+            detections=[detections[d_i] for d_i in unmatched_detections],
+            frame_index=frame_index,
+            objects_features=objects_features[unmatched_detections] if objects_features is not None else None,
+            inplace=inplace
+        )
 
         # Delete old and new unmatched tracks
         for tracklet_index in unmatched_tracklets:

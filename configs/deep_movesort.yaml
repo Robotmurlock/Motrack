@@ -1,0 +1,12 @@
+defaults:
+  - global_config
+  - dataset: dancetrack.yaml
+  - eval: val.yaml
+  - object_detection: yolox_dancetrack.yaml
+  - algorithm: deep_movesort.yaml
+  - postprocess: dancetrack.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'deep-movesort'

@@ -17,4 +17,11 @@ params:
   cmc_params:
     dirpath: /media/home/GMC_files/DanceTrack
 
+  # Deep-MoveSORT extension
+  reid_name: fastreid-onnx
+  reid_params:
+    model_path: /media/home/reid/SBS.onnx
+    height: 384
+    width: 128
+
 requires_image: true

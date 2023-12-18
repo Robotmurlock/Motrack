@@ -47,4 +47,4 @@ class BaseReID(ABC):
             object_features = self.extract_features(crop, frame_index=frame_index, scene=scene)
             objects_features.append(object_features)
 
-        return np.concatenate(objects_features, 0)
+        return np.concatenate(objects_features, 0) if len(objects_features) > 0 else np.empty(0, dtype=np.float32)

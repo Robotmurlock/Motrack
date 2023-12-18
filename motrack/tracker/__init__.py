@@ -10,4 +10,4 @@ from motrack.tracker.trackers.algorithms.byte import ByteTracker
 from motrack.tracker.trackers.algorithms.sort import SortTracker
 from motrack.tracker.trackers.algorithms.sparse import SparseTracker
 from motrack.tracker.trackers.factory import tracker_factory
-from motrack.tracker.tracklet import Tracklet, TrackletState
+from motrack.tracker.tracklet import Tracklet, TrackletState, TrackletCommonData

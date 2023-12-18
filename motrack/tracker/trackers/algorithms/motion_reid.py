@@ -5,11 +5,12 @@ from typing import Tuple, Optional, List
 
 import numpy as np
 from abc import ABC, abstractmethod
+import copy
 
 from motrack.filter import filter_factory
 from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.trackers.algorithms.base import Tracker
-from motrack.tracker.tracklet import Tracklet, TrackletState
+from motrack.tracker.tracklet import Tracklet, TrackletState, TrackletCommonData
 from motrack.cmc import cmc_factory
 from motrack.reid import reid_inference_factory
 
@@ -28,7 +29,8 @@ class MotionReIDBasedTracker(Tracker, ABC):
         cmc_name: Optional[str] = None,
         cmc_params: Optional[dict] = None,
         reid_name: Optional[str] = None,
-        reid_params: Optional[str] = None
+        reid_params: Optional[str] = None,
+        new_tracklet_detection_threshold: Optional[float] = None,
     ):
         """
         Args:
@@ -53,8 +55,12 @@ class MotionReIDBasedTracker(Tracker, ABC):
             reid_params = {} if reid_params is None else reid_params
             self._reid = reid_inference_factory(reid_name, reid_params)
 
+        # Hyperparameters
+        self._new_tracklet_detection_threshold = new_tracklet_detection_threshold
+
         # State
         self._filter_states = {}
+        self._next_id = 0
 
     @staticmethod
     def _raw_to_bbox(tracklet: Tracklet, raw: np.ndarray, conf: Optional[float] = None) -> PredBBox:
@@ -151,6 +157,34 @@ class MotionReIDBasedTracker(Tracker, ABC):
         """
         self._filter_states.pop(tracklet_id)
 
+    def _create_new_tracklets(
+        self,
+        detections: List[PredBBox],
+        frame_index: int,
+        objects_features: Optional[np.ndarray] = None,
+        inplace: bool = True
+    ) -> List[Tracklet]:
+        new_tracklets: List[Tracklet] = []
+        for d_i, detection in enumerate(detections):
+            if self._new_tracklet_detection_threshold is not None and detection.conf < self._new_tracklet_detection_threshold:
+                continue
+
+            new_tracklet = Tracklet(
+                bbox=detection if inplace else copy.deepcopy(detection),
+                frame_index=frame_index,
+                _id=self._next_id,
+                state=TrackletState.NEW if frame_index > 1 else TrackletState.ACTIVE
+            )
+            self._next_id += 1
+            new_tracklets.append(new_tracklet)
+            self._initiate(new_tracklet.id, detection)
+
+            # Set initial tracklet feature if ReId model is used
+            if objects_features is not None:
+                new_tracklet.set(TrackletCommonData.APPEARANCE, objects_features[d_i])
+
+        return new_tracklets
+
     def _perform_cmc(self, frame: np.ndarray, frame_index: int, bboxes: List[PredBBox]) -> List[PredBBox]:
         if self._cmc is None:
             return bboxes
@@ -186,7 +220,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
     ) -> List[Tracklet]:
         frame_index -= 1
         tracklets, prior_tracklet_bboxes = self._track_predict(tracklets, frame_index, frame=frame)
-        objects_features = self._extract_reid_features(frame, frame_index, prior_tracklet_bboxes)
+        objects_features = self._extract_reid_features(frame, frame_index, detections)
         return self._track(tracklets, prior_tracklet_bboxes, detections, frame_index,
                            objects_features=objects_features, inplace=inplace, frame=frame)
 
@@ -222,7 +256,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         prior_tracklet_bboxes: List[PredBBox],
         detections: List[PredBBox],
         frame_index: int,
-        object_features: Optional[np.ndarray] = None,
+        objects_features: Optional[np.ndarray] = None,
         inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
@@ -234,7 +268,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
             prior_tracklet_bboxes: Tracklet prior position bboxes
             detections: Lists of new detections
             frame_index: Current frame number
-            object_features: Object appearance features
+            objects_features: Object appearance features
             inplace: Perform inplace transformations on tracklets and bboxes
             frame: Pass frame in case CMC or appearance based association is used
 

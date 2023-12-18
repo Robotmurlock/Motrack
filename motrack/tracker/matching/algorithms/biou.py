@@ -3,12 +3,14 @@ Implementation of C-BIoU and BIoU association methods.
 """
 from typing import Optional, List, Tuple
 
+import numpy as np
+
 from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 from motrack.tracker.matching.algorithms.iou import IoUAssociation, LabelGatingType
+from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 from motrack.tracker.matching.utils import hungarian
 from motrack.tracker.tracklet import Tracklet
-from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 
 
 @ASSOCIATION_CATALOG.register('biou')
@@ -52,8 +54,11 @@ class HungarianBIoU(IoUAssociation):
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
+        object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
     ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
+        _ = object_features  # Unused
+
         tracklet_estimations = [self._buffer_bbox(bbox) for bbox in tracklet_estimations]
         detections = [self._buffer_bbox(bbox) for bbox in detections]
         cost_matrix = self._form_iou_cost_matrix(tracklet_estimations, detections)
@@ -98,8 +103,11 @@ class HungarianCBIoU(AssociationAlgorithm):
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
+        object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
     ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
+        _ = object_features  # Unused
+
         # First matching
         matches1, unmatched_tracklet_indices1, unmatched_detection_indices1 = \
             self._biou1_matcher(tracklet_estimations, detections, tracklets)
