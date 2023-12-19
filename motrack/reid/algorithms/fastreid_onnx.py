@@ -16,7 +16,16 @@ class FastReIDOnnx(BaseReID):
     """
     FastReIDOnnx framework support for any models exported in ONNX format.
     """
-    def __init__(self, model_path: str, height: int = 256, width: int = 256):
+    def __init__(self, model_path: str, height: int = 256, width: int = 256, cache_path: Optional[str] = None):
+        """
+        Args:
+            model_path: Path where the ONNX model export is stored
+            height: Image input height
+            width: Image input width
+            cache_path: Inference cache path
+        """
+        super().__init__(cache_path=cache_path)
+
         import onnxruntime
         self._ort_session = onnxruntime.InferenceSession(model_path)
         self._input_name = self._ort_session.get_inputs()[0].name

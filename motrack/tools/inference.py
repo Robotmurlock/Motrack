@@ -9,7 +9,8 @@ from tqdm import tqdm
 from motrack.datasets import BaseDataset
 from motrack.evaluation.io import TrackerInferenceWriter
 from motrack.object_detection import DetectionManager
-from motrack.tracker import Tracklet, Tracker, TrackletState
+from motrack.tracker import Tracker
+from motrack.tracker.tracklet import Tracklet, TrackletState
 
 
 def run_tracker_inference(

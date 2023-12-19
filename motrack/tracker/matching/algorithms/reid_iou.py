@@ -8,10 +8,10 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 from motrack.library.cv import PredBBox
-from motrack.tracker import Tracklet, TrackletCommonData
 from motrack.tracker.matching.algorithms.iou import LabelGatingType, IoUAssociation
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 from motrack.tracker.matching.utils import hungarian, greedy
+from motrack.tracker.tracklet import TrackletCommonData, Tracklet
 
 
 @ASSOCIATION_CATALOG.register('reid-iou')
@@ -78,7 +78,13 @@ class ReidIoUAssociation(IoUAssociation):
             object_features=object_features
         )
 
-        cost_matrix = motion_cost_matrix + appearance_cost_matrix
+        # Calculate cost matrix
+        if self._appearance_weight == 0.0:
+            cost_matrix = motion_cost_matrix  # This way we avoid 0.0 * inf = NaN edge-case
+        elif self._appearance_weight == 1.0:
+            cost_matrix = appearance_cost_matrix
+        else:
+            cost_matrix = (1 - self._appearance_weight) * motion_cost_matrix + self._appearance_weight * appearance_cost_matrix
 
         matches, unmatched_tracklets, unmatched_detections = greedy(cost_matrix) if self._fast_linear_assignment else \
             hungarian(cost_matrix)
@@ -102,14 +108,13 @@ class ReidIoUAssociation(IoUAssociation):
         n_detections = object_features.shape[0]
         n_tracklets = len(tracklets)
 
-        cost_matrix = np.zeros(shape=(n_tracklets, n_detections), dtype=np.float32)
         if n_tracklets == 0 or n_detections == 0:
-            return cost_matrix
+            return np.zeros(shape=(n_tracklets, n_detections), dtype=np.float32)
 
         tracklet_features = np.stack([t.get(TrackletCommonData.APPEARANCE) for t in tracklets])
         # noinspection PyTypeChecker
         cost_matrix = np.maximum(0.0, cdist(tracklet_features, object_features, metric=self._appearance_metric))
-        cost_matrix[cost_matrix < self._appearance_threshold] = np.inf
+        cost_matrix[cost_matrix > 1 - self._appearance_threshold] = np.inf
         return cost_matrix
 
 

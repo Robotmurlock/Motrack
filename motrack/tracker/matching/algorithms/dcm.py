@@ -86,7 +86,7 @@ class DCM(AssociationAlgorithm):
 
             # Perform matching
             level_matches, unmatched_tracklet_indices, unmatched_detection_indices = self._matcher(
-                level_tracklet_estimations, level_detections, level_tracklets
+                level_tracklet_estimations, level_detections, tracklets=level_tracklets
             )
 
             # Map "level" indices to real indices

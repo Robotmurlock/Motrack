@@ -110,14 +110,14 @@ class HungarianCBIoU(AssociationAlgorithm):
 
         # First matching
         matches1, unmatched_tracklet_indices1, unmatched_detection_indices1 = \
-            self._biou1_matcher(tracklet_estimations, detections, tracklets)
+            self._biou1_matcher(tracklet_estimations, detections, tracklets=tracklets)
         unmatched_tracklet_estimations = [tracklet_estimations[t_i] for t_i in unmatched_tracklet_indices1]
         unmatched_tracklets = [tracklets[t_i] for t_i in unmatched_tracklet_indices1]
         unmatched_detections = [detections[d_i] for d_i in unmatched_detection_indices1]
 
         # Second matching
         matches2, unmatched_tracklet_indices2, unmatched_detection_indices2 = \
-            self._biou1_matcher(unmatched_tracklet_estimations, unmatched_detections, unmatched_tracklets)
+            self._biou1_matcher(unmatched_tracklet_estimations, unmatched_detections, tracklets=unmatched_tracklets)
         unmatched_tracklet_indices = [unmatched_tracklet_indices1[t_i] for t_i in unmatched_tracklet_indices2]
         unmatched_detection_indices = [unmatched_detection_indices1[t_i] for t_i in unmatched_detection_indices2]
         matches2 = [(unmatched_tracklet_indices1[t_i], unmatched_detection_indices1[d_i]) for t_i, d_i in matches2]

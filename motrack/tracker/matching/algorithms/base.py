@@ -45,4 +45,4 @@ class AssociationAlgorithm(ABC):
         object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
     ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
-        return self.match(tracklet_estimations, detections, tracklets=tracklets)
+        return self.match(tracklet_estimations, detections, object_features=object_features, tracklets=tracklets)
