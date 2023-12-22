@@ -3,10 +3,10 @@ defaults:
   - dataset: dancetrack.yaml
   - eval: val.yaml
   - object_detection: yolox_dancetrack.yaml
-  - algorithm: deep_movesort.yaml
+  - algorithm: reid_sort.yaml
   - postprocess: dancetrack.yaml
   - path: default.yaml
   - _self_
 
 
-experiment: 'deep-movesort'
+experiment: 'sort-reid'

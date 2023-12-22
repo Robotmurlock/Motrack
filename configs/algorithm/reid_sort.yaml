@@ -2,23 +2,18 @@ name: sort
 params:
   filter_name: bot-sort
   filter_params:
-    override_std_weight_position: 0.05
+    override_std_weight_position: 0.01
   initialization_threshold: 3
+  remember_threshold: 30
   matcher_algorithm: reid-iou
   matcher_params:
-    match_threshold: 0.3
-    appearance_weight: 0.5
-    appearance_threshold: 0.5
+    match_threshold: 0.2
+    appearance_weight: 0.50
+    appearance_threshold: 0.00
     appearance_metric: 'cosine'
-    appearance_ema_momentum: 0.9
-  remember_threshold: 30
+    appearance_ema_momentum: 0.95
 
-  # MoveSORT-GMC extension
-  cmc_name: gmc-from-file
-  cmc_params:
-    dirpath: /media/home/GMC_files/DanceTrack
-
-  # Deep-MoveSORT extension
+  # ReID extension
   reid_name: fastreid-onnx
   reid_params:
     model_path: /media/home/reid/SBS.onnx

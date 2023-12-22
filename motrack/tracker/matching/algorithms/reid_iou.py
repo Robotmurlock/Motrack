@@ -135,5 +135,6 @@ class ReidIoUAssociation(IoUAssociation):
             else:
                 emb: np.ndarray
                 emb = self._appearance_ema_momentum * emb + (1 - self._appearance_ema_momentum) * object_features[d_i]
+                emb /= np.linalg.norm(emb)
 
             tracklet.set(TrackletCommonData.APPEARANCE, emb)
