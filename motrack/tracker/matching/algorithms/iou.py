@@ -107,8 +107,11 @@ class IoUAssociation(AssociationAlgorithm):
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
+        object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
     ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
+        _ = object_features  # Unused
+
         cost_matrix = self._form_iou_cost_matrix(tracklet_estimations, detections)
         if self._fast_linear_assignment:
             return greedy(cost_matrix)

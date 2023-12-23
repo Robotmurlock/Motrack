@@ -61,13 +61,14 @@ with other components.
 
 ### Supported tracker algorithms
 
-| Method Name     | Description                                            |
-|-----------------|--------------------------------------------------------|
-| SORT            | [arxiv: Simple Online and Realtime Tracking](https://arxiv.org/pdf/1602.00763.pdf)    | 
-| MoveSORT        | SORT with improved association method                  |
-| ByteTrack       | [arxiv: ByteTrack: Multi-Object Tracking by Associating Every Detection Box](https://arxiv.org/abs/2110.06864)   |
-| Bot-SORT        | [arxiv: BoT-SORT: Robust Associations Multi-Pedestrian Tracking](https://arxiv.org/abs/2206.14651)    |
-| SparseTrack     | [arxiv: SparseTrack: Multi-Object Tracking by Performing Scene Decomposition based on Pseudo-Depth](https://arxiv.org/abs/2306.05238) |
+| Method Name | Description                                            |
+|-------------|--------------------------------------------------------|
+| SORT        | [arxiv: Simple Online and Realtime Tracking](https://arxiv.org/pdf/1602.00763.pdf)    | 
+| DeepSORT    | [arxiv: SIMPLE ONLINE AND REALTIME TRACKING WITH A DEEP ASSOCIATION METRIC](https://arxiv.org/pdf/1703.07402.pdf) |
+| MoveSORT    | SORT with improved association method                  |
+| ByteTrack   | [arxiv: ByteTrack: Multi-Object Tracking by Associating Every Detection Box](https://arxiv.org/abs/2110.06864)   |
+| Bot-SORT    | [arxiv: BoT-SORT: Robust Associations Multi-Pedestrian Tracking](https://arxiv.org/abs/2206.14651)    |
+| SparseTrack | [arxiv: SparseTrack: Multi-Object Tracking by Performing Scene Decomposition based on Pseudo-Depth](https://arxiv.org/abs/2306.05238) |
 
 Evaluation of these methods on different datasets can be found in [evaluation.md](https://github.com/Robotmurlock/Motrack/blob/main/docs/evaluation.md)
 
@@ -77,6 +78,11 @@ Evaluation of these methods on different datasets can be found in [evaluation.md
 |-------------|------------------------------------------------------------------------------------|
 | YOLOX       | [arxiv: Simple Online and Realtime Tracking](https://arxiv.org/pdf/1602.00763.pdf) | 
 | YOLOv8      | [github: Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics)                             |
+
+### FastReID integration
+
+Any [FastReID](https://github.com/JDAI-CV/fast-reid) model for appearance matching can be used.
+Model has to be exported in ONNX. Please check [deploy documentation](https://github.com/JDAI-CV/fast-reid/tree/master/tools/deploy) for mode info.
 
 ### Supported datasets
 

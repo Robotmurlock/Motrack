@@ -3,10 +3,11 @@ BBox implementation
 """
 from dataclasses import dataclass, field
 from typing import Optional, List, Tuple, Union
-from motrack.library.numpy_utils.bbox import affine_transform
 
 import cv2
 import numpy as np
+
+from motrack.library.numpy_utils.bbox import affine_transform
 
 
 @dataclass

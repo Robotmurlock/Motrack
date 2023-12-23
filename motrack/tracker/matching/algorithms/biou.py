@@ -3,12 +3,14 @@ Implementation of C-BIoU and BIoU association methods.
 """
 from typing import Optional, List, Tuple
 
+import numpy as np
+
 from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 from motrack.tracker.matching.algorithms.iou import IoUAssociation, LabelGatingType
+from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 from motrack.tracker.matching.utils import hungarian
 from motrack.tracker.tracklet import Tracklet
-from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 
 
 @ASSOCIATION_CATALOG.register('biou')
@@ -52,8 +54,11 @@ class HungarianBIoU(IoUAssociation):
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
+        object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
     ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
+        _ = object_features  # Unused
+
         tracklet_estimations = [self._buffer_bbox(bbox) for bbox in tracklet_estimations]
         detections = [self._buffer_bbox(bbox) for bbox in detections]
         cost_matrix = self._form_iou_cost_matrix(tracklet_estimations, detections)
@@ -98,18 +103,21 @@ class HungarianCBIoU(AssociationAlgorithm):
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
+        object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
     ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
+        _ = object_features  # Unused
+
         # First matching
         matches1, unmatched_tracklet_indices1, unmatched_detection_indices1 = \
-            self._biou1_matcher(tracklet_estimations, detections, tracklets)
+            self._biou1_matcher(tracklet_estimations, detections, tracklets=tracklets)
         unmatched_tracklet_estimations = [tracklet_estimations[t_i] for t_i in unmatched_tracklet_indices1]
         unmatched_tracklets = [tracklets[t_i] for t_i in unmatched_tracklet_indices1]
         unmatched_detections = [detections[d_i] for d_i in unmatched_detection_indices1]
 
         # Second matching
         matches2, unmatched_tracklet_indices2, unmatched_detection_indices2 = \
-            self._biou1_matcher(unmatched_tracklet_estimations, unmatched_detections, unmatched_tracklets)
+            self._biou1_matcher(unmatched_tracklet_estimations, unmatched_detections, tracklets=unmatched_tracklets)
         unmatched_tracklet_indices = [unmatched_tracklet_indices1[t_i] for t_i in unmatched_tracklet_indices2]
         unmatched_detection_indices = [unmatched_detection_indices1[t_i] for t_i in unmatched_detection_indices2]
         matches2 = [(unmatched_tracklet_indices1[t_i], unmatched_detection_indices1[d_i]) for t_i, d_i in matches2]

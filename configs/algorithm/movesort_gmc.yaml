@@ -11,6 +11,8 @@ params:
     motion_lambda: 5
     only_matched: false
   remember_threshold: 30
+
+  # MoveSORT-GMC extension
   cmc_name: gmc-from-file
   cmc_params:
     dirpath: /media/home/GMC_files/DanceTrack

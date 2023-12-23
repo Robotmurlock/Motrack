@@ -9,7 +9,8 @@ from tqdm import tqdm
 from motrack.datasets import BaseDataset
 from motrack.evaluation.io import TrackerInferenceWriter
 from motrack.object_detection import DetectionManager
-from motrack.tracker import Tracklet, Tracker, TrackletState
+from motrack.tracker import Tracker
+from motrack.tracker.tracklet import Tracklet, TrackletState
 
 
 def run_tracker_inference(
@@ -19,8 +20,7 @@ def run_tracker_inference(
     tracker_active_output: str,
     tracker_all_output: str,
     clip: bool = True,
-    scene_pattern: str = '(.*?)',
-    requires_image: bool = False
+    scene_pattern: str = '(.*?)'
 ) -> None:
     """
     Performs inference on given dataset with a given tracker and detection manager.
@@ -33,7 +33,6 @@ def run_tracker_inference(
         tracker_all_output: Path where the all tracks are stored
         clip: Clip bounding boxes coordinates to range [0, 1]
         scene_pattern: Filter dataset scenes.
-        requires_image: Load image and pass to tracker
     """
     scene_names = dataset.scenes
     scene_names = [scene_name for scene_name in scene_names if re.match(scene_pattern, scene_name)]

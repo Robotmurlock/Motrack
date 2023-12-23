@@ -3,13 +3,21 @@ Tracklet Dataclass.
 """
 import enum
 from multiprocessing import Value, Lock
-from typing import Tuple, ClassVar, Optional, List
+from typing import Tuple, ClassVar, Optional, List, Any, Union
 
 from motrack.library.cv.bbox import PredBBox
 
 _TRACKLET_DEFAULT_MAX_HISTORY = 8
 
 TrackletHistoryType = List[Tuple[int, PredBBox]]
+
+
+# Conventions
+class TrackletCommonData(enum.Enum):
+    """
+    Tracklet common data type used.
+    """
+    APPEARANCE = 'appearance'
 
 
 class TrackletState(enum.Enum):
@@ -70,6 +78,7 @@ class Tracklet:
         self._history: TrackletHistoryType = [(frame_index, bbox)]
         self._total_matches = 1
         self._state = state
+        self._data = None
 
     def __repr__(self) -> str:
         return f'Tracklet(id={self._id}, bbox={self.bbox}, state={self._state})'
@@ -245,3 +254,30 @@ class Tracklet:
             self._total_matches += 1
 
         return self
+
+    def set(self, key: Union[str, TrackletCommonData], value: Any) -> None:
+        """
+        Updates Tracklet key-value data.
+
+        Args:
+            key: Data key
+            value: Data value
+        """
+        if self._data is None:
+            self._data = {}
+        self._data[key] = value
+
+    def get(self, key: Union[str, TrackletCommonData]) -> Any:
+        """
+        Gets Tracklet data by key.
+
+        Args:
+            key: Data key
+
+        Returns:
+            Data value if key is in data else None
+        """
+        if self._data is None or key not in self._data:
+            return None
+
+        return self._data[key]

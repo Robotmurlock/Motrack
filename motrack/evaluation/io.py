@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TextIO, Dict, Optional
 
 from motrack.library.cv.bbox import PredBBox, BBox
-from motrack.tracker import Tracklet
+from motrack.tracker.tracklet import Tracklet
 
 TRACKER_INFERENCE_HEADER = [
     'frame_id', 'id',

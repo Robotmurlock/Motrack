@@ -46,6 +46,8 @@ class DCM(AssociationAlgorithm):
 
         prev_depth = depths_range[0]
         for i, depth in enumerate(depths_range[1:]):
+            depth: float
+
             for j in range(n_bboxes):
                 if i + 2 < depths_range.shape[0]:
                     masks[i, j] = prev_depth <= neg_bottoms[j] < depth
@@ -61,8 +63,11 @@ class DCM(AssociationAlgorithm):
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
+        object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
     ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
+        _ = object_features  # Unused
+
         t_masks = self._create_depth_masks(tracklet_estimations)
         d_masks = self._create_depth_masks(detections)
 
@@ -81,7 +86,7 @@ class DCM(AssociationAlgorithm):
 
             # Perform matching
             level_matches, unmatched_tracklet_indices, unmatched_detection_indices = self._matcher(
-                level_tracklet_estimations, level_detections, level_tracklets
+                level_tracklet_estimations, level_detections, tracklets=level_tracklets
             )
 
             # Map "level" indices to real indices

@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.1.1 - Unreleased
+## 0.2.0 - 2023-12-23
+
+### Added
+- Support for custom FastReID with ONNX export
+- Implementation of SORT-ReID algorithm (DeepSORT-like tracker with modern ReID algorithms)
+
+## 0.1.1 - 2023-12-15
 
 ### Added
 - Support for custom CMC algorithm, with GMC from file for evaluation on popular datasets

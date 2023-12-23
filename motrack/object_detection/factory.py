@@ -5,6 +5,10 @@ Use `OBJECT_DETECTION_CATALOG.register` to extend supported object detection alg
 from typing import Optional
 
 from motrack.object_detection.algorithms.base import ObjectDetectionInference
+# noinspection PyUnresolvedReferences
+from motrack.object_detection.algorithms.yolov8 import YOLOv8Inference
+# noinspection PyUnresolvedReferences
+from motrack.object_detection.algorithms.yolox import YOLOXInference
 from motrack.object_detection.catalog import OBJECT_DETECTION_CATALOG
 from motrack.utils.lookup import LookupTable
 
@@ -15,7 +19,7 @@ def object_detection_inference_factory(
     lookup: Optional[LookupTable] = None
 ) -> ObjectDetectionInference:
     """
-    Creates object detection inference for single object tracking (filter evaluation) given name and parameters.
+    Creates OD inference.
 
     Args:
         name: OD inference name (type)
@@ -23,6 +27,6 @@ def object_detection_inference_factory(
         lookup: Used to decode classes
 
     Returns:
-        Initialized OD inference object for filter evaluation
+        Initialized OD inference
     """
     return OBJECT_DETECTION_CATALOG[name](**params, lookup=lookup)

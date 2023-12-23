@@ -112,8 +112,11 @@ class Move(IoUAssociation):
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
+        object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
     ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
+        _ = object_features  # Unused
+
         neg_iou_cost_matrix = self._form_iou_cost_matrix(tracklet_estimations, detections)
         motion_diff_cost_matrix = self._form_motion_distance_cost_matrix(tracklet_estimations, detections, tracklets)
         cost_matrix = neg_iou_cost_matrix + self._motion_lambda * motion_diff_cost_matrix
