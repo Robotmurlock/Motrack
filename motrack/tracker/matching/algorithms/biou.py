@@ -9,7 +9,6 @@ from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 from motrack.tracker.matching.algorithms.iou import IoUAssociation, LabelGatingType
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
-from motrack.tracker.matching.utils import hungarian
 from motrack.tracker.tracklet import Tracklet
 
 
@@ -50,19 +49,18 @@ class HungarianBIoU(IoUAssociation):
             conf=bbox.conf
         )
 
-    def match(
+    def form_iou_cost_matrix(
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
         object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
-    ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
-        _ = object_features  # Unused
+    ) -> np.ndarray:
+        _, _ = object_features, tracklets  # Unused
 
         tracklet_estimations = [self._buffer_bbox(bbox) for bbox in tracklet_estimations]
         detections = [self._buffer_bbox(bbox) for bbox in detections]
-        cost_matrix = self._form_iou_cost_matrix(tracklet_estimations, detections)
-        return hungarian(cost_matrix)
+        return self.form_iou_cost_matrix(tracklet_estimations, detections)
 
 
 @ASSOCIATION_CATALOG.register('cbiou')
@@ -76,7 +74,7 @@ class HungarianCBIoU(AssociationAlgorithm):
         b2: float = 0.4,
         match_threshold: float = 0.30,
         label_gating: Optional[LabelGatingType] = None,
-        *args, **kwargs
+        fast_linear_assignment: bool = False,
     ):
         """
         Args:
@@ -84,19 +82,21 @@ class HungarianCBIoU(AssociationAlgorithm):
             b2: Second buffer matching threshold
             match_threshold: IoU match gating
             label_gating: Gating between different types of objects
+            fast_linear_assignment: Use greedy algorithm for linear assignment
+            - This might be more efficient in case of large cost matrix
         """
+        super().__init__(fast_linear_assignment=fast_linear_assignment)
+
         self._biou1_matcher = HungarianBIoU(
             b=b1,
             match_threshold=match_threshold,
             label_gating=label_gating,
-            *args, **kwargs
         )
 
         self._biou1_matcher = HungarianBIoU(
             b=b2,
             match_threshold=match_threshold,
             label_gating=label_gating,
-            *args, **kwargs
         )
 
     def match(

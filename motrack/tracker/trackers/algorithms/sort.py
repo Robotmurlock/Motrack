@@ -1,7 +1,6 @@
 """
 Implementation of Sort tracker with a custom filter.
 """
-import copy
 from typing import Optional, Dict, Any, List
 
 import numpy as np
@@ -10,7 +9,7 @@ from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching import association_factory
 from motrack.tracker.trackers.algorithms.motion_reid import MotionReIDBasedTracker
 from motrack.tracker.trackers.catalog import TRACKER_CATALOG
-from motrack.tracker.tracklet import Tracklet, TrackletState
+from motrack.tracker.tracklet import Tracklet
 
 
 @TRACKER_CATALOG.register('sort')
@@ -34,7 +33,8 @@ class SortTracker(MotionReIDBasedTracker):
         remember_threshold: int = 1,
         initialization_threshold: int = 3,
         new_tracklet_detection_threshold: Optional[float] = None,
-        use_observation_if_lost: bool = False
+        use_observation_if_lost: bool = False,
+        appearance_ema_momentum: float = 0.95
     ):
         """
         Args:
@@ -66,7 +66,12 @@ class SortTracker(MotionReIDBasedTracker):
             reid_name=reid_name,
             reid_params=reid_params,
 
-            new_tracklet_detection_threshold=new_tracklet_detection_threshold
+            new_tracklet_detection_threshold=new_tracklet_detection_threshold,
+            remember_threshold=remember_threshold,
+            initialization_threshold=initialization_threshold,
+            use_observation_if_lost=use_observation_if_lost,
+
+            appearance_ema_momentum=appearance_ema_momentum
         )
 
         matcher_params = {} if matcher_params is None else matcher_params
@@ -84,43 +89,30 @@ class SortTracker(MotionReIDBasedTracker):
         detections: List[PredBBox],
         frame_index: int,
         objects_features: Optional[np.ndarray] = None,
-        inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
         # Perform matching
         matches, unmatched_tracklets, unmatched_detections = self._matcher(prior_tracklet_bboxes, detections,
                                                                            object_features=objects_features, tracklets=tracklets)
 
-        # Update matched tracklets
-        for tracklet_index, det_index in matches:
-            tracklet = tracklets[tracklet_index] if inplace else copy.deepcopy(tracklets[tracklet_index])
-            det_bbox = detections[det_index] if inplace else copy.deepcopy(detections[det_index])
-            tracklet_bbox, _, _ = self._update(tracklets[tracklet_index], det_bbox)
-            new_bbox = det_bbox if self._use_observation_if_lost and tracklet.state != TrackletState.ACTIVE \
-                else tracklet_bbox
-
-            new_state = TrackletState.ACTIVE
-            if tracklet.state == TrackletState.NEW and tracklet.total_matches + 1 < self._initialization_threshold:
-                new_state = TrackletState.NEW
-            tracklets[tracklet_index] = tracklet.update(new_bbox, frame_index, state=new_state)
+        self._update_tracklets(
+            matched_tracklets=[tracklets[t_i] for t_i, _ in matches],
+            matched_detections=[detections[d_i] for _, d_i in matches],
+            matched_object_features=objects_features[[d_i for _, d_i in matches]],
+            frame_index=frame_index
+        )
 
         # Create new tracklets from unmatched detections and initiate filter states
         new_tracklets = self._create_new_tracklets(
             detections=[detections[d_i] for d_i in unmatched_detections],
             frame_index=frame_index,
-            objects_features=objects_features[unmatched_detections] if objects_features is not None else None,
-            inplace=inplace
+            objects_features=objects_features[unmatched_detections] if objects_features is not None else None
         )
 
         # Delete old and new unmatched tracks
-        for tracklet_index in unmatched_tracklets:
-            tracklet = tracklets[tracklet_index]
-            if tracklet.number_of_unmatched_frames(frame_index) > self._remember_threshold \
-                    or tracklet.state == TrackletState.NEW:
-                self._delete(tracklet.id)
-                tracklet.state = TrackletState.DELETED
-            else:
-                tracklet_bbox, _, _ = self._missing(tracklet)
-                tracklets[tracklet_index] = tracklet.update(tracklet_bbox, tracklet.frame_index, state=TrackletState.LOST)
+        self._handle_lost_tracklets(
+            lost_tracklets=[tracklets[t_i] for t_i in unmatched_tracklets],
+            frame_index=frame_index
+        )
 
         return tracklets + new_tracklets

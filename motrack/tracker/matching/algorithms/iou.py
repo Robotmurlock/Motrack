@@ -7,10 +7,8 @@ import numpy as np
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
-from motrack.tracker.matching.utils import hungarian, greedy
-from motrack.tracker.tracklet import Tracklet
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
-
+from motrack.tracker.tracklet import Tracklet
 
 LabelType = Union[int, str]
 LabelGatingType = Union[LabelType, List[Tuple[LabelType, LabelType]]]
@@ -26,8 +24,7 @@ class IoUAssociation(AssociationAlgorithm):
         match_threshold: float = 0.30,
         fuse_score: bool = False,
         label_gating: Optional[LabelGatingType] = None,
-        fast_linear_assignment: bool = False,
-        *args, **kwargs
+        fast_linear_assignment: bool = False
     ):
         """
         Args:
@@ -39,12 +36,12 @@ class IoUAssociation(AssociationAlgorithm):
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(fast_linear_assignment=fast_linear_assignment)
 
         self._match_threshold = match_threshold
         self._fuse_score = fuse_score
 
-        self._label_gating = set([tuple(e) for e in label_gating]) if label_gating is not None else None
+        self._label_gating = {tuple(e) for e in label_gating} if label_gating is not None else None
         self._fast_linear_assignment = fast_linear_assignment
 
     def _can_match(self, tracklet_label: LabelType, det_label: LabelType) -> bool:
@@ -69,17 +66,15 @@ class IoUAssociation(AssociationAlgorithm):
         return (tracklet_label, det_label) in self._label_gating \
             or (det_label, tracklet_label) in self._label_gating
 
-    def _form_iou_cost_matrix(self, tracklet_estimations: List[PredBBox], detections: List[PredBBox]) -> np.ndarray:
-        """
-        Creates negative IOU cost matrix as an input into Hungarian algorithm.
+    def form_cost_matrix(
+        self,
+        tracklet_estimations: List[PredBBox],
+        detections: List[PredBBox],
+        object_features: Optional[np.ndarray] = None,
+        tracklets: Optional[List[Tracklet]] = None
+    ) -> np.ndarray:
+        _ = object_features  # Unused
 
-        Args:
-            tracklet_estimations: List of tracklet estimated bboxes
-            detections: Detection (observation) bboxes
-
-        Returns:
-            Negative IOU cost matrix
-        """
         n_tracklets, n_detections = len(tracklet_estimations), len(detections)
         cost_matrix = np.zeros(shape=(n_tracklets, n_detections), dtype=np.float32)
         for t_i in range(n_tracklets):
@@ -102,17 +97,3 @@ class IoUAssociation(AssociationAlgorithm):
                 cost_matrix[t_i][d_i] = score
 
         return cost_matrix
-
-    def match(
-        self,
-        tracklet_estimations: List[PredBBox],
-        detections: List[PredBBox],
-        object_features: Optional[np.ndarray] = None,
-        tracklets: Optional[List[Tracklet]] = None
-    ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
-        _ = object_features  # Unused
-
-        cost_matrix = self._form_iou_cost_matrix(tracklet_estimations, detections)
-        if self._fast_linear_assignment:
-            return greedy(cost_matrix)
-        return hungarian(cost_matrix)

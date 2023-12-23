@@ -37,18 +37,15 @@ class Tracker(ABC):
         tracklets: List[Tracklet],
         detections: List[PredBBox],
         frame_index: int,
-        inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
         """
         Performs multi-object-tracking step.
-        DISCLAIMER: `inplace=True` is default configuration!
 
         Args:
             tracklets: List of active trackelts
             detections: Lists of new detections
             frame_index: Current frame number
-            inplace: Perform inplace transformations on tracklets and bboxes
             frame: Pass frame in case CMC or appearance based association is used
 
         Returns:

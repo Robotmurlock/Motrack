@@ -9,5 +9,4 @@ params:
     distance_name: l1
     match_threshold: 0.2
     motion_lambda: 5
-    only_matched: false
   remember_threshold: 30

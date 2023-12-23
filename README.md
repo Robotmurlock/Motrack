@@ -45,8 +45,7 @@ class MyTracker(Tracker):
     self,
     tracklets: List[Tracklet],
     detections: List[PredBBox],
-    frame_index: int,
-    inplace: bool = True
+    frame_index: int
   ) -> List[Tracklet]:
     ... Tracker logic ...
 
@@ -112,6 +111,32 @@ pip install motrack
 
 Package page can be found on [PyPI](https://pypi.org/project/motrack/).
 
-### Changelog
+### Extensions
+
+In order to use `YOLOv8` for inference, please install `ultralytics` library:
+
+```bash
+pip install ultralytics
+```
+
+or install extras `motrack['yolov8']`:
+
+```bash
+pip install `motrack['yolov8']`
+```
+
+For `FastReID` inference, please install `onnxruntime` for CPU:
+
+```bash
+pip install onnxruntime
+```
+
+or GPU:
+
+```bash
+pip install onnxruntime-gpu
+```
+
+## Changelog
 
 Package changelog can be found [here](https://github.com/Robotmurlock/Motrack/blob/main/docs/changelog.md)

@@ -1,4 +1,4 @@
-# SparseTrack = Bot-Sort + DCM
+# SparseTrack = ByteTrack + DCM
 name: sparse
 params:
   filter_name: bot-sort
@@ -8,14 +8,11 @@ params:
   remember_threshold: 30
   new_tracklet_detection_threshold: 0.7
   detection_threshold: 0.6
-  cmc_name: gmc-from-file
-  cmc_params:
-    dirpath: /media/home/GMC_files/DanceTrack
   high_matcher_algorithm: dcm
   high_matcher_params:
-    match_threshold: 0.3
     levels: 12
+    match_threshold: 0.3
   low_matcher_algorithm: dcm
   low_matcher_params:
-    match_threshold: 0.5
     levels: 12
+    match_threshold: 0.50
