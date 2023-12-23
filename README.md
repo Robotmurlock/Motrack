@@ -98,6 +98,10 @@ List of script tools:
   - Postprocess: Perform offline postprocessing (linear interpolation, etc...) for more accuracy tracklets.
   - Visualize: Visualize tracker inference.
 
+### Evaluation
+
+Evaluation of different supported methods can be found [here](https://github.com/Robotmurlock/Motrack/blob/main/docs/evaluation.md).
+
 ## Installation
 
 Run these commands to install package within your virtual environment or docker container.
@@ -107,3 +111,7 @@ pip install motrack
 ```
 
 Package page can be found on [PyPI](https://pypi.org/project/motrack/).
+
+### Changelog
+
+Package changelog can be found [here](https://github.com/Robotmurlock/Motrack/blob/main/docs/changelog.md)
