@@ -11,11 +11,8 @@ params:
   high_matcher_algorithm: dcm
   high_matcher_params:
     levels: 12
-    match_threshold: 0.25
+    match_threshold: 0.3
   low_matcher_algorithm: dcm
   low_matcher_params:
     levels: 12
     match_threshold: 0.50
-  new_matcher_algorithm: iou
-  new_matcher_params:
-    match_threshold: 0.25
