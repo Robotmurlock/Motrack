@@ -4,6 +4,7 @@ params:
   filter_params:
     override_std_weight_position: 0.05
   initialization_threshold: 3
+  new_tracklet_detection_threshold: 0.7
   remember_threshold: 30
   detection_threshold: 0.6
   high_matcher_algorithm: iou
