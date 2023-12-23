@@ -187,8 +187,7 @@ class ByteTracker(MotionReIDBasedTracker):
 
         # (8) Delete new unmatched and long-lost tracklets
         self._handle_lost_tracklets(
-            lost_tracklets=[tracklets[t_i] for t_i in unmatched_tracklet_indices + new_unmatched_tracklets_indices],
-            frame_index=frame_index
+            lost_tracklets=[tracklets[t_i] for t_i in unmatched_tracklet_indices + new_unmatched_tracklets_indices]
         )
 
         # (9) Delete duplicate between ACTIVE and LOST tracklets

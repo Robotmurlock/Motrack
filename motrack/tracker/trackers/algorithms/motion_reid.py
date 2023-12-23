@@ -262,11 +262,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
             tracklet.set(TrackletCommonData.APPEARANCE, emb)
 
-    def _handle_lost_tracklets(
-        self,
-        lost_tracklets: List[Tracklet],
-        frame_index: int
-    ) -> None:
+    def _handle_lost_tracklets(self, lost_tracklets: List[Tracklet]) -> None:
         """
         Handles lost tracklets:
         - Deletes tracklets that are lost for more than `self._remember_threshold` frames
@@ -275,10 +271,9 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
         Args:
             lost_tracklets: Lost tracklets that potentially should be deleted
-            frame_index: Current frame index
         """
         for tracklet in lost_tracklets:
-            if tracklet.number_of_unmatched_frames(frame_index) > self._remember_threshold \
+            if tracklet.lost_time > self._remember_threshold \
                     or tracklet.state == TrackletState.NEW:
                 tracklet.state = TrackletState.DELETED
                 self._delete(tracklet.id)

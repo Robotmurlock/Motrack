@@ -77,6 +77,7 @@ class Tracklet:
         # State
         self._history: TrackletHistoryType = [(frame_index, bbox)]
         self._total_matches = 1
+        self._total_lost = 0
         self._state = state
         self._data = None
 
@@ -136,20 +137,17 @@ class Tracklet:
         """
         return self.frame_index - self._start_frame_index
 
-    def number_of_unmatched_frames(self, current_frame_index: int) -> int:
+    @property
+    def lost_time(self) -> int:
         """
-        Calculates number of frames that the tracklet was not matched with any of the detections
-        counting from the last matched frames.
+        Gets number of frames that tracklet has LOST state
 
         Example: (match, missing, match, missing, missing) -> returns 2
-
-        Args:
-            current_frame_index: Current frame
 
         Returns:
             Number of unmatched frames
         """
-        return current_frame_index - self.frame_index
+        return self._total_lost
 
     @property
     def id(self) -> int:
@@ -250,8 +248,12 @@ class Tracklet:
         if state is not None:
             self._state = state
 
+        # Update state stats
         if self._state in [TrackletState.NEW, TrackletState.ACTIVE]:
             self._total_matches += 1
+            self._total_lost = 0
+        elif self._state == TrackletState.LOST:
+            self._total_lost += 1
 
         return self
 

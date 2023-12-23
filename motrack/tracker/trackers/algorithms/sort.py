@@ -98,7 +98,7 @@ class SortTracker(MotionReIDBasedTracker):
         self._update_tracklets(
             matched_tracklets=[tracklets[t_i] for t_i, _ in matches],
             matched_detections=[detections[d_i] for _, d_i in matches],
-            matched_object_features=objects_features[[d_i for _, d_i in matches]],
+            matched_object_features=objects_features[[d_i for _, d_i in matches]] if objects_features is not None else None,
             frame_index=frame_index
         )
 
@@ -111,8 +111,7 @@ class SortTracker(MotionReIDBasedTracker):
 
         # Delete old and new unmatched tracks
         self._handle_lost_tracklets(
-            lost_tracklets=[tracklets[t_i] for t_i in unmatched_tracklets],
-            frame_index=frame_index
+            lost_tracklets=[tracklets[t_i] for t_i in unmatched_tracklets]
         )
 
         return tracklets + new_tracklets
