@@ -40,7 +40,7 @@ class ComposeAssociationAlgorithm(AssociationAlgorithm):
         self._matchers = matchers
         self._weights = weights
 
-    def _form_cost_matrix(
+    def form_cost_matrix(
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
@@ -49,7 +49,7 @@ class ComposeAssociationAlgorithm(AssociationAlgorithm):
     ) -> np.ndarray:
         weighted_cost_matrix: Optional[np.ndarray] = None
         for matcher, weight in zip(self._matchers, self._weights):
-            cost_matrix = weight * matcher.match(
+            cost_matrix = weight * matcher.form_cost_matrix(
                 tracklet_estimations=tracklet_estimations,
                 detections=detections,
                 object_features=object_features,

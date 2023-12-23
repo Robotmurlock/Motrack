@@ -24,7 +24,7 @@ class AssociationAlgorithm:
         """
         self._fast_linear_assignment = fast_linear_assignment
 
-    def _form_cost_matrix(
+    def form_cost_matrix(
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
@@ -66,7 +66,7 @@ class AssociationAlgorithm:
             - list of unmatched tracklets
             - list of unmatched detections
         """
-        cost_matrix = self._form_cost_matrix(
+        cost_matrix = self.form_cost_matrix(
             tracklet_estimations=tracklet_estimations,
             detections=detections,
             object_features=object_features,

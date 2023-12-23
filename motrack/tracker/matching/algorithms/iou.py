@@ -68,17 +68,15 @@ class IoUAssociation(AssociationAlgorithm):
         return (tracklet_label, det_label) in self._label_gating \
             or (det_label, tracklet_label) in self._label_gating
 
-    def _form_iou_cost_matrix(self, tracklet_estimations: List[PredBBox], detections: List[PredBBox]) -> np.ndarray:
-        """
-        Creates negative IOU cost matrix as an input into Hungarian algorithm.
+    def form_cost_matrix(
+        self,
+        tracklet_estimations: List[PredBBox],
+        detections: List[PredBBox],
+        object_features: Optional[np.ndarray] = None,
+        tracklets: Optional[List[Tracklet]] = None
+    ) -> np.ndarray:
+        _ = object_features  # Unused
 
-        Args:
-            tracklet_estimations: List of tracklet estimated bboxes
-            detections: Detection (observation) bboxes
-
-        Returns:
-            Negative IOU cost matrix
-        """
         n_tracklets, n_detections = len(tracklet_estimations), len(detections)
         cost_matrix = np.zeros(shape=(n_tracklets, n_detections), dtype=np.float32)
         for t_i in range(n_tracklets):
@@ -101,13 +99,3 @@ class IoUAssociation(AssociationAlgorithm):
                 cost_matrix[t_i][d_i] = score
 
         return cost_matrix
-
-    def _form_cost_matrix(
-        self,
-        tracklet_estimations: List[PredBBox],
-        detections: List[PredBBox],
-        object_features: Optional[np.ndarray] = None,
-        tracklets: Optional[List[Tracklet]] = None
-    ) -> np.ndarray:
-        _ = object_features  # Unused
-        return self._form_iou_cost_matrix(tracklet_estimations, detections)
