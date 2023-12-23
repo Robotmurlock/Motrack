@@ -16,26 +16,56 @@ class BaseReID(ABC):
     """.
     Interface for re-identification appearance extractor
     """
-    def __init__(self, cache_path: Optional[str] = None):
+    def __init__(self, cache_path: Optional[str] = None, batch_inference: bool = False):
         """
         Args:
             cache_path: Inference cache path
+            batch_inference: Use batch inference mode if supported by the ONNX export
+                - This makes inference faster
         """
         self._cache_path = cache_path
+        self._batch_inference = batch_inference
 
     @abstractmethod
-    def extract_features(self, frame: np.ndarray, frame_index: int, scene: Optional[str] = None) -> np.ndarray:
+    def preprocess(self, image: np.ndarray) -> np.ndarray:
+        """
+        Preprocesses the input frame. Ref: https://github.com/JDAI-CV/fast-reid/blob/master/tools/deploy/onnx_inference.py
+
+        Args:
+            image: Object crop
+
+        Returns:
+            frame features (not normalized)
+        """
+
+    @abstractmethod
+    def postprocess(self, features: np.ndarray) -> np.ndarray:
+        """
+        Normalized the input features to L2 ball.
+
+        Args:
+            features: Un-normalized features
+
+        Returns:
+            Normalized features
+        """
+
+    @abstractmethod
+    def inference(self, image: np.ndarray) -> np.ndarray:
         """
         Extracts object appearance features for given frame.
 
         Args:
-            frame: Raw frame
-            frame_index: Frame number (index)
-            scene: Scene name (optional, for caching)
+            image: Raw frame
 
         Returns:
             Object frame appearance features
         """
+
+    def extract_features(self, image: np.ndarray) -> np.ndarray:
+        data = self.preprocess(image)
+        features = self.inference(data)
+        return self.postprocess(features)
 
     def extract_objects_features(self, frame: np.ndarray, bboxes: List[BBox], frame_index: int, scene: Optional[str] = None) -> np.ndarray:
         """
@@ -58,8 +88,9 @@ class BaseReID(ABC):
                 return load_npy(scene_frame_cache_path)
 
 
-        object_feature_list: List[np.ndarray] = []
+        data_list: List[np.ndarray] = []
 
+        # Pack batch input
         for bbox in bboxes:
             # Clip bbox to image
             bbox = copy.deepcopy(bbox)
@@ -67,11 +98,21 @@ class BaseReID(ABC):
             assert bbox.area > 0, 'Bounding box has no area!'
 
             crop = bbox.crop(frame)
-            object_features = self.extract_features(crop, frame_index=frame_index, scene=scene)
-            object_feature_list.append(object_features)
+            data = self.preprocess(crop)
+            data_list.append(data)
 
-        objects_features = np.concatenate(object_feature_list, 0) if len(object_feature_list) > 0 \
-            else np.empty(0, dtype=np.float32)
+        if len(data_list) == 0:
+            objects_features = np.empty(0, dtype=np.float32)
+        else:
+            data = np.stack(data_list, 0)
+
+            if self._batch_inference:
+                objects_features = self.inference(data)
+            else:
+                objects_features = np.concatenate([self.inference(data[i][np.newaxis]) for i in range(data.shape[0])], 0)
+
+            objects_features = self.postprocess(objects_features)
+
         if self._cache_path is not None:
             # Store features to cache for faster future inference
             assert scene is not None, 'Scene must be specified in order to perform caching!'
