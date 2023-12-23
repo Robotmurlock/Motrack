@@ -45,8 +45,7 @@ class MyTracker(Tracker):
     self,
     tracklets: List[Tracklet],
     detections: List[PredBBox],
-    frame_index: int,
-    inplace: bool = True
+    frame_index: int
   ) -> List[Tracklet]:
     ... Tracker logic ...
 

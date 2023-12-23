@@ -30,7 +30,11 @@ class MotionReIDBasedTracker(Tracker, ABC):
         cmc_params: Optional[dict] = None,
         reid_name: Optional[str] = None,
         reid_params: Optional[str] = None,
+        initialization_threshold: int = 3,
+        remember_threshold: int = 1,
         new_tracklet_detection_threshold: Optional[float] = None,
+        use_observation_if_lost: bool = False,
+        appearance_ema_momentum: float = 0.95
     ):
         """
         Args:
@@ -57,6 +61,12 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
         # Hyperparameters
         self._new_tracklet_detection_threshold = new_tracklet_detection_threshold
+        self._initialization_threshold = initialization_threshold
+        self._remember_threshold = remember_threshold
+        self._use_observation_if_lost = use_observation_if_lost
+
+        # ReID hyperparameters
+        self._appearance_ema_momentum = appearance_ema_momentum
 
         # State
         self._filter_states = {}
@@ -161,19 +171,29 @@ class MotionReIDBasedTracker(Tracker, ABC):
         self,
         detections: List[PredBBox],
         frame_index: int,
-        objects_features: Optional[np.ndarray] = None,
-        inplace: bool = True
+        objects_features: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
+        """
+        Creates new tracklets based on unmatched detections.
+
+        Args:
+            detections: List of unmatched detections
+            frame_index: Current frame index
+            objects_features: List of unmatched detections' object features
+
+        Returns:
+            New tracklets
+        """
         new_tracklets: List[Tracklet] = []
         for d_i, detection in enumerate(detections):
             if self._new_tracklet_detection_threshold is not None and detection.conf < self._new_tracklet_detection_threshold:
                 continue
 
             new_tracklet = Tracklet(
-                bbox=detection if inplace else copy.deepcopy(detection),
+                bbox=copy.deepcopy(detection),
                 frame_index=frame_index,
                 _id=self._next_id,
-                state=TrackletState.NEW if frame_index > 1 else TrackletState.ACTIVE
+                state=TrackletState.NEW if frame_index > self._initialization_threshold else TrackletState.ACTIVE
             )
             self._next_id += 1
             new_tracklets.append(new_tracklet)
@@ -185,7 +205,96 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
         return new_tracklets
 
+    def _update_tracklets(
+        self,
+        matched_tracklets: List[Tracklet],
+        matched_detections: List[PredBBox],
+        matched_object_features: np.ndarray,
+        frame_index: int
+    ) -> List[Tracklet]:
+        """
+        Updates tracklets with detections and object appearance features (if used).
+
+        Args:
+            matched_tracklets: List of matched tracklets
+            matched_detections: List of matched detections
+            frame_index: Current frame index
+
+        Returns:
+            List of updated tracklets
+        """
+        for tracklet, det_bbox in zip(matched_tracklets, matched_detections):
+            tracklet_bbox, _, _ = self._update(tracklet, det_bbox)
+            new_bbox = det_bbox if self._use_observation_if_lost and tracklet.state != TrackletState.ACTIVE \
+                else tracklet_bbox
+
+            new_state = TrackletState.ACTIVE
+            if tracklet.state == TrackletState.NEW and tracklet.total_matches + 1 < self._initialization_threshold:
+                new_state = TrackletState.NEW
+            tracklet.update(new_bbox, frame_index, state=new_state)
+
+        self._update_appearances(
+            tracklets=matched_tracklets,
+            object_features=matched_object_features
+        )
+
+        return matched_tracklets
+
+    def _update_appearances(self, tracklets: List[Tracklet], object_features: np.ndarray) -> None:
+        """
+        Updates Tracklet appearance.
+
+        Args:
+            tracklets: Tracklets
+            object_features: Detected objects features
+        """
+        for i, tracklet in enumerate(tracklets):
+            emb = tracklet.get(TrackletCommonData.APPEARANCE)
+            if emb is not None:
+                emb = object_features[i]
+            else:
+                emb: np.ndarray
+                emb = self._appearance_ema_momentum * emb + (1 - self._appearance_ema_momentum) * object_features[i]
+                emb /= np.linalg.norm(emb)
+
+            tracklet.set(TrackletCommonData.APPEARANCE, emb)
+
+    def _handle_lost_tracklets(
+        self,
+        lost_tracklets: List[Tracklet],
+        frame_index: int
+    ) -> None:
+        """
+        Handles lost tracklets:
+        - Deletes tracklets that are lost for more than `self._remember_threshold` frames
+        - Deletes new tracklets that are lost before initialized
+        - Update lost tracklets position using the motion model
+
+        Args:
+            lost_tracklets: Lost tracklets that potentially should be deleted
+            frame_index: Current frame index
+        """
+        for tracklet in lost_tracklets:
+            if tracklet.number_of_unmatched_frames(frame_index) > self._remember_threshold \
+                    or tracklet.state == TrackletState.NEW:
+                tracklet.state = TrackletState.DELETED
+                self._delete(tracklet.id)
+            else:
+                tracklet_bbox, _, _ = self._missing(tracklet)
+                tracklet.update(tracklet_bbox, tracklet.frame_index, state=TrackletState.LOST)
+
     def _perform_cmc(self, frame: np.ndarray, frame_index: int, bboxes: List[PredBBox]) -> List[PredBBox]:
+        """
+        Performs CMC on detected bounding boxes and updates motion filter states.
+
+        Args:
+            frame: Frame (image)
+            frame_index: Current frame index
+            bboxes: List of bounding boxes
+
+        Returns:
+            Updated bounding boxes
+        """
         if self._cmc is None:
             return bboxes
 
@@ -205,6 +314,17 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
 
     def _extract_reid_features(self, frame: np.ndarray, frame_index: int, bboxes: List[PredBBox]) -> Optional[np.ndarray]:
+        """
+        Extracts features for each detected bounding box. Skips if ReID is not used
+
+        Args:
+            frame: Frame (image)
+            frame_index: Current frame index
+            bboxes: List of bounding boxes
+
+        Returns:
+            ReId features for each detected bounding box if ReId is used else None
+        """
         if self._reid is None:
             return None
 
@@ -215,14 +335,13 @@ class MotionReIDBasedTracker(Tracker, ABC):
         tracklets: List[Tracklet],
         detections: List[PredBBox],
         frame_index: int,
-        inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
         frame_index -= 1
         tracklets, prior_tracklet_bboxes = self._track_predict(tracklets, frame_index, frame=frame)
         objects_features = self._extract_reid_features(frame, frame_index, detections)
         return self._track(tracklets, prior_tracklet_bboxes, detections, frame_index,
-                           objects_features=objects_features, inplace=inplace, frame=frame)
+                           objects_features=objects_features, frame=frame)
 
     def _track_predict(self, tracklets: List[Tracklet], frame_index: int, frame: Optional[np.ndarray] = None):
         """
@@ -257,7 +376,6 @@ class MotionReIDBasedTracker(Tracker, ABC):
         detections: List[PredBBox],
         frame_index: int,
         objects_features: Optional[np.ndarray] = None,
-        inplace: bool = True,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
         """
@@ -269,7 +387,6 @@ class MotionReIDBasedTracker(Tracker, ABC):
             detections: Lists of new detections
             frame_index: Current frame number
             objects_features: Object appearance features
-            inplace: Perform inplace transformations on tracklets and bboxes
             frame: Pass frame in case CMC or appearance based association is used
 
         Returns:

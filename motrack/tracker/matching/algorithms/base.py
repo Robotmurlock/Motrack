@@ -43,7 +43,7 @@ class AssociationAlgorithm:
         Returns:
             Cost matrix
         """
-        raise NotImplemented('Form cost matrix is not implemented!')
+        raise NotImplementedError('Form cost matrix is not implemented!')
 
     def match(
         self,

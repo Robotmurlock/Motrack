@@ -7,10 +7,8 @@ import numpy as np
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
-from motrack.tracker.matching.utils import hungarian, greedy
-from motrack.tracker.tracklet import Tracklet
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
-
+from motrack.tracker.tracklet import Tracklet
 
 LabelType = Union[int, str]
 LabelGatingType = Union[LabelType, List[Tuple[LabelType, LabelType]]]
@@ -43,7 +41,7 @@ class IoUAssociation(AssociationAlgorithm):
         self._match_threshold = match_threshold
         self._fuse_score = fuse_score
 
-        self._label_gating = set([tuple(e) for e in label_gating]) if label_gating is not None else None
+        self._label_gating = {tuple(e) for e in label_gating} if label_gating is not None else None
         self._fast_linear_assignment = fast_linear_assignment
 
     def _can_match(self, tracklet_label: LabelType, det_label: LabelType) -> bool:

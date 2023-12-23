@@ -37,6 +37,9 @@ def distance(name: str, x: np.ndarray, y: np.ndarray) -> float:
 
 @ASSOCIATION_CATALOG.register('distance')
 class DistanceAssociation(AssociationAlgorithm):
+    """
+    Calculates distance between detection and prediction relative to the last track position.
+    """
     def __init__(
         self,
         distance_name: str = 'l1',

@@ -37,6 +37,9 @@ class ComposeAssociationAlgorithm(AssociationAlgorithm):
 
         assert len(matchers) == len(weights), \
             f'Number of matchers and weights must be equal! Got {len(matchers)=} and {len(weights)=}'
+        assert all(w >= 0 for w in weights), 'All weights must be non-negative!'
+        assert any(w > 0 for w in weights), 'At least one weight must be positive!'
+
         self._matchers = matchers
         self._weights = weights
 
@@ -49,6 +52,9 @@ class ComposeAssociationAlgorithm(AssociationAlgorithm):
     ) -> np.ndarray:
         weighted_cost_matrix: Optional[np.ndarray] = None
         for matcher, weight in zip(self._matchers, self._weights):
+            if weight == 0.0:
+                continue
+
             cost_matrix = weight * matcher.form_cost_matrix(
                 tracklet_estimations=tracklet_estimations,
                 detections=detections,

@@ -2,16 +2,16 @@ name: sort
 params:
   filter_name: bot-sort
   filter_params:
-    override_std_weight_position: 0.01
+    override_std_weight_position: 0.05
   initialization_threshold: 3
   remember_threshold: 30
+  appearance_ema_momentum: 0.95
   matcher_algorithm: reid-iou
   matcher_params:
-    match_threshold: 0.2
+    match_threshold: 0.3
     appearance_weight: 0.50
     appearance_threshold: 0.00
     appearance_metric: 'cosine'
-    appearance_ema_momentum: 0.95
 
   # ReID extension
   reid_name: fastreid-onnx
