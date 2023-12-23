@@ -1,0 +1,27 @@
+# Check docker/Dockerfile
+version: "3.9"
+services:
+  motrack-env:
+    container_name: motrack-env
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: motrack-env
+    stdin_open: true
+    tty: true
+    command: bash
+
+    shm_size: 16gb
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [ '${GPU}' ]
+              capabilities: [ gpu ]
+          cpus: '${CPUS:-1.0}'
+
+    volumes:
+      - '/tmp:/tmp'
+      - '${DATA}:/media/home'
+      - '${CODE:-$PWD}:/motrack'
