@@ -26,7 +26,7 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
         initial_P_conf: float = 10.0,
         Q_conf: float = 1.0,
         Q_conf_velocity: float = 1e-3,
-        R_conf: float = 10.0,
+        R_conf: float = 100.0,
         linear_prediction: bool = False,
         fast_linear_assignment: bool = False
     ):
@@ -104,7 +104,6 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
                 mean, std = self._kf.update(mean, std, conf_measurement)
 
             tracklet.set(self.DATA_KEY, (mean, std))
-
 
     def form_cost_matrix(
         self,
