@@ -248,6 +248,9 @@ class MotionReIDBasedTracker(Tracker, ABC):
             tracklets: Tracklets
             object_features: Detected objects features
         """
+        if self._reid is None:
+            return
+
         for i, tracklet in enumerate(tracklets):
             emb = tracklet.get(TrackletCommonData.APPEARANCE)
             if emb is not None:

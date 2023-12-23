@@ -130,7 +130,6 @@ class ByteTracker(MotionReIDBasedTracker):
         high_det_indices = [i for i, d in enumerate(detections) if d.conf >= self._detection_threshold]
         low_detections = [d for d in detections if d.conf < self._detection_threshold]
         low_det_indices = [i for i, d in enumerate(detections) if d.conf < self._detection_threshold]
-        assert len(detections) == objects_features.shape[0]
 
         # (2) Match high detections with tracklets with states ACTIVE and LOST using HighMatchAlgorithm
         tracklets_active_and_lost_indices, tracklets_active_and_lost, tracklets_active_and_lost_bboxes = \
@@ -182,7 +181,7 @@ class ByteTracker(MotionReIDBasedTracker):
         self._update_tracklets(
             matched_tracklets=[tracklets[t_i] for t_i, _ in all_matches],
             matched_detections=[detections[d_i] for _, d_i in all_matches],
-            matched_object_features=objects_features[[d_i for _, d_i in all_matches]],
+            matched_object_features=objects_features[[d_i for _, d_i in all_matches]] if objects_features is not None else None,
             frame_index=frame_index
         )
 
