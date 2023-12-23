@@ -9,25 +9,13 @@ import rich
 import rich.syntax
 import rich.tree
 from omegaconf import DictConfig, OmegaConf
-from pytorch_lightning.utilities import rank_zero_only
 
 log = logging.getLogger('RichUtils')
 
 
-@rank_zero_only
 def print_config_tree(
     cfg: DictConfig,
-    print_order: Sequence[str] = (
-        'experiment',
-        'path',
-        'dataset',
-        'eval',
-        'object_detection',
-        'algorithm',
-        'filter',
-        'postprocess',
-        'visualize'
-    ),
+    print_order: Sequence[str] = (),
     resolve: bool = False,
     save_to_file: bool = False,
 ) -> None:
