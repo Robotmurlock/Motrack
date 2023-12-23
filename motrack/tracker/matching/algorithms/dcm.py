@@ -21,7 +21,17 @@ class DCM(AssociationAlgorithm):
         self,
         matcher: AssociationAlgorithm,
         levels: int = 12,
+        fast_linear_assignment: bool = False
     ):
+        """
+        Args:
+            matcher: Base matcher
+            levels: Number of depth levels to use
+            fast_linear_assignment: Use greedy algorithm for linear assignment
+                - This might be more efficient in case of large cost matrix
+        """
+        super().__init__(fast_linear_assignment=fast_linear_assignment)
+
         self._matcher = matcher
         self._levels = levels
 
@@ -109,8 +119,17 @@ class DCMIoU(DCM):
         levels: int = 12,
         match_threshold: float = 0.30,
         fuse_score: bool = False,
-        label_gating: Optional[LabelGatingType] = None
+        label_gating: Optional[LabelGatingType] = None,
+        fast_linear_assignment: bool = False
     ):
+        """
+        Args:
+            match_threshold: IoU gating match threshold
+            fuse_score: Multiply IoU score by detection score
+            levels: Number of depth levels to use
+            fast_linear_assignment: Use greedy algorithm for linear assignment
+                - This might be more efficient in case of large cost matrix
+        """
         matcher = IoUAssociation(
             match_threshold=match_threshold,
             label_gating=label_gating,
@@ -119,6 +138,7 @@ class DCMIoU(DCM):
         super().__init__(
             matcher=matcher,
             levels=levels,
+            fast_linear_assignment=fast_linear_assignment
         )
 
 
@@ -132,18 +152,28 @@ class MoveDCM(DCM):
         levels: int = 12,
         match_threshold: float = 0.30,
         motion_lambda: float = 5,
-        only_matched: bool = False,
         distance_name: str = 'l1',
         label_gating: Optional[LabelGatingType] = None,
-        fuse_score: bool = False
+        fuse_score: bool = False,
+        fast_linear_assignment: bool = False
     ):
+        """
+        Args:
+            levels: Number of depth levels to use
+            match_threshold: IoU gating match threshold
+            motion_lambda: Move cost multiplier
+            fuse_score: Multiply IoU score by detection score
+            levels: Number of depth levels to use
+            fast_linear_assignment: Use greedy algorithm for linear assignment
+                - This might be more efficient in case of large cost matrix
+        """
         matcher = Move(
             match_threshold=match_threshold,
             motion_lambda=motion_lambda,
-            only_matched=only_matched,
             distance_name=distance_name,
             label_gating=label_gating,
-            fuse_score=fuse_score
+            fuse_score=fuse_score,
+            fast_linear_assignment=fast_linear_assignment
         )
         super().__init__(
             matcher=matcher,

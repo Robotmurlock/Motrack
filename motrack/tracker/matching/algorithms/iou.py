@@ -26,8 +26,7 @@ class IoUAssociation(AssociationAlgorithm):
         match_threshold: float = 0.30,
         fuse_score: bool = False,
         label_gating: Optional[LabelGatingType] = None,
-        fast_linear_assignment: bool = False,
-        *args, **kwargs
+        fast_linear_assignment: bool = False
     ):
         """
         Args:
@@ -39,7 +38,7 @@ class IoUAssociation(AssociationAlgorithm):
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(fast_linear_assignment=fast_linear_assignment)
 
         self._match_threshold = match_threshold
         self._fuse_score = fuse_score
@@ -103,16 +102,12 @@ class IoUAssociation(AssociationAlgorithm):
 
         return cost_matrix
 
-    def match(
+    def _form_cost_matrix(
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
         object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
-    ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
+    ) -> np.ndarray:
         _ = object_features  # Unused
-
-        cost_matrix = self._form_iou_cost_matrix(tracklet_estimations, detections)
-        if self._fast_linear_assignment:
-            return greedy(cost_matrix)
-        return hungarian(cost_matrix)
+        return self._form_iou_cost_matrix(tracklet_estimations, detections)

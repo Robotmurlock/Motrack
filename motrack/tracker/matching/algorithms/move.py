@@ -1,15 +1,14 @@
 """
 Implementation of Move (hybrid) association method.
 """
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 import numpy as np
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching.algorithms.iou import IoUAssociation, LabelGatingType
-from motrack.tracker.matching.utils import hungarian
-from motrack.tracker.tracklet import Tracklet, TrackletState
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
+from motrack.tracker.tracklet import Tracklet
 
 
 def distance(name: str, x: np.ndarray, y: np.ndarray) -> float:
@@ -28,6 +27,8 @@ def distance(name: str, x: np.ndarray, y: np.ndarray) -> float:
         return np.abs(x - y).sum()
     if name == 'l2':
         return np.sqrt(np.square(x - y).sum())
+    if name == 'cosine':
+        return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
     raise AssertionError('Invalid Program State!')
 
@@ -42,28 +43,27 @@ class Move(IoUAssociation):
         self,
         match_threshold: float = 0.30,
         motion_lambda: float = 5,
-        only_matched: bool = False,
         distance_name: str = 'l1',
         label_gating: Optional[LabelGatingType] = None,
         fuse_score: bool = False,
-        *args, **kwargs
+        fast_linear_assignment: bool = False
     ):
         """
         Args:
             match_threshold: IOU match gating
             motion_lambda: Motion difference multiplier
-            only_matched: Only use motion cost matrix for tracklets that are matched in last frame
             label_gating: Gating between different types of objects
             fuse_score: Fuse Hungarian IoU score
+            fast_linear_assignment: Use greedy algorithm for linear assignment
+                - This might be more efficient in case of large cost matrix
         """
         super().__init__(
             match_threshold=match_threshold,
             label_gating=label_gating,
             fuse_score=fuse_score,
-            *args, **kwargs
+            fast_linear_assignment=fast_linear_assignment
         )
         self._motion_lambda = motion_lambda
-        self._only_matched = only_matched
 
         assert distance_name in self.DISTANCE_OPTIONS, f'Invalid distance option "{distance_name}". Available: {self.DISTANCE_OPTIONS}.'
         self._distance_name = distance_name
@@ -91,7 +91,6 @@ class Move(IoUAssociation):
         for t_i in range(n_tracklets):
             tracklet_estimated_bbox = tracklet_estimations[t_i]
             tracklet_info = tracklets[t_i]
-            is_matched = tracklet_info.state == TrackletState.ACTIVE
 
             tracklet_last_bbox = tracklet_info.bbox.as_numpy_xyxy()
             tracklet_motion = tracklet_estimated_bbox.as_numpy_xyxy() - tracklet_last_bbox
@@ -101,23 +100,17 @@ class Move(IoUAssociation):
                 det_motion = det_bbox.as_numpy_xyxy() - tracklet_last_bbox
                 cost_matrix[t_i][d_i] = distance(self._distance_name, tracklet_motion, det_motion)
 
-            if self._only_matched and not is_matched:
-                # Assumption: Motion estimation is not that accurate in this case
-                cost_matrix[t_i, :] = 0
-                continue
-
         return cost_matrix
 
-    def match(
+    def _form_cost_matrix(
         self,
         tracklet_estimations: List[PredBBox],
         detections: List[PredBBox],
         object_features: Optional[np.ndarray] = None,
         tracklets: Optional[List[Tracklet]] = None
-    ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
+    ) -> np.ndarray:
         _ = object_features  # Unused
 
         neg_iou_cost_matrix = self._form_iou_cost_matrix(tracklet_estimations, detections)
         motion_diff_cost_matrix = self._form_motion_distance_cost_matrix(tracklet_estimations, detections, tracklets)
-        cost_matrix = neg_iou_cost_matrix + self._motion_lambda * motion_diff_cost_matrix
-        return hungarian(cost_matrix)
+        return neg_iou_cost_matrix + self._motion_lambda * motion_diff_cost_matrix

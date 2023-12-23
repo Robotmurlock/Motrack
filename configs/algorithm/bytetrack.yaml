@@ -8,7 +8,10 @@ params:
   detection_threshold: 0.6
   high_matcher_algorithm: iou
   high_matcher_params:
-    match_threshold: 0.3
+    match_threshold: 0.25
   low_matcher_algorithm: iou
   low_matcher_params:
-    match_threshold: 0.5
+    match_threshold: 0.50
+  new_matcher_algorithm: iou
+  new_matcher_params:
+    match_threshold: 0.25
