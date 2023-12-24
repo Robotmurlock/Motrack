@@ -19,7 +19,7 @@ from motrack.tracker.matching.algorithms.iou import IoUAssociation
 # noinspection PyUnresolvedReferences
 from motrack.tracker.matching.algorithms.move import Move
 # noinspection PyUnresolvedReferences
-from motrack.tracker.matching.algorithms.reid_iou import ReIDIoUAssociation
+from motrack.tracker.matching.algorithms.reid import ReIDIoUAssociation
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 
 
