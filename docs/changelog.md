@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.1 - Unreleased
+## 0.2.1 - 2023-12-24
 
 ### Features
 - Implementation of weighted cost matrix composition for easy heuristic combination
