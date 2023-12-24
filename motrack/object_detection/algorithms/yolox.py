@@ -38,7 +38,6 @@ class YOLOXInference(ObjectDetectionInference):
             conf_threshold=conf,
             legacy=legacy
         )
-        self._conf = conf
         self._min_bbox_area = min_bbox_area
 
     def predict_raw(self, image: np.ndarray) -> Any:

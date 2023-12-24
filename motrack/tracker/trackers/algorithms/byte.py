@@ -73,7 +73,8 @@ class ByteTracker(MotionReIDBasedTracker):
             initialization_threshold=initialization_threshold,
             use_observation_if_lost=use_observation_if_lost,
 
-            appearance_ema_momentum=appearance_ema_momentum
+            appearance_ema_momentum=appearance_ema_momentum,
+            reid_detection_threshold=detection_threshold
         )
 
         if high_matcher_algorithm == 'default':
@@ -134,10 +135,9 @@ class ByteTracker(MotionReIDBasedTracker):
         # (2) Match high detections with tracklets with states ACTIVE and LOST using HighMatchAlgorithm
         tracklets_active_and_lost_indices, tracklets_active_and_lost, tracklets_active_and_lost_bboxes = \
             unpack_n([(i, t, t_bbox) for i, (t, t_bbox) in enumerate(zip(tracklets, prior_tracklet_bboxes)) if t.is_tracked], n=3)
-        reid_features_high = objects_features[high_det_indices] if objects_features is not None else None
         high_matches, remaining_tracklet_indices, high_unmatched_detections_indices = \
             self._high_match(tracklets_active_and_lost_bboxes, high_detections,
-                             object_features=reid_features_high, tracklets=tracklets_active_and_lost)
+                             object_features=objects_features, tracklets=tracklets_active_and_lost)
         high_matches = [(tracklets_active_and_lost_indices[t_i], high_det_indices[d_i]) for t_i, d_i in high_matches]
         high_unmatched_detections_indices = [high_det_indices[d_i] for d_i in high_unmatched_detections_indices]
         remaining_tracklet_bboxes = [tracklets_active_and_lost_bboxes[t_i] for t_i in remaining_tracklet_indices]
@@ -148,10 +148,9 @@ class ByteTracker(MotionReIDBasedTracker):
         remaining_active_tracklet_indices, remaining_active_tracklets, remaining_active_tracklet_bboxes = \
             unpack_n([(i, t, t_bbox) for i, t, t_bbox in zip(remaining_tracklet_indices, remaining_tracklets, remaining_tracklet_bboxes)
                   if t.state == TrackletState.ACTIVE], n=3)
-        reid_features_remaining_low = objects_features[low_det_indices] if objects_features is not None else None
         low_matches, low_unmatched_tracklet_indices, _ = \
             self._low_match(remaining_active_tracklet_bboxes, low_detections,
-                            object_features=reid_features_remaining_low, tracklets=remaining_active_tracklets)
+                            object_features=None, tracklets=remaining_active_tracklets)
         low_matches = [(remaining_active_tracklet_indices[t_i], low_det_indices[d_i]) for t_i, d_i in low_matches]
         unmatched_tracklet_indices = [remaining_active_tracklet_indices[t_i] for t_i in low_unmatched_tracklet_indices]
 
@@ -160,10 +159,9 @@ class ByteTracker(MotionReIDBasedTracker):
         remaining_high_detection_indices = high_unmatched_detections_indices
         tracklets_new_indices, tracklets_new, tracklets_new_bboxes = \
             unpack_n([(i, t, t_bbox) for i, (t, t_bbox) in enumerate(zip(tracklets, prior_tracklet_bboxes)) if t.state == TrackletState.NEW], n=3)
-        reid_features_new = objects_features[high_unmatched_detections_indices] if objects_features is not None else None
         new_matches, new_unmatched_tracklets_indices, new_unmatched_detections_indices = \
             self._new_match(tracklets_new_bboxes, remaining_high_detections,
-                            object_features=reid_features_new, tracklets=tracklets_new)
+                            object_features=None, tracklets=tracklets_new)
         new_matches = [(tracklets_new_indices[t_i], high_unmatched_detections_indices[d_i]) for t_i, d_i in new_matches]
         new_unmatched_tracklets_indices = [tracklets_new_indices[t_i] for t_i in new_unmatched_tracklets_indices]
         new_unmatched_detections_indices = [remaining_high_detection_indices[d_i] for d_i in new_unmatched_detections_indices]
@@ -175,20 +173,26 @@ class ByteTracker(MotionReIDBasedTracker):
             objects_features=objects_features[new_unmatched_detections_indices] if objects_features is not None else None
         )
 
-        all_matches = high_matches + low_matches + new_matches
-
         # (7) Update matched tracklets
+        all_matches = high_matches + low_matches + new_matches
+        matched_detection_indices = [d_i for _, d_i in all_matches]
+        if objects_features is not None:
+            # Object's that have features (because of the high detection score)
+            # have stored features in the list, otherwise None is set
+            detection_to_object_feature_index = {d_i: i for i, d_i in enumerate(high_det_indices)}
+            matched_features_indices = [detection_to_object_feature_index.get(d_i) for d_i in matched_detection_indices]
+            objects_features = [(objects_features[i] if i is not None else None) for i in matched_features_indices]
+
         self._update_tracklets(
             matched_tracklets=[tracklets[t_i] for t_i, _ in all_matches],
-            matched_detections=[detections[d_i] for _, d_i in all_matches],
-            matched_object_features=objects_features[[d_i for _, d_i in all_matches]] if objects_features is not None else None,
+            matched_detections=[detections[d_i] for d_i in matched_detection_indices],
+            matched_object_features=objects_features,
             frame_index=frame_index
         )
 
         # (8) Delete new unmatched and long-lost tracklets
         self._handle_lost_tracklets(
-            lost_tracklets=[tracklets[t_i] for t_i in unmatched_tracklet_indices + new_unmatched_tracklets_indices],
-            frame_index=frame_index
+            lost_tracklets=[tracklets[t_i] for t_i in unmatched_tracklet_indices + new_unmatched_tracklets_indices]
         )
 
         # (9) Delete duplicate between ACTIVE and LOST tracklets

@@ -29,8 +29,6 @@ def distance(name: str, x: np.ndarray, y: np.ndarray) -> float:
         return np.abs(x - y).sum()
     if name == 'l2':
         return np.sqrt(np.square(x - y).sum())
-    if name == 'cosine':
-        return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
     raise AssertionError('Invalid Program State!')
 

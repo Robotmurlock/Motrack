@@ -1,7 +1,7 @@
 """
 Implementation of Filter Sort tracker
 """
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Union
 
 import numpy as np
 from abc import ABC, abstractmethod
@@ -30,6 +30,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         cmc_params: Optional[dict] = None,
         reid_name: Optional[str] = None,
         reid_params: Optional[str] = None,
+        reid_detection_threshold: Optional[float] = None,
         initialization_threshold: int = 3,
         remember_threshold: int = 1,
         new_tracklet_detection_threshold: Optional[float] = None,
@@ -44,6 +45,18 @@ class MotionReIDBasedTracker(Tracker, ABC):
             cmc_params: CMC params
             reid_name: ReID name
             reid_params: ReID params
+
+            reid_detection_threshold: Filter bboxes that have more than `reid_detection_threshold`
+                detection score before applying ReID. Mandatory for trackers that use low detection scores
+                like `BYTE`.
+
+            remember_threshold: How long does the tracklet without any detection matching
+                If tracklet isn't matched for more than `remember_threshold` frames then
+                it is deleted.
+            initialization_threshold: Number of frames until tracklet becomes active
+            new_tracklet_detection_threshold: Threshold to accept new tracklet
+            use_observation_if_lost: When re-finding tracklet, use observation instead of estimation
+            appearance_ema_momentum: Appearance EMA (Exponential Moving Average) momentum
         """
         super().__init__()
 
@@ -60,6 +73,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
             self._reid = reid_inference_factory(reid_name, reid_params)
 
         # Hyperparameters
+        self._reid_detection_threshold = reid_detection_threshold
         self._new_tracklet_detection_threshold = new_tracklet_detection_threshold
         self._initialization_threshold = initialization_threshold
         self._remember_threshold = remember_threshold
@@ -209,7 +223,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         self,
         matched_tracklets: List[Tracklet],
         matched_detections: List[PredBBox],
-        matched_object_features: np.ndarray,
+        matched_object_features: Union[np.ndarray, List[Optional[np.ndarray]]],
         frame_index: int
     ) -> List[Tracklet]:
         """
@@ -240,7 +254,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
         return matched_tracklets
 
-    def _update_appearances(self, tracklets: List[Tracklet], object_features: np.ndarray) -> None:
+    def _update_appearances(self, tracklets: List[Tracklet], object_features: Union[np.ndarray, List[Optional[np.ndarray]]]) -> None:
         """
         Updates Tracklet appearance.
 
@@ -252,6 +266,9 @@ class MotionReIDBasedTracker(Tracker, ABC):
             return
 
         for i, tracklet in enumerate(tracklets):
+            if object_features[i] is None:
+                continue
+
             emb = tracklet.get(TrackletCommonData.APPEARANCE)
             if emb is not None:
                 emb = object_features[i]
@@ -262,11 +279,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
             tracklet.set(TrackletCommonData.APPEARANCE, emb)
 
-    def _handle_lost_tracklets(
-        self,
-        lost_tracklets: List[Tracklet],
-        frame_index: int
-    ) -> None:
+    def _handle_lost_tracklets(self, lost_tracklets: List[Tracklet]) -> None:
         """
         Handles lost tracklets:
         - Deletes tracklets that are lost for more than `self._remember_threshold` frames
@@ -275,10 +288,9 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
         Args:
             lost_tracklets: Lost tracklets that potentially should be deleted
-            frame_index: Current frame index
         """
         for tracklet in lost_tracklets:
-            if tracklet.number_of_unmatched_frames(frame_index) > self._remember_threshold \
+            if tracklet.lost_time > self._remember_threshold \
                     or tracklet.state == TrackletState.NEW:
                 tracklet.state = TrackletState.DELETED
                 self._delete(tracklet.id)
@@ -329,7 +341,13 @@ class MotionReIDBasedTracker(Tracker, ABC):
             ReId features for each detected bounding box if ReId is used else None
         """
         if self._reid is None:
+            # ReID is not used
             return None
+
+        if self._reid_detection_threshold is not None:
+            # Filter bboxes with high confidence
+            # Remove bboxes with low confidence
+            bboxes = [bbox for bbox in bboxes if bbox.conf >= self._reid_detection_threshold]
 
         return self._reid.extract_objects_features(frame, bboxes, frame_index=frame_index, scene=self._scene)
 

@@ -22,13 +22,14 @@ class ReIDAssociation(AssociationAlgorithm):
     """
     def __init__(
         self,
-        appearance_threshold: float = 0.5,
+        appearance_threshold: float = 0.0,
         appearance_metric: str = 'cosine',
         fast_linear_assignment: bool = False
     ):
         """
         Args:
             appearance_threshold: Appearance metric minimum threshold
+                - Disabled by default
             appearance_metric: Appearance metric (default: cosine)
             fast_linear_assignment: Use faster linear assignment
         """
