@@ -8,8 +8,8 @@ params:
   appearance_ema_momentum: 0.95
   matcher_algorithm: reid-iou
   matcher_params:
-    match_threshold: 0.3
-    appearance_weight: 0.50
+    match_threshold: 0.25
+    appearance_weight: 0.70
     appearance_threshold: 0.00
     appearance_metric: 'cosine'
 

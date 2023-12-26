@@ -9,14 +9,14 @@ Also, version with the updated numpy package can be found here: [Robotmurlock/Tr
 All configs can be found in `configs` repository directory. 
 Default ReID model is the fast-reid SBS(S50).
 
-| Method Name     | Description                                            | HOTA | MOTA | IDF1 | config            |
-|-----------------|--------------------------------------------------------|------|------|------|-------------------|
-| FastTracker     | no motion filter + IoU + Greedy                        | 46.0 | 88.7 | 44.4 | fast.yaml         |
-| Bot-SORT        | [arxiv: Bot-SORT](https://arxiv.org/abs/2206.14651)    | 51.3 | 90.4 | 52.2 | botsort.yaml      |
-| SORT            | [arxiv: SORT](https://arxiv.org/pdf/1602.00763.pdf)    | 51.4 | 89.6 | 51.2 | sort.yaml         |
-| ByteTrack       | [arxiv: ByteTrack](https://arxiv.org/abs/2110.06864)   | 52.3 | 90.5 | 53.3 | bytetrack.yaml    |
-| SORT-ReID       | SORT + ReID                                            | 52.3 | 89.8 | 52.1 | sort_reid.yaml    |
-| SparseTrack     | [arxiv: SparseTrack](https://arxiv.org/abs/2306.05238) | 52.4 | 90.0 | 52.7 | sparsetrack.yaml  |
+| Method Name | Description                                            | HOTA | MOTA | IDF1 | config           |
+|-------------|--------------------------------------------------------|------|------|------|------------------|
+| FastTracker | no motion filter + IoU + Greedy                        | 46.0 | 88.7 | 44.4 | fast.yaml        |
+| Bot-SORT    | [arxiv: Bot-SORT](https://arxiv.org/abs/2206.14651)    | 51.3 | 90.4 | 52.2 | botsort.yaml     |
+| SORT        | [arxiv: SORT](https://arxiv.org/pdf/1602.00763.pdf)    | 51.4 | 89.6 | 51.2 | sort.yaml        |
+| ByteTrack   | [arxiv: ByteTrack](https://arxiv.org/abs/2110.06864)   | 52.3 | 90.5 | 53.3 | bytetrack.yaml   |
+| SparseTrack | [arxiv: SparseTrack](https://arxiv.org/abs/2306.05238) | 52.4 | 90.0 | 52.7 | sparsetrack.yaml |
+| SORT-ReID   | SORT + ReID (FastReID SBS-S50)                         | 56.3 | 89.9 | 56.9 | sort_reid.yaml   |
 
 Custom architectures:
 

@@ -116,7 +116,6 @@ class ByteTracker(MotionReIDBasedTracker):
         # State
         self._next_id = 0
 
-
     def _track(
         self,
         tracklets: List[Tracklet],
@@ -176,17 +175,18 @@ class ByteTracker(MotionReIDBasedTracker):
         # (7) Update matched tracklets
         all_matches = high_matches + low_matches + new_matches
         matched_detection_indices = [d_i for _, d_i in all_matches]
+        matched_objects_features: Optional[List[Optional[np.ndarray]]] = None
         if objects_features is not None:
             # Object's that have features (because of the high detection score)
             # have stored features in the list, otherwise None is set
             detection_to_object_feature_index = {d_i: i for i, d_i in enumerate(high_det_indices)}
             matched_features_indices = [detection_to_object_feature_index.get(d_i) for d_i in matched_detection_indices]
-            objects_features = [(objects_features[i] if i is not None else None) for i in matched_features_indices]
+            matched_objects_features = [(objects_features[i] if i is not None else None) for i in matched_features_indices]
 
         self._update_tracklets(
             matched_tracklets=[tracklets[t_i] for t_i, _ in all_matches],
             matched_detections=[detections[d_i] for d_i in matched_detection_indices],
-            matched_object_features=objects_features,
+            matched_object_features=matched_objects_features,
             frame_index=frame_index
         )
 

@@ -237,6 +237,10 @@ class MotionReIDBasedTracker(Tracker, ABC):
         Returns:
             List of updated tracklets
         """
+        assert len(matched_tracklets) == len(matched_tracklets), \
+            'Number of matched tracklets and number of matched detections do not match! ' \
+            f'Got: {len(matched_tracklets)}, {len(matched_tracklets)}'
+
         for tracklet, det_bbox in zip(matched_tracklets, matched_detections):
             tracklet_bbox, _, _ = self._update(tracklet, det_bbox)
             new_bbox = det_bbox if self._use_observation_if_lost and tracklet.state != TrackletState.ACTIVE \
@@ -265,18 +269,22 @@ class MotionReIDBasedTracker(Tracker, ABC):
         if self._reid is None:
             return
 
+        assert len(tracklets) == len(object_features), \
+            'Number of matched tracklets and number of matched detection features do not match! ' \
+            f'Got: {len(tracklets)}, {len(object_features)}'
+
         for i, tracklet in enumerate(tracklets):
             if object_features[i] is None:
                 continue
 
             emb = tracklet.get(TrackletCommonData.APPEARANCE)
-            if emb is not None:
+            if emb is None:
                 emb = object_features[i]
             else:
                 emb: np.ndarray
                 emb = self._appearance_ema_momentum * emb + (1 - self._appearance_ema_momentum) * object_features[i]
-                emb /= np.linalg.norm(emb)
 
+            emb /= np.linalg.norm(emb)
             tracklet.set(TrackletCommonData.APPEARANCE, emb)
 
     def _handle_lost_tracklets(self, lost_tracklets: List[Tracklet]) -> None:
