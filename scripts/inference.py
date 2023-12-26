@@ -16,7 +16,7 @@ from motrack.datasets import dataset_factory
 from motrack.object_detection import DetectionManager
 from motrack.tracker import tracker_factory
 from motrack.utils import pipeline
-from motrack.tools import run_tracker_inference
+from motrack.tools import run_tracker_inference, run_tracker_postprocess
 
 logger = logging.getLogger('TrackerInference')
 
@@ -27,6 +27,9 @@ def run_inference(cfg: GlobalConfig) -> None:
         user_input = input(f'Experiment on path "{cfg.experiment_path}" already exists. Are you sure you want to override it? [yes/no] ').lower()
         if user_input in ['yes', 'y']:
             shutil.rmtree(cfg.experiment_path)
+        else:
+            logger.info('Aborting!')
+            return
 
     tracker_active_output = os.path.join(cfg.experiment_path, 'active')
     tracker_all_output = os.path.join(cfg.experiment_path, 'all')
@@ -68,6 +71,18 @@ def run_inference(cfg: GlobalConfig) -> None:
     tracker_config_path = os.path.join(cfg.experiment_path, 'config.yaml')
     with open(tracker_config_path, 'w', encoding='utf-8') as f:
         yaml.safe_dump(asdict(cfg), f)
+
+    if cfg.eval.postprocess:
+        logger.info('Performing inference postprocessing...')
+        tracker_postprocess_output = os.path.join(cfg.experiment_path, 'postprocess')
+        run_tracker_postprocess(
+            dataset=dataset,
+            tracker_active_output=tracker_active_output,
+            tracker_all_output=tracker_all_output,
+            tracker_postprocess_output=tracker_postprocess_output,
+            postprocess_cfg=cfg.postprocess,
+            scene_pattern=cfg.dataset_filter.scene_pattern
+        )
 
 
 @hydra.main(config_path=CONFIGS_PATH, config_name='movesort', version_base='1.1')
