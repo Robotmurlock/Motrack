@@ -121,6 +121,7 @@ class TrackerPostprocessConfig:
 @dataclass
 class TrackerEvalConfig:
     split: str
+    postprocess: bool = field(default=False)
 
 
 @dataclass

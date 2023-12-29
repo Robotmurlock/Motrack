@@ -65,6 +65,7 @@ class SortTracker(MotionReIDBasedTracker):
             cmc_params=cmc_params,
             reid_name=reid_name,
             reid_params=reid_params,
+            reid_detection_threshold=None,
 
             new_tracklet_detection_threshold=new_tracklet_detection_threshold,
             remember_threshold=remember_threshold,

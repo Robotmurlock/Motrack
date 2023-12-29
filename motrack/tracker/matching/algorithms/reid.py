@@ -71,7 +71,7 @@ class ReIDIoUAssociation(ComposeAssociationAlgorithm):
     def __init__(
         self,
         appearance_weight: float = 0.5,
-        appearance_threshold: float = 0.5,
+        appearance_threshold: float = 0.0,
         appearance_metric: str = 'cosine',
         match_threshold: float = 0.30,
         fuse_score: bool = False,

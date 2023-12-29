@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 - 2023-12-29
+
+### Fixes
+- Appearance embedding update (improved SORT-ReID evaluation score)
+
 ## 0.2.1 - 2023-12-24
 
 ### Features
@@ -8,7 +13,7 @@
 - Implementation of Hybrid-SORT inspired confidence association method
 - Implement Dockerfile and docker-compose
 
-### Fixed
+### Fixes
 - Remove Byte low detections ReID inference for faster inference
 - Remove Pytorch Lightning config print dependency
 
@@ -32,7 +37,7 @@
 ### Docs
 - Added `evaluation.md` with algorithms evaluated on DanceTrack
 
-### Fixed
+### Fixes
 - ByteTrack lost new tracks.
 
 ## 0.1.0 - 2023-12-09
