@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.2 - Unreleased
+## 0.2.2 - 2023-12-29
 
 ### Fixes
 - Appearance embedding update (improved SORT-ReID evaluation score)
