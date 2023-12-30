@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 - Unreleased
+
+### Fixes
+- Visualization now shows track id properly and does not crash
+
 ## 0.2.2 - 2023-12-29
 
 ### Fixes
