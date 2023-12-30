@@ -181,8 +181,8 @@ class IoUAssociationAdaptiveGating(IoUBasedAssociation):
         if len(tracklet.history) >= 2:
             last_bbox_index, last_bbox = tracklet.history[-1]
             prev_bbox_index, prev_bbox = tracklet.history[-2]
-            movement = np.abs(last_bbox.as_numpy_xyxy() - prev_bbox.as_numpy_xyxy()).mean()
-            match_threshold -= movement * self._gating_factor
+            movement = np.abs(last_bbox.as_numpy_xyxy() - prev_bbox.as_numpy_xyxy() / (last_bbox_index - prev_bbox_index)).mean()
+            match_threshold = max(0, match_threshold - movement * self._gating_factor)
 
         iou_score = tracklet_bbox.iou(det_bbox)
         score = iou_score * det_bbox.conf if self._fuse_score else iou_score

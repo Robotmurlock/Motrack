@@ -48,7 +48,7 @@ setup(
     ],
 
     keywords='tracking-by-detection, multi-object-tracking',  # Optional
-    packages=find_packages(exclude=['*.tests', '*.tests.*', 'tests.*', 'tests', 'tools']),  # Required
+    packages=find_packages(exclude=['*.tests', '*.tests.*', 'tests.*', 'tests', 'scripts']),  # Required
     python_requires='>=3.8, <4',
     install_requires=[
         'hydra-core',
@@ -59,7 +59,9 @@ setup(
         'pandas',
         'PyYAML',
         'scipy',
-        'tqdm'
+        'tqdm',
+        'torch',
+        'motrack-motion'
     ],  # Optional
     extras_require={  # Optional
         'yolov8': ['ultralytics'],

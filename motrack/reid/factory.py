@@ -2,10 +2,9 @@
 ReID factory method.
 Use `REID_CATALOG.register` to extend supported ReID algorithms.
 """
-
 from motrack.reid.algorithms.base import BaseReID
 # noinspection PyUnresolvedReferences
-from motrack.reid.algorithms.fastreid_onnx import FastReIDOnnx
+from motrack.reid.algorithms.fastreid_onnx import FastReIDOnnx  # pylint: disable=unused-import
 from motrack.reid.catalog import REID_CATALOG
 
 

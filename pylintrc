@@ -149,7 +149,8 @@ disable=abstract-method,
         W1203,
         E1120,
         keyword-arg-before-vararg,
-        invalid-name
+        invalid-name,
+        import-outside-toplevel
 
 
 [REPORTS]

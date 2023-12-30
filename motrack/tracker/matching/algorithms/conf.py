@@ -5,13 +5,12 @@ Reference: https://arxiv.org/pdf/2308.00783.pdf
 from typing import List, Optional
 
 import numpy as np
-
 from motrack.library.cv import PredBBox
-from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
-from motrack.tracker.tracklet import Tracklet, TrackletState
 from motrack.library.kalman_filter.conf_kf import ConfidenceKalmanFilter
-from scipy.spatial.distance import cdist
+from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
+from motrack.tracker.tracklet import Tracklet, TrackletState
+from scipy.spatial.distance import cdist
 
 
 @ASSOCIATION_CATALOG.register('hybrid-conf')

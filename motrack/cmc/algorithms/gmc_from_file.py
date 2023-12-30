@@ -1,3 +1,6 @@
+"""
+Load GMC results from file - pre-calculated.
+"""
 import os
 from typing import Optional, Dict
 
@@ -63,7 +66,7 @@ class GMCFromFile(CameraMotionCompensation):
             warps = np.zeros(shape=(n_lines, 2, 3), dtype=np.float32)
             for line_i, line in enumerate(lines):
                 tokens = line.strip().split(GMCFromFile.LINE_SEP)[1:]
-                for token_i, token in enumerate(tokens):
+                for token_i in range(len(tokens)):
                     r, c = token_i // 3, token_i % 3
                     warps[line_i, r, c] = float(tokens[token_i])
 
@@ -73,7 +76,7 @@ class GMCFromFile(CameraMotionCompensation):
 
 
     def apply(self, frame: np.ndarray, frame_index: int, scene: Optional[str] = None) -> np.ndarray:
-        assert scene is not None, f'Scene name is required in order to load GMC warps from a file!'
+        assert scene is not None, 'Scene name is required in order to load GMC warps from a file!'
         scene_file = self._get_gmc_filename(scene)
         warp = self._gmc_lookup[scene_file][frame_index, :, :]
         warp[0, 2] /= frame.shape[1]

@@ -1,6 +1,10 @@
+"""
+Camera motion compensation interface.
+"""
 from abc import ABC, abstractmethod
-import numpy as np
 from typing import Optional
+
+import numpy as np
 
 
 class CameraMotionCompensation(ABC):
