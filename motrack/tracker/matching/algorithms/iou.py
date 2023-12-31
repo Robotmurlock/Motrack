@@ -92,7 +92,7 @@ class IoUBasedAssociation(AssociationAlgorithm):
         Args:
             tracklet: Tracklet info
             tracklet_bbox: Tracklet bounding box
-            det_bbox:
+            det_bbox: Detection bounding box
 
         Returns:
             Matching score
@@ -188,3 +188,61 @@ class IoUAssociationAdaptiveGating(IoUBasedAssociation):
         iou_score = tracklet_bbox.iou(det_bbox)
         score = iou_score * det_bbox.conf if self._fuse_score else iou_score
         return - score if score > match_threshold else np.inf
+
+
+@ASSOCIATION_CATALOG.register('hmiou')
+class HMIoUAssociation(IoUBasedAssociation):
+    """
+    Height modulated IoU. Reference: https://arxiv.org/pdf/2308.00783.pdf
+    """
+    def __init__(
+        self,
+        match_threshold: float = 0.30,
+        label_gating: Optional[LabelGatingType] = None,
+        fast_linear_assignment: bool = False
+    ):
+        """
+        Args:
+            match_threshold: Min threshold do match tracklet with object.
+                If threshold is not met then cost is equal to infinity.
+            label_gating: Define which object labels can be matched
+                - If not defined, matching is label agnostic
+            fast_linear_assignment: Use greedy algorithm for linear assignment
+                - This might be more efficient in case of large cost matrix
+        """
+        super().__init__(
+            label_gating=label_gating,
+            fast_linear_assignment=fast_linear_assignment
+        )
+
+        self._match_threshold = match_threshold
+
+    @staticmethod
+    def hiou(tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
+        """
+        Calculates HIoU between two bboxes.
+
+        Args:
+            tracklet_bbox: Tracklet bounding box
+            det_bbox: Detection bounding box
+
+        Returns:
+            HIoU between two bboxes
+        """
+        intersection_bottom = min(tracklet_bbox.bottom_right.y, det_bbox.bottom_right.y)
+        intersection_top = max(tracklet_bbox.upper_left.y, det_bbox.upper_left.y)
+        union_bottom = max(tracklet_bbox.bottom_right.y, det_bbox.bottom_right.y)
+        union_top = min(tracklet_bbox.upper_left.y, det_bbox.upper_left.y)
+
+        if union_top >= union_bottom or intersection_top >= intersection_bottom:
+            return 0.0
+
+        return (intersection_bottom - intersection_top) / (union_bottom - union_top)
+
+    def _calc_score(self, tracklet: Tracklet, tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
+        _ = tracklet
+
+        # Calculate IOU score
+        iou_score = tracklet_bbox.iou(det_bbox)
+        height_iou_score = self.hiou(tracklet_bbox, det_bbox)
+        return - iou_score * height_iou_score * height_iou_score if iou_score > self._match_threshold else np.inf
