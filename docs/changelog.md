@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 - Unreleased
+
+### Features
+- Extension of motion filters with Motrack-motion library (End-to-end RNNFilter)
+- Implementation of Hybrid-SORT's HMIoU
+
+### Fixes
+- Visualization now shows track id properly and does not crash
+
 ## 0.2.2 - 2023-12-29
 
 ### Fixes

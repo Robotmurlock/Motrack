@@ -117,4 +117,4 @@ class StateModelFilter(ABC):
         Returns:
             Warped state
         """
-        raise NotImplemented('This filter does not support affine transform!')
+        raise NotImplementedError('This filter does not support affine transform!')
