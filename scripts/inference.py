@@ -24,7 +24,11 @@ logger = logging.getLogger('TrackerInference')
 @pipeline.task('inference')
 def run_inference(cfg: GlobalConfig) -> None:
     if os.path.exists(cfg.experiment_path):
-        user_input = input(f'Experiment on path "{cfg.experiment_path}" already exists. Are you sure you want to override it? [yes/no] ').lower()
+        if cfg.eval.override:
+            user_input = 'yes'  # `input` from config
+        else:
+            user_input = input(f'Experiment on path "{cfg.experiment_path}" already exists. '
+                               f'Are you sure you want to override it? [yes/no] ').lower()
         if user_input in ['yes', 'y']:
             shutil.rmtree(cfg.experiment_path)
         else:
