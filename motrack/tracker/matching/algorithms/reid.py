@@ -56,11 +56,53 @@ class ReIDAssociation(AssociationAlgorithm):
         if n_tracklets == 0 or n_detections == 0:
             return np.zeros(shape=(n_tracklets, n_detections), dtype=np.float32)
 
-        tracklet_features = np.stack([t.get(TrackletCommonData.APPEARANCE) for t in tracklets])
+        tracklet_features = self._get_features(tracklets)
         # noinspection PyTypeChecker
         cost_matrix = np.maximum(0.0, cdist(tracklet_features, object_features, metric=self._appearance_metric))
         cost_matrix[cost_matrix > 1 - self._appearance_threshold] = np.inf
         return cost_matrix
+
+    @staticmethod
+    def _get_features(tracklets: List[Tracklet]) -> np.ndarray:
+        """
+        Extracts appearance features from the tracklets.
+
+        Args:
+            tracklets: List of tracklets
+
+        Returns:
+            Tracklet appearance features
+        """
+        return np.stack([t.get(TrackletCommonData.APPEARANCE) for t in tracklets])
+
+
+@ASSOCIATION_CATALOG.register('long-term-reid')
+class LongTermReIdAssociation(ReIDAssociation):
+    """
+    Long-term based ReID association.
+    """
+    def __init__(
+        self,
+        appearance_threshold: float = 0.0,
+        appearance_metric: str = 'cosine',
+        fast_linear_assignment: bool = False
+    ):
+        """
+        Args:
+            appearance_threshold: Appearance metric minimum threshold
+                - Disabled by default
+            appearance_metric: Appearance metric (default: cosine)
+            fast_linear_assignment: Use faster linear assignment
+        """
+        super().__init__(
+            fast_linear_assignment=fast_linear_assignment,
+            appearance_threshold=appearance_threshold,
+            appearance_metric=appearance_metric
+        )
+
+    @staticmethod
+    def _get_features(tracklets: List[Tracklet]) -> np.ndarray:
+        return np.stack([np.stack(list(t.get(TrackletCommonData.APPEARANCE_BUFFER))).mean(axis=0) for t in tracklets])
 
 
 @ASSOCIATION_CATALOG.register('reid-iou')

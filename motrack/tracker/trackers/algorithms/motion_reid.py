@@ -13,6 +13,7 @@ from motrack.tracker.trackers.algorithms.base import Tracker
 from motrack.tracker.tracklet import Tracklet, TrackletState, TrackletCommonData
 from motrack.cmc import cmc_factory
 from motrack.reid import reid_inference_factory
+from collections import deque
 
 
 class MotionReIDBasedTracker(Tracker, ABC):
@@ -35,7 +36,8 @@ class MotionReIDBasedTracker(Tracker, ABC):
         remember_threshold: int = 1,
         new_tracklet_detection_threshold: Optional[float] = None,
         use_observation_if_lost: bool = False,
-        appearance_ema_momentum: float = 0.95
+        appearance_ema_momentum: float = 0.95,
+        appearance_buffer: int = 0
     ):
         """
         Args:
@@ -57,6 +59,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
             new_tracklet_detection_threshold: Threshold to accept new tracklet
             use_observation_if_lost: When re-finding tracklet, use observation instead of estimation
             appearance_ema_momentum: Appearance EMA (Exponential Moving Average) momentum
+            appearance_buffer: Appearance buffer length (set to a non-zero non-negative integer to activate)
         """
         super().__init__()
 
@@ -81,6 +84,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
         # ReID hyperparameters
         self._appearance_ema_momentum = appearance_ema_momentum
+        self._appearance_buffer = appearance_buffer
 
         # State
         self._filter_states = {}
@@ -216,6 +220,10 @@ class MotionReIDBasedTracker(Tracker, ABC):
             # Set initial tracklet feature if ReId model is used
             if objects_features is not None:
                 new_tracklet.set(TrackletCommonData.APPEARANCE, objects_features[d_i])
+                if self._appearance_buffer > 0:
+                    buffer = deque(maxlen=self._appearance_buffer)
+                    buffer.append(objects_features[d_i])
+                    new_tracklet.set(TrackletCommonData.APPEARANCE_BUFFER, buffer)
 
         return new_tracklets
 
@@ -274,18 +282,23 @@ class MotionReIDBasedTracker(Tracker, ABC):
             f'Got: {len(tracklets)}, {len(object_features)}'
 
         for i, tracklet in enumerate(tracklets):
-            if object_features[i] is None:
+            current_emb = object_features[i]
+            if current_emb is None:
                 continue
 
             emb = tracklet.get(TrackletCommonData.APPEARANCE)
             if emb is None:
-                emb = object_features[i]
+                emb = current_emb
             else:
                 emb: np.ndarray
-                emb = self._appearance_ema_momentum * emb + (1 - self._appearance_ema_momentum) * object_features[i]
+                emb = self._appearance_ema_momentum * emb + (1 - self._appearance_ema_momentum) * current_emb
 
             emb /= np.linalg.norm(emb)
             tracklet.set(TrackletCommonData.APPEARANCE, emb)
+
+            if self._appearance_buffer > 0:
+                buffer = tracklet.get(TrackletCommonData.APPEARANCE_BUFFER)
+                buffer.append(current_emb)
 
     def _handle_lost_tracklets(self, lost_tracklets: List[Tracklet]) -> None:
         """

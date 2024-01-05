@@ -53,7 +53,8 @@ class ByteTracker(MotionReIDBasedTracker):
         new_tracklet_detection_threshold: Optional[float] = None,
         duplicate_iou_threshold: float = 0.85,
         use_observation_if_lost: bool = False,
-        appearance_ema_momentum: float = 0.95
+        appearance_ema_momentum: float = 0.95,
+        appearance_buffer: int = 0
     ):
         if filter_params is None:
             filter_params = {}
@@ -74,6 +75,7 @@ class ByteTracker(MotionReIDBasedTracker):
             use_observation_if_lost=use_observation_if_lost,
 
             appearance_ema_momentum=appearance_ema_momentum,
+            appearance_buffer=appearance_buffer,
             reid_detection_threshold=detection_threshold
         )
 

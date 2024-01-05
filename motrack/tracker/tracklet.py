@@ -18,6 +18,7 @@ class TrackletCommonData(enum.Enum):
     Tracklet common data type used.
     """
     APPEARANCE = 'appearance'
+    APPEARANCE_BUFFER = 'appearance-buffer'
 
 
 class TrackletState(enum.Enum):
