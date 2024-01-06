@@ -81,11 +81,6 @@ class SortTracker(MotionReIDBasedTracker):
         matcher_params = {} if matcher_params is None else matcher_params
         self._matcher = association_factory(name=matcher_algorithm, params=matcher_params)
 
-        # Parameters
-        self._remember_threshold = remember_threshold
-        self._initialization_threshold = initialization_threshold
-        self._use_observation_if_lost = use_observation_if_lost
-
     def _track(
         self,
         tracklets: List[Tracklet],

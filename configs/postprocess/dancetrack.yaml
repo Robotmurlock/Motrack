@@ -1,3 +1,4 @@
 init_threshold: 2
 linear_interpolation_threshold: 10
+linear_interpolation_min_tracklet_length: 30
 min_tracklet_length: 20
