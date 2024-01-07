@@ -124,6 +124,7 @@ class TrackerEvalConfig:
     split: str
     postprocess: bool = field(default=False)
     override: bool = field(default=False)
+    load_image: bool = field(default=True)
 
 
 @dataclass

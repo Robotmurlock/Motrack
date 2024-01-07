@@ -7,7 +7,7 @@ from typing import Tuple, ClassVar, Optional, List, Any, Union
 
 from motrack.library.cv.bbox import PredBBox
 
-_TRACKLET_DEFAULT_MAX_HISTORY = 8
+_TRACKLET_DEFAULT_MAX_HISTORY = 32
 
 TrackletHistoryType = List[Tuple[int, PredBBox]]
 
@@ -240,11 +240,11 @@ class Tracklet:
         """
         bbox.id = self._id  # Update bbox id
 
-        # Remove `obsolete` history
-        while len(self._history) > 1 and frame_index - self.first[0] > self._max_history:
-            self._history.pop(0)
-
         self._history.append((frame_index, bbox))
+
+        # Remove `obsolete` history
+        while len(self._history) > self._max_history:
+            self._history.pop(0)
 
         if state is not None:
             self._state = state
