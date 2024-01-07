@@ -34,7 +34,6 @@ class IoUBasedAssociation(AssociationAlgorithm):
         super().__init__(fast_linear_assignment=fast_linear_assignment)
 
         self._label_gating = {tuple(e) for e in label_gating} if label_gating is not None else None
-        self._fast_linear_assignment = fast_linear_assignment
 
     def _can_match_labels(self, tracklet_label: LabelType, det_label: LabelType) -> bool:
         """
