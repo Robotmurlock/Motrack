@@ -8,7 +8,7 @@ import numpy as np
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
-from motrack.tracker.tracklet import Tracklet
+from motrack.tracker.tracklet import Tracklet, TrackletState
 
 LabelType = Union[int, str]
 LabelGatingType = Union[LabelType, List[Tuple[LabelType, LabelType]]]
@@ -245,3 +245,52 @@ class HMIoUAssociation(IoUBasedAssociation):
         iou_score = tracklet_bbox.iou(det_bbox)
         height_iou_score = self.hiou(tracklet_bbox, det_bbox)
         return - iou_score * height_iou_score * height_iou_score if iou_score > self._match_threshold else np.inf
+
+
+@ASSOCIATION_CATALOG.register('decay-iou')
+class DecayIoU(IoUBasedAssociation):
+    """
+    IoU but with threshold decay.
+    """
+    def __init__(
+        self,
+        min_threshold: float = 0.30,
+        max_threshold: float = 0.50,
+        threshold_decay: float = 0.02,
+        fuse_score: bool = False,
+        label_gating: Optional[LabelGatingType] = None,
+        fast_linear_assignment: bool = False
+    ):
+        """
+        Args:
+            min_threshold: Min IoU threshold
+            max_threshold: Initial IoU threshold
+            threshold_decay: IoU threshold decay
+            fuse_score: Fuse score with iou
+            label_gating: Define which object labels can be matched
+                - If not defined, matching is label agnostic
+            fast_linear_assignment: Use greedy algorithm for linear assignment
+                - This might be more efficient in case of large cost matrix
+        """
+        super().__init__(
+            label_gating=label_gating,
+            fast_linear_assignment=fast_linear_assignment
+        )
+
+        self._min_threshold = min_threshold
+        self._max_threshold = max_threshold
+        self._threshold_decay = threshold_decay
+        self._fuse_score = fuse_score
+
+    def _calc_score(self, tracklet: Tracklet, tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
+        _ = tracklet
+
+        # Calculate IOU score
+        iou_score = tracklet_bbox.iou(det_bbox)
+        # Higher the IOU score the better is the match (using negative values because of min optim function)
+        # If score has very high value then
+        score = iou_score * det_bbox.conf if self._fuse_score else iou_score
+
+        match_threshold = max(self._min_threshold, self._max_threshold - self._threshold_decay * tracklet.lost_time)
+        return - score if score > match_threshold else np.inf
+

@@ -160,7 +160,7 @@ class ByteTracker(MotionReIDBasedTracker):
             unpack_n([(i, t, t_bbox) for i, (t, t_bbox) in enumerate(zip(tracklets, prior_tracklet_bboxes)) if t.state == TrackletState.NEW], n=3)
         new_matches, new_unmatched_tracklets_indices, new_unmatched_detections_indices = \
             self._new_match(tracklets_new_bboxes, remaining_high_detections,
-                            object_features=None, tracklets=tracklets_new)
+                            object_features=objects_features[remaining_high_detection_indices], tracklets=tracklets_new)
         new_matches = [(tracklets_new_indices[t_i], high_unmatched_detections_indices[d_i]) for t_i, d_i in new_matches]
         new_unmatched_tracklets_indices = [tracklets_new_indices[t_i] for t_i in new_unmatched_tracklets_indices]
         new_unmatched_detections_indices = [remaining_high_detection_indices[d_i] for d_i in new_unmatched_detections_indices]
