@@ -15,7 +15,11 @@ from motrack.tracker.matching.algorithms.conf import HybridConfidenceAssociation
 # noinspection PyUnresolvedReferences
 from motrack.tracker.matching.algorithms.dcm import DCMIoU, MoveDCM
 # noinspection PyUnresolvedReferences
-from motrack.tracker.matching.algorithms.iou import IoUAssociation, IoUAssociationAdaptiveGating, HMIoUAssociation
+from motrack.tracker.matching.algorithms.horizontal_cues import HorizontalViewCues
+# noinspection PyUnresolvedReferences
+from motrack.tracker.matching.algorithms.iou import IoUAssociation, IoUAssociationAdaptiveGating, HMIoUAssociation, DecayIoU
+# noinspection PyUnresolvedReferences
+from motrack.tracker.matching.algorithms.momentum import OCM, RobustOCM, ECM, RobustECM
 # noinspection PyUnresolvedReferences
 from motrack.tracker.matching.algorithms.move import Move
 # noinspection PyUnresolvedReferences

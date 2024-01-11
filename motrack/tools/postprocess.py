@@ -173,8 +173,8 @@ def run_tracker_postprocess(
         tracklets_to_keep = {k for k, v in tracklet_presence_counter.items() if v >= postprocess_cfg.min_tracklet_length}
         tracklet_frame_bboxes = dict(tracklet_frame_bboxes)
 
-        with TrackerInferenceReader(tracker_all_output, scene_name, image_height=imheight, image_width=imwidth) as tracker_all_inf_reader, \
-            TrackerInferenceWriter(tracker_postprocess_output, scene_name, image_height=imheight, image_width=imwidth) as tracker_inf_writer:
+        with (TrackerInferenceReader(tracker_all_output, scene_name, image_height=imheight, image_width=imwidth) as tracker_all_inf_reader, \
+            TrackerInferenceWriter(tracker_postprocess_output, scene_name, image_height=imheight, image_width=imwidth) as tracker_inf_writer):
 
             last_all_read = tracker_all_inf_reader.read()
 
@@ -190,22 +190,21 @@ def run_tracker_postprocess(
                         keep = False
                         if index in tracklet_indices:
                             keep = True
-
-                        # (2) Linear interpolation
-                        if index not in tracklet_indices and min(tracklet_indices) <= index <= max(tracklet_indices):
-                            prev_index = find_closest_prev_element(index, tracklet_indices)
-                            next_index = find_closest_next_element(index, tracklet_indices)
-                            if next_index - prev_index > postprocess_cfg.linear_interpolation_threshold:
-                                continue
-
-                            bbox = interpolate_bbox(
-                                start_index=prev_index,
-                                start_bbox=tracklet_frame_bboxes[tracklet_id][prev_index],
-                                end_index=next_index,
-                                end_bbox=tracklet_frame_bboxes[tracklet_id][next_index],
-                                index=index
-                            )
-                            keep = True
+                        else:
+                            # (2) Linear interpolation
+                            if min(tracklet_indices) <= index <= max(tracklet_indices) \
+                                and tracklet_presence_counter[tracklet_id] >= postprocess_cfg.linear_interpolation_min_tracklet_length:
+                                prev_index = find_closest_prev_element(index, tracklet_indices)
+                                next_index = find_closest_next_element(index, tracklet_indices)
+                                if next_index - prev_index <= postprocess_cfg.linear_interpolation_threshold:
+                                    bbox = interpolate_bbox(
+                                        start_index=prev_index,
+                                        start_bbox=tracklet_frame_bboxes[tracklet_id][prev_index],
+                                        end_index=next_index,
+                                        end_bbox=tracklet_frame_bboxes[tracklet_id][next_index],
+                                        index=index
+                                    )
+                                    keep = True
 
                         # (3) Add trajectory initialization
                         start_index = min(tracklet_indices)

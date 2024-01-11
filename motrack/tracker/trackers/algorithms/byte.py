@@ -53,7 +53,8 @@ class ByteTracker(MotionReIDBasedTracker):
         new_tracklet_detection_threshold: Optional[float] = None,
         duplicate_iou_threshold: float = 0.85,
         use_observation_if_lost: bool = False,
-        appearance_ema_momentum: float = 0.95
+        appearance_ema_momentum: float = 0.95,
+        appearance_buffer: int = 0
     ):
         if filter_params is None:
             filter_params = {}
@@ -74,6 +75,7 @@ class ByteTracker(MotionReIDBasedTracker):
             use_observation_if_lost=use_observation_if_lost,
 
             appearance_ema_momentum=appearance_ema_momentum,
+            appearance_buffer=appearance_buffer,
             reid_detection_threshold=detection_threshold
         )
 
@@ -107,14 +109,8 @@ class ByteTracker(MotionReIDBasedTracker):
         self._new_match = association_factory(new_matcher_algorithm, new_matcher_params)
 
         # Parameters
-        self._initialization_threshold = initialization_threshold
-        self._remember_threshold = remember_threshold
-        self._use_observation_if_lost = use_observation_if_lost
         self._detection_threshold = detection_threshold
         self._duplicate_iou_threshold = duplicate_iou_threshold
-
-        # State
-        self._next_id = 0
 
     def _track(
         self,
@@ -147,11 +143,15 @@ class ByteTracker(MotionReIDBasedTracker):
         remaining_active_tracklet_indices, remaining_active_tracklets, remaining_active_tracklet_bboxes = \
             unpack_n([(i, t, t_bbox) for i, t, t_bbox in zip(remaining_tracklet_indices, remaining_tracklets, remaining_tracklet_bboxes)
                   if t.state == TrackletState.ACTIVE], n=3)
+        remaining_lost_tracklet_indices = \
+            [i for i, t in enumerate(tracklets) if t.state == TrackletState.LOST and i in remaining_tracklet_indices]
+
         low_matches, low_unmatched_tracklet_indices, _ = \
             self._low_match(remaining_active_tracklet_bboxes, low_detections,
                             object_features=None, tracklets=remaining_active_tracklets)
         low_matches = [(remaining_active_tracklet_indices[t_i], low_det_indices[d_i]) for t_i, d_i in low_matches]
-        unmatched_tracklet_indices = [remaining_active_tracklet_indices[t_i] for t_i in low_unmatched_tracklet_indices]
+        unmatched_tracklet_indices = [remaining_active_tracklet_indices[t_i] for t_i in low_unmatched_tracklet_indices] + \
+                                     remaining_lost_tracklet_indices
 
         # (5) Match NEW tracklets with high detections using NewMatchAlgorithm
         remaining_high_detections = [detections[d_i] for d_i in high_unmatched_detections_indices]
@@ -160,7 +160,7 @@ class ByteTracker(MotionReIDBasedTracker):
             unpack_n([(i, t, t_bbox) for i, (t, t_bbox) in enumerate(zip(tracklets, prior_tracklet_bboxes)) if t.state == TrackletState.NEW], n=3)
         new_matches, new_unmatched_tracklets_indices, new_unmatched_detections_indices = \
             self._new_match(tracklets_new_bboxes, remaining_high_detections,
-                            object_features=None, tracklets=tracklets_new)
+                            object_features=objects_features[remaining_high_detection_indices], tracklets=tracklets_new)
         new_matches = [(tracklets_new_indices[t_i], high_unmatched_detections_indices[d_i]) for t_i, d_i in new_matches]
         new_unmatched_tracklets_indices = [tracklets_new_indices[t_i] for t_i in new_unmatched_tracklets_indices]
         new_unmatched_detections_indices = [remaining_high_detection_indices[d_i] for d_i in new_unmatched_detections_indices]

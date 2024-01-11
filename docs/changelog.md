@@ -1,6 +1,20 @@
 # Changelog
 
-## 0.3.0 - Unreleased
+## 0.3.1 - 2024-01-11
+
+### Features
+- Implementation of HVC (improved Move) association method
+- Implementation of LongTermReID association method
+- Tracking postprocess now includes minimum tracklet length
+- Generalized Motrack-motion package support (usage of any motrack-motion filter)
+  - This currently includes the RNNFilter and TransFilter methods
+- Implementation of OC_SORT's observation centric momentum association methods
+- Implementation od DTIoU (decaying threshold) IoU based association method
+
+### Fixes
+- ByteTrack lost tracklets are properly extrapolated with a filter
+
+## 0.3.0 - 2023-12-31
 
 ### Features
 - Extension of motion filters with Motrack-motion library (End-to-end RNNFilter)

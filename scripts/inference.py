@@ -24,7 +24,11 @@ logger = logging.getLogger('TrackerInference')
 @pipeline.task('inference')
 def run_inference(cfg: GlobalConfig) -> None:
     if os.path.exists(cfg.experiment_path):
-        user_input = input(f'Experiment on path "{cfg.experiment_path}" already exists. Are you sure you want to override it? [yes/no] ').lower()
+        if cfg.eval.override:
+            user_input = 'yes'  # `input` from config
+        else:
+            user_input = input(f'Experiment on path "{cfg.experiment_path}" already exists. '
+                               f'Are you sure you want to override it? [yes/no] ').lower()
         if user_input in ['yes', 'y']:
             shutil.rmtree(cfg.experiment_path)
         else:
@@ -64,7 +68,8 @@ def run_inference(cfg: GlobalConfig) -> None:
         tracker_active_output=tracker_active_output,
         tracker_all_output=tracker_all_output,
         clip=cfg.dataset.type != 'MOT17',
-        scene_pattern=cfg.dataset_filter.scene_pattern
+        scene_pattern=cfg.dataset_filter.scene_pattern,
+        load_image=cfg.eval.load_image
     )
 
     # Save tracker config

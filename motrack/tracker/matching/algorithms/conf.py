@@ -5,12 +5,14 @@ Reference: https://arxiv.org/pdf/2308.00783.pdf
 from typing import List, Optional
 
 import numpy as np
+from scipy.spatial.distance import cdist
+
 from motrack.library.cv import PredBBox
 from motrack.library.kalman_filter.conf_kf import ConfidenceKalmanFilter
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 from motrack.tracker.tracklet import Tracklet, TrackletState
-from scipy.spatial.distance import cdist
+from motrack.tracker.matching.algorithms.utils import filter_observations
 
 
 @ASSOCIATION_CATALOG.register('hybrid-conf')
@@ -18,7 +20,7 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
     """
     Hybrid-SORT inspired confidence based association algorithm.
     """
-    DATA_KEY = 'kf-conf-est'
+    DATA_KF_KEY = 'kf-conf-est'
 
     def __init__(
         self,
@@ -27,6 +29,8 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
         Q_conf_velocity: float = 1e-3,
         R_conf: float = 100.0,
         linear_prediction: bool = False,
+        lower_bound: float = 0.1,
+        upper_bound: float = 0.9,
         fast_linear_assignment: bool = False
     ):
         """
@@ -36,6 +40,8 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
             Q_conf_velocity: Initial process noise confidence "velocity"
             R_conf: Confidence noise uncertainty
             linear_prediction: Use linear prediction instead of KF
+            lower_bound: Lower confidence bound
+            upper_bound: Upper confidence bound
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
@@ -47,6 +53,11 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
             R_conf=R_conf
         )
         self._linear_prediction = linear_prediction
+        self._lower_bound = lower_bound
+        self._upper_bound = upper_bound
+
+    def _postprocess_conf(self, conf: float) -> float:
+        return max(self._lower_bound, min(self._upper_bound, conf))
 
     def _predict_conf(self, tracklet: Tracklet) -> float:
         """
@@ -61,26 +72,32 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
         """
         if self._linear_prediction:
             # Perform linear prediction
-            history_len = len(tracklet.history)
-            if history_len < 2:
-                return tracklet.bbox.conf
+            observation_history = filter_observations(tracklet.history)
 
-            last_bbox_frame_index, last_bbox = tracklet.history[-1]
+            history_len = len(observation_history)
+            if history_len < 2:
+                return self._postprocess_conf(tracklet.bbox.conf)
+
+            last_bbox_frame_index, last_bbox = observation_history[-1]
             last_bbox_conf = last_bbox.conf
-            prev_bbox_frame_index, prev_bbox = tracklet.history[-2]
+            prev_bbox_frame_index, prev_bbox = observation_history[-2]
             prev_bbox_conf = prev_bbox.conf
 
-            delta = (last_bbox_conf - prev_bbox_conf) / (last_bbox_frame_index - prev_bbox_frame_index)
-            conf = last_bbox_conf + delta * (1 + tracklet.lost_time)
-        else:
-            # Perform KF prediction
-            mean, std = tracklet.get(self.DATA_KEY)
-            mean, std = self._kf.predict(mean, std)
-            tracklet.set(self.DATA_KEY, (mean, std))
+            if last_bbox_frame_index - prev_bbox_frame_index > 1:
+                return self._postprocess_conf(tracklet.bbox.conf)
 
-            conf = float(self._kf.project(mean, std)[0])
+            delta = last_bbox_conf - prev_bbox_conf
+            conf = last_bbox_conf + delta
 
-        return max(0.0, min(1.0, conf))
+            return self._postprocess_conf(conf)
+
+        # Perform KF prediction
+        mean, std = tracklet.get(self.DATA_KF_KEY)
+        mean, std = self._kf.predict(mean, std)
+        tracklet.set(self.DATA_KF_KEY, (mean, std))
+
+        conf = float(self._kf.project(mean, std)[0])
+        return self._postprocess_conf(conf)
 
     def _update_conf(self, tracklets: List[Tracklet]) -> None:
         """
@@ -95,14 +112,14 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
 
             conf_measurement = np.array([tracklet.bbox.conf], dtype=np.float32)
 
-            state = tracklet.get(self.DATA_KEY)
+            state = tracklet.get(self.DATA_KF_KEY)
             if state is None:
                 mean, std = self._kf.initiate(conf_measurement)
             else:
                 mean, std = state
                 mean, std = self._kf.update(mean, std, conf_measurement)
 
-            tracklet.set(self.DATA_KEY, (mean, std))
+            tracklet.set(self.DATA_KF_KEY, (mean, std))
 
     def form_cost_matrix(
         self,

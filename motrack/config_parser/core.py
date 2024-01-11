@@ -115,6 +115,7 @@ class TrackerVisualizeConfig:
 class TrackerPostprocessConfig:
     init_threshold: int = 2  # Activate `init_threshold` starting bboxes
     linear_interpolation_threshold: int = 3  # Maximum distance to perform linear interpolation
+    linear_interpolation_min_tracklet_length: int = 30  # Minimum tracklet length to perform linear interpolation
     min_tracklet_length: int = 20  # Remove all tracklets that are shorter than this
 
 
@@ -122,6 +123,8 @@ class TrackerPostprocessConfig:
 class TrackerEvalConfig:
     split: str
     postprocess: bool = field(default=False)
+    override: bool = field(default=False)
+    load_image: bool = field(default=True)
 
 
 @dataclass

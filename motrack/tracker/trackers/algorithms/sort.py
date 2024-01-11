@@ -34,7 +34,8 @@ class SortTracker(MotionReIDBasedTracker):
         initialization_threshold: int = 3,
         new_tracklet_detection_threshold: Optional[float] = None,
         use_observation_if_lost: bool = False,
-        appearance_ema_momentum: float = 0.95
+        appearance_ema_momentum: float = 0.95,
+        appearance_buffer: int = 0
     ):
         """
         Args:
@@ -54,6 +55,7 @@ class SortTracker(MotionReIDBasedTracker):
             initialization_threshold: Number of frames until tracklet becomes active
             new_tracklet_detection_threshold: Threshold to accept new tracklet
             use_observation_if_lost: When re-finding tracklet, use observation instead of estimation
+            appearance_buffer: Appearance buffer length (set to a non-zero non-negative integer to activate)
         """
         if filter_params is None:
             filter_params = {}
@@ -72,16 +74,12 @@ class SortTracker(MotionReIDBasedTracker):
             initialization_threshold=initialization_threshold,
             use_observation_if_lost=use_observation_if_lost,
 
-            appearance_ema_momentum=appearance_ema_momentum
+            appearance_ema_momentum=appearance_ema_momentum,
+            appearance_buffer=appearance_buffer
         )
 
         matcher_params = {} if matcher_params is None else matcher_params
         self._matcher = association_factory(name=matcher_algorithm, params=matcher_params)
-
-        # Parameters
-        self._remember_threshold = remember_threshold
-        self._initialization_threshold = initialization_threshold
-        self._use_observation_if_lost = use_observation_if_lost
 
     def _track(
         self,

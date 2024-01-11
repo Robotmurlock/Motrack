@@ -8,7 +8,7 @@ import torch
 from motrack.filter.algorithms.base import StateModelFilter, State
 from motrack.filter.catalog import FILTER_CATALOG
 from motrack_motion.datasets import transforms
-from motrack_motion.filter import BufferedE2EFilter
+from motrack_motion.filter.factory import filter_factory
 from motrack_motion.models import model_factory
 from torch import nn
 
@@ -20,50 +20,36 @@ class MotrackMotionFilterEndToEnd(StateModelFilter):
     """
     def __init__(
         self,
+        name: str,
+        params: dict,
         model_type: str,
         model_params: dict,
         checkpoint_path: str,
         transform_type: str,
-        transform_params: dict,
-        accelerator: str,
-
-        buffer_size: int,
-        buffer_min_size: int = 1,
-        buffer_min_history: int = 5,
-
-        recursive_inverse: bool = False
+        transform_params: dict
     ):
         """
         Args:
+            name: Filter name
+            params: Filter params
             model_type: Model type (architecture name)
             model_params: Model parameters
             checkpoint_path: Checkpoint path (PLT checkpoint)
             transform_type: Transform type
             transform_params: Transform parameters
-            accelerator: Accelerator (cpu/gpu)
-            buffer_size: Maximum buffer size
-            buffer_min_size: Minimum buffer size in order to have a meaningful model input
-            buffer_min_history: Minimum number of items in buffer before deletinf old items
-            recursive_inverse: Performs recursive inverse for transform function (cumsum)
         """
         transform = transforms.transform_factory(transform_type, transform_params)
 
-        self._core = BufferedE2EFilter(
+        self._core = filter_factory(
+            name=name,
+            params=params,
             model=self._load_model_from_pl_checkpoint(model_type, model_params, checkpoint_path),
             transform=transform,
-            accelerator=accelerator,
-
-            buffer_size=buffer_size,
-            buffer_min_size=buffer_min_size,
-            buffer_min_history=buffer_min_history,
-            dtype=torch.float32,
-
-            recursive_inverse=recursive_inverse
         )
 
+    @staticmethod
     def _load_model_from_pl_checkpoint(
-        self,
-        model_type: str,
+            model_type: str,
         model_params: dict,
         checkpoint_path: str
     ) -> nn.Module:

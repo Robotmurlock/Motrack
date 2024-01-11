@@ -13,8 +13,8 @@ Default ReID model is the fast-reid SBS(S50).
 |-------------|--------------------------------------------------------|------|------|------|------------------|
 | FastTracker | no motion filter + IoU + Greedy                        | 46.0 | 88.7 | 44.4 | fast.yaml        |
 | Bot-SORT    | [arxiv: Bot-SORT](https://arxiv.org/abs/2206.14651)    | 51.3 | 90.4 | 52.2 | botsort.yaml     |
-| SORT        | [arxiv: SORT](https://arxiv.org/pdf/1602.00763.pdf)    | 51.4 | 89.6 | 51.2 | sort.yaml        |
-| ByteTrack   | [arxiv: ByteTrack](https://arxiv.org/abs/2110.06864)   | 52.3 | 90.5 | 53.3 | bytetrack.yaml   |
+| SORT        | [arxiv: SORT](https://arxiv.org/pdf/1602.00763.pdf)    | 51.5 | 89.6 | 51.2 | sort.yaml        |
+| ByteTrack   | [arxiv: ByteTrack](https://arxiv.org/abs/2110.06864)   | 52.9 | 90.8 | 54.4 | bytetrack.yaml   |
 | SparseTrack | [arxiv: SparseTrack](https://arxiv.org/abs/2306.05238) | 52.4 | 90.0 | 52.7 | sparsetrack.yaml |
 | SORT-ReID   | SORT + ReID (FastReID SBS-S50)                         | 56.3 | 89.9 | 56.9 | sort_reid.yaml   |
 
@@ -26,3 +26,4 @@ Custom architectures:
 | MoveSORT + CMC | SORT + Move association + CMC                           | 53.1 | 90.1 | 53.3 | movesort_gmc.yaml  |
 | MoveByte       | Byte + Move association                                 | 53.8 | 90.5 | 54.7 | movebyte.yaml      |
 | MoveByte + CKF | Byte + Move association + Confidence KF and association | 56.0 | 90.5 | 57.7 | movebyte_conf.yaml |
+| DeepMoveSORT   | Byte + ReID + HVC + Conf                                | 60.8 | 90.9 | 65.0 | coming_soon.yaml   |

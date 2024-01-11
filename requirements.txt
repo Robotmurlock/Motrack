@@ -9,4 +9,4 @@ scipy>=1.10.0
 tqdm
 ultralytics
 torch
-motrack-motion
+motrack-motion>=0.2.2
