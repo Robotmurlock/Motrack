@@ -26,3 +26,4 @@ Custom architectures:
 | MoveSORT + CMC | SORT + Move association + CMC                           | 53.1 | 90.1 | 53.3 | movesort_gmc.yaml  |
 | MoveByte       | Byte + Move association                                 | 53.8 | 90.5 | 54.7 | movebyte.yaml      |
 | MoveByte + CKF | Byte + Move association + Confidence KF and association | 56.0 | 90.5 | 57.7 | movebyte_conf.yaml |
+| DeepMoveSORT   | Byte + ReID + HVC + Conf                                | 60.8 | 90.9 | 65.0 | coming_soon.yaml   |
