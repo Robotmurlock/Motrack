@@ -137,6 +137,12 @@ or GPU:
 pip install onnxruntime-gpu
 ```
 
+In order to use `motrack-motion` filters, use:
+
+```bash
+pip install `motrack['motion']`
+```
+
 ## Changelog
 
 Package changelog can be found [here](https://github.com/Robotmurlock/Motrack/blob/main/docs/changelog.md)

@@ -65,6 +65,7 @@ setup(
     ],  # Optional
     extras_require={  # Optional
         'yolov8': ['ultralytics'],
-        'reid': ['onnxruntime']
+        'reid': ['onnxruntime'],
+        'motion': ['motrack-motion']
     }
 )
