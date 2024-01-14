@@ -102,7 +102,8 @@ class LongTermReIdAssociation(ReIDAssociation):
 
     @staticmethod
     def _get_features(tracklets: List[Tracklet]) -> np.ndarray:
-        return np.stack([np.stack(list(t.get(TrackletCommonData.APPEARANCE_BUFFER))).mean(axis=0) for t in tracklets])
+        features = np.stack([np.stack(list(t.get(TrackletCommonData.APPEARANCE_BUFFER))).mean(axis=0) for t in tracklets])
+        return features / np.linalg.norm(features)
 
 
 @ASSOCIATION_CATALOG.register('reid-iou')

@@ -43,13 +43,13 @@ class MotrackMotionFilterEndToEnd(StateModelFilter):
         self._core = filter_factory(
             name=name,
             params=params,
-            model=self._load_model_from_pl_checkpoint(model_type, model_params, checkpoint_path),
+            model=self._load_model_from_checkpoint(model_type, model_params, checkpoint_path),
             transform=transform,
         )
 
     @staticmethod
-    def _load_model_from_pl_checkpoint(
-            model_type: str,
+    def _load_model_from_checkpoint(
+        model_type: str,
         model_params: dict,
         checkpoint_path: str
     ) -> nn.Module:
@@ -94,3 +94,7 @@ class MotrackMotionFilterEndToEnd(StateModelFilter):
 
     def singlestep_to_multistep_state(self, state: State) -> State:
         return self.singlestep_to_multistep_state(state)
+
+    def affine_transform(self, state: State, warp: np.ndarray) -> State:
+        warp = torch.from_numpy(warp)
+        self._core.affine_transform(state, warp)
