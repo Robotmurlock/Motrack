@@ -334,7 +334,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         if self._cmc is None:
             return bboxes
 
-        warp = self._cmc.apply(frame, frame_index, scene=self._scene)
+        warp = self._cmc.apply(frame, frame_index - 1, scene=self._scene)
         self._filter_states = {t_id: self._filter.affine_transform(state, warp) for t_id, state in self._filter_states.items()}
 
         corrected_bboxes: List[PredBBox] = []

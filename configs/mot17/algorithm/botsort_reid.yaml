@@ -1,0 +1,46 @@
+name: byte
+params:
+  filter_name: bot-sort
+  filter_params:
+    override_std_weight_position: 0.05
+  initialization_threshold: 2
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+
+  detection_threshold: 0.6
+  duplicate_iou_threshold: 0.85
+
+  high_matcher_algorithm: compose
+  high_matcher_params:
+    matchers:
+      - name: iou
+        params:
+          match_threshold: 0.20
+          fuse_score: true
+      - name: reid
+        params: {}
+    weights:
+      - 1.0
+      - 1.0
+  low_matcher_algorithm: iou
+  low_matcher_params:
+    match_threshold: 0.50
+    fuse_score: true
+  new_matcher_algorithm: iou
+  new_matcher_params:
+    match_threshold: 0.30
+    fuse_score: true
+
+  # CMC extension
+  cmc_name: gmc-from-file
+  cmc_params:
+    dirpath: /media/home/models/cmc/mot17_gmc
+
+  # ReID extension
+  reid_name: fastreid-onnx
+  reid_params:
+    model_path: /media/home/models/reid/mot17.onnx
+    height: 384
+    width: 128
+    cache_path: /workspace/motrack/reid/mot17_sbs50  # Cache inference for faster future runs (should be deleted if the detector changed)
+    batch_inference: false

@@ -7,7 +7,7 @@ import os
 import hydra
 from omegaconf import DictConfig
 
-from motrack.common.project import CONFIGS_PATH
+from motrack.common.project import DANCETRACK_CONFIG_PATH
 from motrack.config_parser import GlobalConfig
 from motrack.datasets import dataset_factory
 from motrack.tools.postprocess import run_tracker_postprocess
@@ -38,11 +38,12 @@ def run_postprocess(cfg: GlobalConfig) -> None:
         tracker_all_output=tracker_all_output,
         tracker_postprocess_output=tracker_postprocess_output,
         postprocess_cfg=cfg.postprocess,
-        scene_pattern=cfg.dataset_filter.scene_pattern
+        scene_pattern=cfg.dataset_filter.scene_pattern,
+        clip=cfg.eval.clip
     )
 
 
-@hydra.main(config_path=CONFIGS_PATH, config_name='movesort', version_base='1.1')
+@hydra.main(config_path=DANCETRACK_CONFIG_PATH, config_name='movesort', version_base='1.1')
 def main(cfg: DictConfig):
     # noinspection PyTypeChecker
     run_postprocess(cfg)

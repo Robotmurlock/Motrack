@@ -7,7 +7,7 @@ import os
 import hydra
 from omegaconf import DictConfig
 
-from motrack.common.project import CONFIGS_PATH
+from motrack.common.project import DANCETRACK_CONFIG_PATH
 from motrack.config_parser import GlobalConfig
 from motrack.datasets import dataset_factory
 from motrack.utils import pipeline
@@ -38,7 +38,7 @@ def visualize_inference(cfg: GlobalConfig) -> None:
         scene_pattern=cfg.dataset_filter.scene_pattern
     )
 
-@hydra.main(config_path=CONFIGS_PATH, config_name='movesort', version_base='1.1')
+@hydra.main(config_path=DANCETRACK_CONFIG_PATH, config_name='movesort', version_base='1.1')
 def main(cfg: DictConfig):
     # noinspection PyTypeChecker
     visualize_inference(cfg)

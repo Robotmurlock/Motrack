@@ -1,0 +1,12 @@
+defaults:
+  - global_config
+  - dataset: mot17.yaml
+  - eval: val.yaml
+  - object_detection: yolox_ablation_mot17.yaml
+  - algorithm: sort.yaml
+  - postprocess: mot17.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'mot17-sort'

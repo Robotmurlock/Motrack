@@ -12,3 +12,5 @@ PLAYGROUND_PATH = os.path.join(ROOT_PATH, 'playground')
 
 ASSETS_PATH = '/media/home/motrack-outputs/'
 MASTER_PATH = '/media/home/'
+
+DANCETRACK_CONFIG_PATH = os.path.join(CONFIGS_PATH, 'dancetrack')
