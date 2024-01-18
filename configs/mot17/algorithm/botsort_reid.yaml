@@ -20,8 +20,8 @@ params:
       - name: reid
         params: {}
     weights:
-      - 1.0
-      - 1.0
+      - 0.2
+      - 0.8
   low_matcher_algorithm: iou
   low_matcher_params:
     match_threshold: 0.50

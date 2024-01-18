@@ -6,7 +6,7 @@ import numpy as np
 
 def affine_transform(warp: np.ndarray, bbox_coords: np.ndarray) -> np.ndarray:
     """
-    Applied affine transform to bbox coordinates in format (xyxy or xywh).
+    Applied affine transform to bbox coordinates in format XYXY!
 
     Args:
         warp: Warp matrix

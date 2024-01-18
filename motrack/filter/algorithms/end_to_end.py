@@ -97,4 +97,4 @@ class MotrackMotionFilterEndToEnd(StateModelFilter):
 
     def affine_transform(self, state: State, warp: np.ndarray) -> State:
         warp = torch.from_numpy(warp)
-        self._core.affine_transform(state, warp)
+        return self._core.affine_transform(state, warp)

@@ -35,7 +35,7 @@ Default ReID model is the fast-reid SBS(S50). Default detection model is the YOL
 
 | Method Name   | Description                                          | HOTA | MOTA | IDF1 | config            |
 |---------------|------------------------------------------------------|------|------|------|-------------------|
-| SORT          | [arxiv: SORT](https://arxiv.org/pdf/1602.00763.pdf)  | 67.7 | 78.5 | 79.0 | sort.yaml         |
-| ByteTrack     | [arxiv: ByteTrack](https://arxiv.org/abs/2110.06864) | 68.0 | 78.6 | 79.9 | bytetrack.yaml    |
-| Bot-SORT      | [arxiv: Bot-SORT](https://arxiv.org/abs/2206.14651)  | 69.2 | 79.5 | 82.0 | botsort.yaml      |
-| Bot-SORT-ReID | Bot-SORT + ReID (FastReID SBS-S50)                   | ?    | ?    | ?    | botsort_reid.yaml |
+| SORT          | [arxiv: SORT](https://arxiv.org/pdf/1602.00763.pdf)  | 68.0 | 78.7 | 79.4 | sort.yaml         |
+| ByteTrack     | [arxiv: ByteTrack](https://arxiv.org/abs/2110.06864) | 68.2 | 78.6 | 80.1 | bytetrack.yaml    |
+| Bot-SORT      | [arxiv: Bot-SORT](https://arxiv.org/abs/2206.14651)  | 69.4 | 79.6 | 82.2 | botsort.yaml      |
+| Bot-SORT-ReID | Bot-SORT + ReID (FastReID SBS-S50)                   | 70.0 | 79.7 | 82.7 | botsort_reid.yaml |
