@@ -1,0 +1,10 @@
+type: 'yolox'
+params:
+  accelerator: cuda:0
+  conf: 0.1
+  min_bbox_area: 0
+  # Model source: https://github.com/ifzhang/ByteTrack, ByteTrack_ablation
+  model_path: /media/home/models/detection/mot20.pth.tar
+lookup_path: /media/home/models/detection/mot20.lookup.json
+oracle: false
+cache_path: '/workspace/motrack/mot20_yolox_low_conf'  # Inference on the second run is 10-20 times faster
