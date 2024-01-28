@@ -34,6 +34,7 @@ class SortTracker(MotionReIDBasedTracker):
         initialization_threshold: int = 3,
         new_tracklet_detection_threshold: Optional[float] = None,
         use_observation_if_lost: bool = False,
+        duplicate_iou_threshold: float = 1.00,
         appearance_ema_momentum: float = 0.95,
         appearance_buffer: int = 0
     ):
@@ -73,6 +74,7 @@ class SortTracker(MotionReIDBasedTracker):
             remember_threshold=remember_threshold,
             initialization_threshold=initialization_threshold,
             use_observation_if_lost=use_observation_if_lost,
+            duplicate_iou_threshold=duplicate_iou_threshold,
 
             appearance_ema_momentum=appearance_ema_momentum,
             appearance_buffer=appearance_buffer
@@ -113,4 +115,5 @@ class SortTracker(MotionReIDBasedTracker):
             lost_tracklets=[tracklets[t_i] for t_i in unmatched_tracklets]
         )
 
-        return tracklets + new_tracklets
+        tracklets.extend(new_tracklets)
+        return self._postprocess_tracklets(tracklets)

@@ -10,7 +10,6 @@ from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching import association_factory
 from motrack.tracker.trackers.algorithms.motion_reid import MotionReIDBasedTracker
 from motrack.tracker.trackers.catalog import TRACKER_CATALOG
-from motrack.tracker.trackers.utils import remove_duplicates
 from motrack.tracker.tracklet import Tracklet, TrackletState
 from motrack.utils.collections import unpack_n
 
@@ -74,6 +73,7 @@ class ByteTracker(MotionReIDBasedTracker):
             remember_threshold=remember_threshold,
             initialization_threshold=initialization_threshold,
             use_observation_if_lost=use_observation_if_lost,
+            duplicate_iou_threshold=duplicate_iou_threshold,
 
             appearance_ema_momentum=appearance_ema_momentum,
             appearance_buffer=appearance_buffer,
@@ -111,7 +111,6 @@ class ByteTracker(MotionReIDBasedTracker):
 
         # Parameters
         self._detection_threshold = detection_threshold
-        self._duplicate_iou_threshold = duplicate_iou_threshold
         self._use_reid_for_low_matching = use_reid_for_low_matching
 
     def _track(
@@ -202,9 +201,5 @@ class ByteTracker(MotionReIDBasedTracker):
         )
 
         # (9) Delete duplicate between ACTIVE and LOST tracklets
-        deleted_tracklets = [t for t in tracklets if t.state == TrackletState.DELETED]
-        active_tracklets = [t for t in tracklets if t.state == TrackletState.ACTIVE]
-        lost_tracklets = [t for t in tracklets if t.state == TrackletState.LOST]
-        new_tracklets.extend([t for t in tracklets if t.state == TrackletState.NEW])  # Add new tracklets from previous iteration
-        active_tracklets, lost_tracklets = remove_duplicates(self._duplicate_iou_threshold, active_tracklets, lost_tracklets)
-        return active_tracklets + lost_tracklets + new_tracklets + deleted_tracklets
+        tracklets.extend(new_tracklets)
+        return self._postprocess_tracklets(tracklets)
