@@ -132,7 +132,8 @@ def run_tracker_postprocess(
     tracker_all_output: str,
     tracker_postprocess_output: str,
     postprocess_cfg: Optional[TrackerPostprocessConfig] = None,
-    scene_pattern: str = '(.*?)'
+    scene_pattern: str = '(.*?)',
+    clip: bool = True
 ) -> None:
     """
     Performs postprocess on tracker inference output files.
@@ -144,6 +145,7 @@ def run_tracker_postprocess(
         tracker_postprocess_output: Path where the postprocessed files will be stored
         postprocess_cfg: Custom postprocess config (if not set then default is used)
         scene_pattern: Scene pattern filter (regex)
+        clip: Clip bounding boxes to image
     """
     if postprocess_cfg is None:
         postprocess_cfg = TrackerPostprocessConfig()
@@ -173,8 +175,10 @@ def run_tracker_postprocess(
         tracklets_to_keep = {k for k, v in tracklet_presence_counter.items() if v >= postprocess_cfg.min_tracklet_length}
         tracklet_frame_bboxes = dict(tracklet_frame_bboxes)
 
-        with (TrackerInferenceReader(tracker_all_output, scene_name, image_height=imheight, image_width=imwidth) as tracker_all_inf_reader, \
-            TrackerInferenceWriter(tracker_postprocess_output, scene_name, image_height=imheight, image_width=imwidth) as tracker_inf_writer):
+        with TrackerInferenceReader(tracker_all_output, scene_name,
+                                    image_height=imheight, image_width=imwidth) as tracker_all_inf_reader, \
+            TrackerInferenceWriter(tracker_postprocess_output, scene_name,
+                                   image_height=imheight, image_width=imwidth, clip=clip) as tracker_inf_writer:
 
             last_all_read = tracker_all_inf_reader.read()
 

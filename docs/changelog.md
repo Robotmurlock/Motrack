@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 - 2024-01-31
+
+### Features
+- Added support for SportsMOT dataset (evaluation still not added)
+- ByteTrack now supports ReID on low confidence detections
+- Motrack-motion filter models now support CMC
+
 ## 0.3.1 - 2024-01-11
 
 ### Features

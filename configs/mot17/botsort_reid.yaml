@@ -1,0 +1,12 @@
+defaults:
+  - global_config
+  - dataset: mot17.yaml
+  - eval: val.yaml
+  - object_detection: yolox_ablation_low_conf_mot17.yaml
+  - algorithm: botsort_reid.yaml
+  - postprocess: default.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'mot17-botsort-reid'

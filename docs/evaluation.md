@@ -6,8 +6,8 @@ Also, version with the updated numpy package can be found here: [Robotmurlock/Tr
 
 ## DanceTrack validation dataset
 
-All configs can be found in `configs` repository directory. 
-Default ReID model is the fast-reid SBS(S50).
+All configs can be found in `configs/dancetrack` repository directory. 
+Default ReID model is the fast-reid SBS(S50). Default detection model is the YOLOX model.
 
 | Method Name | Description                                            | HOTA | MOTA | IDF1 | config           |
 |-------------|--------------------------------------------------------|------|------|------|------------------|
@@ -20,10 +20,22 @@ Default ReID model is the fast-reid SBS(S50).
 
 Custom architectures:
 
-| Method Name    | Description                                             | HOTA | MOTA | IDF1 | config             |
-|----------------|---------------------------------------------------------|------|------|------|--------------------|
-| MoveSORT       | SORT + Move association                                 | 52.7 | 89.9 | 53.0 | movesort.yaml      |
-| MoveSORT + CMC | SORT + Move association + CMC                           | 53.1 | 90.1 | 53.3 | movesort_gmc.yaml  |
-| MoveByte       | Byte + Move association                                 | 53.8 | 90.5 | 54.7 | movebyte.yaml      |
-| MoveByte + CKF | Byte + Move association + Confidence KF and association | 56.0 | 90.5 | 57.7 | movebyte_conf.yaml |
-| DeepMoveSORT   | Byte + ReID + HVC + Conf                                | 60.8 | 90.9 | 65.0 | coming_soon.yaml   |
+| Method Name    | Description                            | HOTA | MOTA | IDF1 | config             |
+|----------------|----------------------------------------|------|------|------|--------------------|
+| MoveSORT       | SORT + Move                            | 52.7 | 89.9 | 53.0 | movesort.yaml      |
+| MoveSORT + CMC | SORT + Move + CMC                      | 53.1 | 90.1 | 53.3 | movesort_gmc.yaml  |
+| MoveByte       | Byte + Move                            | 53.8 | 90.5 | 54.7 | movebyte.yaml      |
+| MoveByte + CKF | Byte + Move + Conf                     | 56.0 | 90.5 | 57.7 | movebyte_conf.yaml |
+| DeepMoveSORT   | Byte + ReID + HVC + Conf + TransFilter | 60.8 | 90.9 | 65.0 | coming_soon.yaml   |
+
+## MOT17 validation dataset
+
+All configs can be found in `configs/mot17` repository directory. 
+Default ReID model is the fast-reid SBS(S50). Default detection model is the YOLOX model.
+
+| Method Name   | Description                                          | HOTA | MOTA | IDF1 | config            |
+|---------------|------------------------------------------------------|------|------|------|-------------------|
+| SORT          | [arxiv: SORT](https://arxiv.org/pdf/1602.00763.pdf)  | 68.0 | 78.7 | 79.4 | sort.yaml         |
+| ByteTrack     | [arxiv: ByteTrack](https://arxiv.org/abs/2110.06864) | 68.2 | 78.6 | 80.1 | bytetrack.yaml    |
+| Bot-SORT      | [arxiv: Bot-SORT](https://arxiv.org/abs/2206.14651)  | 69.4 | 79.6 | 82.2 | botsort.yaml      |
+| Bot-SORT-ReID | Bot-SORT + ReID (FastReID SBS-S50)                   | 70.0 | 79.7 | 82.7 | botsort_reid.yaml |

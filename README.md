@@ -85,7 +85,7 @@ Model has to be exported in ONNX. Please check [deploy documentation](https://gi
 
 ### Supported datasets
 
-Currently supported datasets are: MOT17, MOT20, DanceTrack.
+Currently supported datasets are: MOT17, MOT20, DanceTrack and SportsMOT.
 
 Any custom dataset can be added by extending the base dataset.
 

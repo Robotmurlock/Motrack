@@ -1,0 +1,29 @@
+name: byte
+params:
+  filter_name: bot-sort
+  filter_params:
+    override_std_weight_position: 0.05
+  initialization_threshold: 2
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+
+  detection_threshold: 0.6
+  duplicate_iou_threshold: 0.85
+
+  high_matcher_algorithm: iou
+  high_matcher_params:
+    match_threshold: 0.20
+    fuse_score: true
+  low_matcher_algorithm: iou
+  low_matcher_params:
+    match_threshold: 0.50
+    fuse_score: true
+  new_matcher_algorithm: iou
+  new_matcher_params:
+    match_threshold: 0.30
+    fuse_score: true
+
+  # CMC extension
+  cmc_name: gmc-from-file
+  cmc_params:
+    dirpath: /media/home/models/cmc/mot17_gmc

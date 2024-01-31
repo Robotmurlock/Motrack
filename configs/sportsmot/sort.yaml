@@ -1,0 +1,12 @@
+defaults:
+  - global_config
+  - dataset: sportsmot.yaml
+  - eval: val.yaml
+  - object_detection: yolox_sportsmot.yaml
+  - algorithm: sort.yaml
+  - postprocess: sportsmot.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'sportsmot-sort'

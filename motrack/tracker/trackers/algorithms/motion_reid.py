@@ -10,6 +10,7 @@ import copy
 from motrack.filter import filter_factory
 from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.trackers.algorithms.base import Tracker
+from motrack.tracker.trackers.utils import remove_duplicates
 from motrack.tracker.tracklet import Tracklet, TrackletState, TrackletCommonData
 from motrack.cmc import cmc_factory
 from motrack.reid import reid_inference_factory
@@ -36,6 +37,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         remember_threshold: int = 1,
         new_tracklet_detection_threshold: Optional[float] = None,
         use_observation_if_lost: bool = False,
+        duplicate_iou_threshold: float = 1.00,
         appearance_ema_momentum: float = 0.95,
         appearance_buffer: int = 0
     ):
@@ -58,6 +60,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
             initialization_threshold: Number of frames until tracklet becomes active
             new_tracklet_detection_threshold: Threshold to accept new tracklet
             use_observation_if_lost: When re-finding tracklet, use observation instead of estimation
+            duplicate_iou_threshold: Remove lost/active tracklets that overlap
             appearance_ema_momentum: Appearance EMA (Exponential Moving Average) momentum
             appearance_buffer: Appearance buffer length (set to a non-zero non-negative integer to activate)
         """
@@ -81,6 +84,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         self._initialization_threshold = initialization_threshold
         self._remember_threshold = remember_threshold
         self._use_observation_if_lost = use_observation_if_lost
+        self._duplicate_iou_threshold = duplicate_iou_threshold
 
         # ReID hyperparameters
         self._appearance_ema_momentum = appearance_ema_momentum
@@ -334,7 +338,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         if self._cmc is None:
             return bboxes
 
-        warp = self._cmc.apply(frame, frame_index, scene=self._scene)
+        warp = self._cmc.apply(frame, frame_index - 1, scene=self._scene)
         self._filter_states = {t_id: self._filter.affine_transform(state, warp) for t_id, state in self._filter_states.items()}
 
         corrected_bboxes: List[PredBBox] = []
@@ -409,6 +413,24 @@ class MotionReIDBasedTracker(Tracker, ABC):
         prior_tracklet_bboxes = self._perform_cmc(frame, frame_index, prior_tracklet_bboxes)
 
         return tracklets, prior_tracklet_bboxes
+
+    def _postprocess_tracklets(self, tracklets: List[Tracklet]) -> List[Tracklet]:
+        """
+        Performs tracklets postprocessing. Includes:
+            - Removal of duplicates between active and lost trackelts (older tracklets are always kept).
+
+        Args:
+            tracklets: All tracklets
+
+        Returns:
+            Postprocessed tracklets.
+        """
+        deleted_tracklets = [t for t in tracklets if t.state == TrackletState.DELETED]
+        active_tracklets = [t for t in tracklets if t.state == TrackletState.ACTIVE]
+        lost_tracklets = [t for t in tracklets if t.state == TrackletState.LOST]
+        new_tracklets = [t for t in tracklets if t.state == TrackletState.NEW]
+        active_tracklets, lost_tracklets = remove_duplicates(self._duplicate_iou_threshold, active_tracklets, lost_tracklets)
+        return active_tracklets + lost_tracklets + new_tracklets + deleted_tracklets
 
     @abstractmethod
     def _track(
