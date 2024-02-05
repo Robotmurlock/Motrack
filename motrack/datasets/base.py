@@ -9,6 +9,8 @@ from typing import List, Optional, Union, Tuple
 import cv2
 import numpy as np
 
+from motrack.library.cv.bbox import BBox
+
 
 @dataclass
 class BasicSceneInfo:
@@ -39,6 +41,13 @@ class ObjectFrameData:
     category: Union[str, int]
     occ: bool
     oov: bool
+
+    def create_bbox_object(self) -> BBox:
+        """
+        Returns:
+            Create BBox object from parsed data
+        """
+        return BBox.from_xywh(*self.bbox)
 
 
 class BaseDataset(ABC):

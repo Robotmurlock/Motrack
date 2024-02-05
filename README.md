@@ -82,6 +82,7 @@ Evaluation of these methods on different datasets can be found in [evaluation.md
 
 Any [FastReID](https://github.com/JDAI-CV/fast-reid) model for appearance matching can be used.
 Model has to be exported in ONNX. Please check [deploy documentation](https://github.com/JDAI-CV/fast-reid/tree/master/tools/deploy) for mode info.
+Use `motrack/datasets/tools/script_create_fastreid_patches.py` to create fast-reid dataset in order to train an appearance model.
 
 ### Supported datasets
 

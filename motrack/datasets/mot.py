@@ -1,5 +1,5 @@
 """
-MOT Challenge Dataset support. Supports: MOT17, MOT20, DanceTrack.
+MOT Challenge Dataset support. Supports: MOT17, MOT20, DanceTrack and SportsMOT.
 """
 import configparser
 import copy
@@ -20,6 +20,7 @@ from motrack.utils import file_system
 
 CATEGORY = 'pedestrian'
 N_IMG_DIGITS = 6
+ID_SEPARATOR = '+'
 
 
 @dataclass
@@ -85,7 +86,7 @@ class MOTDataset(BaseDataset):
 
     def parse_object_id(self, object_id: str) -> Tuple[str, str]:
         assert object_id in self._data_labels, f'Unknown object id "{object_id}".'
-        scene_name, scene_object_id = object_id.split('_')
+        scene_name, scene_object_id = object_id.split(ID_SEPARATOR)
         return scene_name, scene_object_id
 
     def get_object_category(self, object_id: str) -> str:
@@ -272,7 +273,7 @@ class MOTDataset(BaseDataset):
             df = df.iloc[:, :6]
             df.columns = ['frame_id', 'object_id', 'xmin', 'ymin', 'w', 'h']  # format: yxwh
             df['object_global_id'] = \
-                scene_name + '_' + df['object_id'].astype(str)  # object id is not unique over all scenes
+                scene_name + ID_SEPARATOR + df['object_id'].astype(str)  # object id is not unique over all scenes
             df = df.drop(columns='object_id', axis=1)
             df = df.sort_values(by=['object_global_id', 'frame_id'])
             n_labels += df.shape[0]

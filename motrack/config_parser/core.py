@@ -52,6 +52,7 @@ class DatasetConfig:
         Fullpath is resolved from global config (path is required)
         """
         self.fullpath = None
+        self.basepath = None
 
 
 @dataclass
@@ -156,7 +157,8 @@ class GlobalConfig:
         """
         Postprocess.
         """
-        self.dataset.fullpath = os.path.join(self.path.assets, self.dataset.path, self.eval.split)
+        self.dataset.basepath = os.path.join(self.path.assets, self.dataset.path)
+        self.dataset.fullpath = os.path.join(self.dataset.basepath, self.eval.split)
 
 
 # Configuring hydra config store
