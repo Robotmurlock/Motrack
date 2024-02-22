@@ -14,7 +14,7 @@ from motrack.object_detection import DetectionManager
 from motrack.tools import run_visualize_detections
 from motrack.utils import pipeline
 
-logger = logging.getLogger('VisualizeDetections')
+logger = logging.getLogger('Script-VisualizeDetections')
 
 
 @pipeline.task('visualize-detections')

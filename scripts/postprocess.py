@@ -13,7 +13,7 @@ from motrack.datasets import dataset_factory
 from motrack.tools.postprocess import run_tracker_postprocess
 from motrack.utils import pipeline
 
-logger = logging.getLogger('TrackerVizualization')
+logger = logging.getLogger('Script-TrackerVizualization')
 
 
 @pipeline.task('postprocess')

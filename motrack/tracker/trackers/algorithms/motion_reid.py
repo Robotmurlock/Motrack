@@ -255,8 +255,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
         for tracklet, det_bbox in zip(matched_tracklets, matched_detections):
             tracklet_bbox, _, _ = self._update(tracklet, det_bbox)
-            new_bbox = det_bbox if self._use_observation_if_lost and tracklet.state != TrackletState.ACTIVE \
-                else tracklet_bbox
+            new_bbox = det_bbox # tracklet_bbox if tracklet.state == TrackletState.ACTIVE else det_bbox
 
             new_state = TrackletState.ACTIVE
             if tracklet.state == TrackletState.NEW and tracklet.total_matches + 1 < self._initialization_threshold:

@@ -79,6 +79,7 @@ class Tracklet:
         self._history: TrackletHistoryType = [(frame_index, bbox)]
         self._total_matches = 1
         self._total_lost = 0
+        self._total_active = 1
         self._state = state
         self._data = None
 
@@ -146,9 +147,21 @@ class Tracklet:
         Example: (match, missing, match, missing, missing) -> returns 2
 
         Returns:
-            Number of unmatched frames
+            Number of latest consecutive unmatched frames
         """
         return self._total_lost
+
+    @property
+    def active_time(self) -> int:
+        """
+        Gets number of frames that tracklet has ACTIVE state
+
+        Example: (match, missing, match, match, match) -> returns 3
+
+        Returns:
+            Number of latest consecutive matched frames
+        """
+        return self._total_active
 
     @property
     def id(self) -> int:
@@ -253,8 +266,10 @@ class Tracklet:
         if self._state in [TrackletState.NEW, TrackletState.ACTIVE]:
             self._total_matches += 1
             self._total_lost = 0
+            self._total_active += 1
         elif self._state == TrackletState.LOST:
             self._total_lost += 1
+            self._total_active = 0
 
         return self
 
