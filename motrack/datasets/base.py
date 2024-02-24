@@ -35,6 +35,7 @@ class BasicSceneInfo:
 @dataclass
 class ObjectFrameData:
     frame_id: int
+    track_id: int
     bbox: Union[List[float], np.ndarray]
     image_path: str
     scene: Union[str, int]

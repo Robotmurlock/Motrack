@@ -128,7 +128,7 @@ class MOTDataset(BaseDataset):
         object_id: str,
         frame_index: int,
         relative_bbox_coords: bool = True
-    ) -> Optional[dict]:
+    ) -> Optional[ObjectFrameData]:
         return self.get_object_data(object_id, frame_index, relative_bbox_coords=relative_bbox_coords)
 
     def get_scene_info(self, scene_name: str) -> BasicSceneInfo:
@@ -280,12 +280,16 @@ class MOTDataset(BaseDataset):
 
             object_groups = df.groupby('object_global_id')
             for object_global_id, df_grp in tqdm(object_groups, desc=f'Parsing {scene_name}', unit='pedestrian'):
+                assert object_global_id.count(ID_SEPARATOR) == 1, f'Object id "{object_global_id}" contains separator in scene name or object id.'
+
+                track_id = int(object_global_id.split(ID_SEPARATOR)[-1])
                 df_grp = df_grp.drop(columns='object_global_id', axis=1).set_index('frame_id')
 
                 data[object_global_id] = [None for _ in range(seqlength)]
                 for frame_id, row in df_grp.iterrows():
                     data[object_global_id][int(frame_id) - 1] = ObjectFrameData(
                         frame_id=frame_id,
+                        track_id=track_id,
                         bbox=row.values.tolist(),
                         image_path=self._get_image_path(scene_info, frame_id),
                         occ=False,
