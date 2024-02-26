@@ -18,7 +18,7 @@ from motrack.tracker import tracker_factory
 from motrack.utils import pipeline
 from motrack.tools import run_tracker_inference, run_tracker_postprocess
 
-logger = logging.getLogger('TrackerInference')
+logger = logging.getLogger('Script-TrackerInference')
 
 
 @pipeline.task('inference')

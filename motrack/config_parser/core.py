@@ -52,6 +52,7 @@ class DatasetConfig:
         Fullpath is resolved from global config (path is required)
         """
         self.fullpath = None
+        self.basepath = None
 
 
 @dataclass
@@ -102,6 +103,7 @@ class TrackerVisualizeConfig:
     fps: int = 20
     new_object_length: int = 5
     option: str = 'all'
+    is_rgb: bool = field(default=True)
 
     def __post_init__(self) -> None:
         """
@@ -134,6 +136,11 @@ class DatasetFilterConfig:
 
 
 @dataclass
+class UtilityConfig:
+    use_validation_for_training: bool = field(default=False)
+
+
+@dataclass
 class GlobalConfig:
     experiment: str
     dataset: DatasetConfig
@@ -144,6 +151,7 @@ class GlobalConfig:
     path: PathConfig = field(default_factory=PathConfig)
     postprocess: TrackerPostprocessConfig = field(default_factory=TrackerPostprocessConfig)
     visualize: TrackerVisualizeConfig = field(default_factory=TrackerVisualizeConfig)
+    utility: UtilityConfig = field(default_factory=UtilityConfig)
 
     @property
     def experiment_path(self) -> str:
@@ -156,7 +164,8 @@ class GlobalConfig:
         """
         Postprocess.
         """
-        self.dataset.fullpath = os.path.join(self.path.assets, self.dataset.path, self.eval.split)
+        self.dataset.basepath = os.path.join(self.path.assets, self.dataset.path)
+        self.dataset.fullpath = os.path.join(self.dataset.basepath, self.eval.split)
 
 
 # Configuring hydra config store

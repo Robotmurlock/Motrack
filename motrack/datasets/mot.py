@@ -1,11 +1,10 @@
 """
-MOT Challenge Dataset support. Supports: MOT17, MOT20, DanceTrack.
+MOT Challenge Dataset support. Supports: MOT17, MOT20, DanceTrack and SportsMOT.
 """
 import configparser
 import copy
 import logging
 import os
-from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple, List, Union, Optional
@@ -20,6 +19,7 @@ from motrack.utils import file_system
 
 CATEGORY = 'pedestrian'
 N_IMG_DIGITS = 6
+ID_SEPARATOR = '+'
 
 
 @dataclass
@@ -77,7 +77,7 @@ class MOTDataset(BaseDataset):
         self._path = path
 
         self._scene_info_index, self._n_digits = self._index_dataset(path, sequence_list, test=test)
-        self._data_labels, self._n_labels, self._frame_to_data_index_lookup = self._parse_labels(self._scene_info_index, test=test)
+        self._data_labels, self._n_labels = self._parse_labels(self._scene_info_index, test=test)
 
     @property
     def scenes(self) -> List[str]:
@@ -85,7 +85,7 @@ class MOTDataset(BaseDataset):
 
     def parse_object_id(self, object_id: str) -> Tuple[str, str]:
         assert object_id in self._data_labels, f'Unknown object id "{object_id}".'
-        scene_name, scene_object_id = object_id.split('_')
+        scene_name, scene_object_id = object_id.split(ID_SEPARATOR)
         return scene_name, scene_object_id
 
     def get_object_category(self, object_id: str) -> str:
@@ -127,7 +127,7 @@ class MOTDataset(BaseDataset):
         object_id: str,
         frame_index: int,
         relative_bbox_coords: bool = True
-    ) -> Optional[dict]:
+    ) -> Optional[ObjectFrameData]:
         return self.get_object_data(object_id, frame_index, relative_bbox_coords=relative_bbox_coords)
 
     def get_scene_info(self, scene_name: str) -> BasicSceneInfo:
@@ -240,7 +240,7 @@ class MOTDataset(BaseDataset):
 
         return scene_info_index, n_digits
 
-    def _parse_labels(self, scene_infos: SceneInfoIndex, test: bool = False) -> Tuple[Dict[str, List[ObjectFrameData]], int, Dict[str, Dict[int, int]]]:
+    def  _parse_labels(self, scene_infos: SceneInfoIndex, test: bool = False) -> Tuple[Dict[str, List[ObjectFrameData]], int]:
         """
         Loads all labels dictionary with format:
         {
@@ -257,11 +257,10 @@ class MOTDataset(BaseDataset):
             Labels dictionary
         """
         data: Dict[str, List[Optional[ObjectFrameData]]] = {}
-        frame_to_data_index_lookup: Dict[str, Dict[int, int]] = defaultdict(dict)
         n_labels = 0
         if test:
             # Return empty labels
-            return data, n_labels, frame_to_data_index_lookup
+            return data, n_labels
 
         for scene_name, scene_info in scene_infos.items():
             seqlength = self._scene_info_index[scene_name].seqlength
@@ -272,19 +271,23 @@ class MOTDataset(BaseDataset):
             df = df.iloc[:, :6]
             df.columns = ['frame_id', 'object_id', 'xmin', 'ymin', 'w', 'h']  # format: yxwh
             df['object_global_id'] = \
-                scene_name + '_' + df['object_id'].astype(str)  # object id is not unique over all scenes
+                scene_name + ID_SEPARATOR + df['object_id'].astype(str)  # object id is not unique over all scenes
             df = df.drop(columns='object_id', axis=1)
             df = df.sort_values(by=['object_global_id', 'frame_id'])
             n_labels += df.shape[0]
 
             object_groups = df.groupby('object_global_id')
             for object_global_id, df_grp in tqdm(object_groups, desc=f'Parsing {scene_name}', unit='pedestrian'):
+                assert object_global_id.count(ID_SEPARATOR) == 1, f'Object id "{object_global_id}" contains separator in scene name or object id.'
+
+                track_id = int(object_global_id.split(ID_SEPARATOR)[-1])
                 df_grp = df_grp.drop(columns='object_global_id', axis=1).set_index('frame_id')
 
                 data[object_global_id] = [None for _ in range(seqlength)]
                 for frame_id, row in df_grp.iterrows():
                     data[object_global_id][int(frame_id) - 1] = ObjectFrameData(
                         frame_id=frame_id,
+                        track_id=track_id,
                         bbox=row.values.tolist(),
                         image_path=self._get_image_path(scene_info, frame_id),
                         occ=False,
@@ -292,11 +295,10 @@ class MOTDataset(BaseDataset):
                         scene=scene_name,
                         category=CATEGORY
                     )
-                    frame_to_data_index_lookup[object_global_id][frame_id] = len(data[object_global_id]) - 1
 
         logger.debug(f'Parsed labels. Dataset size is {n_labels}.')
         data = dict(data)  # Disposing unwanted defaultdict side-effects
-        return data, n_labels, frame_to_data_index_lookup
+        return data, n_labels
 
     def __len__(self) -> int:
         return self._n_labels

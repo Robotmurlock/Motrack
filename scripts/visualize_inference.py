@@ -13,7 +13,7 @@ from motrack.datasets import dataset_factory
 from motrack.utils import pipeline
 from motrack.tools import run_visualize_tracker_inference
 
-logger = logging.getLogger('TrackerVizualization')
+logger = logging.getLogger('Script-TrackerVizualization')
 
 
 @pipeline.task('visualize-inference')

@@ -5,7 +5,7 @@ from typing import Optional, Union, List, Tuple
 
 import numpy as np
 
-from motrack.library.cv.bbox import PredBBox
+from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 from motrack.tracker.tracklet import Tracklet, TrackletState
@@ -259,6 +259,7 @@ class DecayIoU(IoUBasedAssociation):
         threshold_decay: float = 0.02,
         fuse_score: bool = False,
         label_gating: Optional[LabelGatingType] = None,
+        expansion_rate: float = 0.0,
         fast_linear_assignment: bool = False
     ):
         """
@@ -269,6 +270,7 @@ class DecayIoU(IoUBasedAssociation):
             fuse_score: Fuse score with iou
             label_gating: Define which object labels can be matched
                 - If not defined, matching is label agnostic
+            expansion_rate: Bounding box expansion rate
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
@@ -282,10 +284,38 @@ class DecayIoU(IoUBasedAssociation):
         self._threshold_decay = threshold_decay
         self._fuse_score = fuse_score
 
+        assert expansion_rate >= 0.0, f'Invalid value for expansion rate: {expansion_rate}.'
+        self._expansion_rate = expansion_rate
+
+    def _expand_bbox(self, bbox: PredBBox) -> PredBBox:
+        """
+        Expands bounding box (allows matching between bounding boxes that do not overlap).
+
+        Args:
+            bbox: Bounding box
+
+        Returns:
+            Expanded (new) bounding box
+        """
+        h = bbox.height * (1 + self._expansion_rate)
+        w = bbox.width * (1 + self._expansion_rate)
+        center = bbox.center
+        cx, cy = center.x, center.y
+
+        return PredBBox.create(
+            bbox=BBox.from_cxywh(cx, cy, w, h),
+            label=bbox.label,
+            conf=bbox.conf
+        )
+
     def _calc_score(self, tracklet: Tracklet, tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
         _ = tracklet
 
         # Calculate IOU score
+        if self._expansion_rate > 0.0:
+            tracklet_bbox = self._expand_bbox(tracklet_bbox)
+            det_bbox = self._expand_bbox(det_bbox)
+
         iou_score = tracklet_bbox.iou(det_bbox)
         # Higher the IOU score the better is the match (using negative values because of min optim function)
         # If score has very high value then
