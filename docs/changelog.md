@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1 - 2024-02-26
+
+### Features
+- Added script for `FastReID` training dataset creation
+- Added script for `YOLOv8` training dataset creation
+- Added script for `YOLOX` training dataset creation
+
 ## 0.4.0 - 2024-01-31
 
 ### Features
