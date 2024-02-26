@@ -27,15 +27,15 @@ ANNOTATIONS_DIRNAME = 'annotations'
 CATEGORY_ID = 1
 CATEGORY_NAME = 'pedestrian'
 
-SEP = '_'
-SEP_REPLACEMENT = '+'
-
 
 @pipeline.task('coco-annotations')
 def run_inference(cfg: GlobalConfig) -> None:
     coco_path = os.path.join(cfg.dataset.basepath, COCO_DIRNAME)
     annotations_path = os.path.join(coco_path, ANNOTATIONS_DIRNAME)
     Path(annotations_path).mkdir(parents=True, exist_ok=True)
+
+    if cfg.utility.use_validation_for_training:
+        logger.warning('Including validation dataset in training is not supported!')
 
     for split in ['train', 'val']:
         split_annotations_path = os.path.join(annotations_path, f'{split}.json')
