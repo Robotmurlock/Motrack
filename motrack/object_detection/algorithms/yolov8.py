@@ -3,6 +3,7 @@ YOLOv8 inference support.
 """
 from typing import List, Optional, Tuple, Union, Any
 
+import cv2
 import numpy as np
 
 from motrack.library.cv.bbox import LabelType
@@ -24,6 +25,7 @@ class YOLOv8Inference(ObjectDetectionInference):
         conf: float = 0.25,
         class_filter: Optional[List[LabelType]] = None,
         lookup: Optional[LookupTable] = None,
+        is_rgb: bool = True
     ):
         super().__init__(lookup=lookup)
         try:
@@ -36,10 +38,12 @@ class YOLOv8Inference(ObjectDetectionInference):
         self._verbose = verbose
         self._conf = conf
         self._class_filter = class_filter
-        if self._class_filter is None:
-            self._class_filter = []
+        self._is_rgb = is_rgb
 
     def predict_raw(self, image: np.ndarray) -> Any:
+        if self._is_rgb:
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
         return self._yolo.predict(
             source=image,
             verbose=self._verbose,

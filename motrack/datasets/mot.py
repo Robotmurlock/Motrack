@@ -5,7 +5,6 @@ import configparser
 import copy
 import logging
 import os
-from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple, List, Union, Optional
@@ -78,7 +77,7 @@ class MOTDataset(BaseDataset):
         self._path = path
 
         self._scene_info_index, self._n_digits = self._index_dataset(path, sequence_list, test=test)
-        self._data_labels, self._n_labels, self._frame_to_data_index_lookup = self._parse_labels(self._scene_info_index, test=test)
+        self._data_labels, self._n_labels = self._parse_labels(self._scene_info_index, test=test)
 
     @property
     def scenes(self) -> List[str]:
@@ -241,7 +240,7 @@ class MOTDataset(BaseDataset):
 
         return scene_info_index, n_digits
 
-    def _parse_labels(self, scene_infos: SceneInfoIndex, test: bool = False) -> Tuple[Dict[str, List[ObjectFrameData]], int, Dict[str, Dict[int, int]]]:
+    def  _parse_labels(self, scene_infos: SceneInfoIndex, test: bool = False) -> Tuple[Dict[str, List[ObjectFrameData]], int]:
         """
         Loads all labels dictionary with format:
         {
@@ -258,11 +257,10 @@ class MOTDataset(BaseDataset):
             Labels dictionary
         """
         data: Dict[str, List[Optional[ObjectFrameData]]] = {}
-        frame_to_data_index_lookup: Dict[str, Dict[int, int]] = defaultdict(dict)
         n_labels = 0
         if test:
             # Return empty labels
-            return data, n_labels, frame_to_data_index_lookup
+            return data, n_labels
 
         for scene_name, scene_info in scene_infos.items():
             seqlength = self._scene_info_index[scene_name].seqlength
@@ -297,11 +295,10 @@ class MOTDataset(BaseDataset):
                         scene=scene_name,
                         category=CATEGORY
                     )
-                    frame_to_data_index_lookup[object_global_id][frame_id] = len(data[object_global_id]) - 1
 
         logger.debug(f'Parsed labels. Dataset size is {n_labels}.')
         data = dict(data)  # Disposing unwanted defaultdict side-effects
-        return data, n_labels, frame_to_data_index_lookup
+        return data, n_labels
 
     def __len__(self) -> int:
         return self._n_labels

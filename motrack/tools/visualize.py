@@ -128,7 +128,8 @@ def run_visualize_detections(
     dataset: BaseDataset,
     detection_manager: DetectionManager,
     output_path: str,
-    fps: int = 30
+    fps: int = 30,
+    is_rgb: bool = True
 ) -> None:
     """
     Performs visualization of raw detections without usage of the tracker.
@@ -138,6 +139,7 @@ def run_visualize_detections(
         detection_manager: Detection manager
         output_path: Path where the detections will be stored
         fps: output video fps
+        is_rgb: Is the input image in RGB format?
     """
     scene_names = dataset.scenes
     for scene_name in tqdm(scene_names, desc='Visualize detections', unit='scene'):
@@ -152,4 +154,6 @@ def run_visualize_detections(
                 for bbox in detection_bboxes:
                     image = bbox.draw(image)
 
+                if is_rgb:
+                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                 video_writer.write(image)

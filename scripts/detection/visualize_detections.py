@@ -42,7 +42,8 @@ def inference(cfg: GlobalConfig) -> None:
         dataset=dataset,
         detection_manager=detection_manager,
         output_path=output_path,
-        fps=cfg.visualize.fps
+        fps=cfg.visualize.fps,
+        is_rbg=cfg.visualize.is_rgb
     )
 
 

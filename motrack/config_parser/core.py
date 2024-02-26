@@ -103,6 +103,7 @@ class TrackerVisualizeConfig:
     fps: int = 20
     new_object_length: int = 5
     option: str = 'all'
+    is_rgb: bool = field(default=True)
 
     def __post_init__(self) -> None:
         """
@@ -135,6 +136,11 @@ class DatasetFilterConfig:
 
 
 @dataclass
+class UtilityConfig:
+    use_validation_for_training: bool = field(default=False)
+
+
+@dataclass
 class GlobalConfig:
     experiment: str
     dataset: DatasetConfig
@@ -145,6 +151,7 @@ class GlobalConfig:
     path: PathConfig = field(default_factory=PathConfig)
     postprocess: TrackerPostprocessConfig = field(default_factory=TrackerPostprocessConfig)
     visualize: TrackerVisualizeConfig = field(default_factory=TrackerVisualizeConfig)
+    utility: UtilityConfig = field(default_factory=UtilityConfig)
 
     @property
     def experiment_path(self) -> str:
