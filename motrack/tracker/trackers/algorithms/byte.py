@@ -174,7 +174,8 @@ class ByteTracker(MotionReIDBasedTracker):
         new_tracklets = self._create_new_tracklets(
             detections=[detections[d_i] for d_i in new_unmatched_detections_indices],
             frame_index=frame_index,
-            objects_features=objects_features[new_unmatched_detections_indices] if objects_features is not None else None
+            objects_features=objects_features[new_unmatched_detections_indices] if objects_features is not None else None,
+            frame=frame
         )
 
         # (7) Update matched tracklets
@@ -192,12 +193,14 @@ class ByteTracker(MotionReIDBasedTracker):
             matched_tracklets=[tracklets[t_i] for t_i, _ in all_matches],
             matched_detections=[detections[d_i] for d_i in matched_detection_indices],
             matched_object_features=matched_objects_features,
-            frame_index=frame_index
+            frame_index=frame_index,
+            frame=frame
         )
 
         # (8) Delete new unmatched and long-lost tracklets
         self._handle_lost_tracklets(
-            lost_tracklets=[tracklets[t_i] for t_i in unmatched_tracklet_indices + new_unmatched_tracklets_indices]
+            lost_tracklets=[tracklets[t_i] for t_i in unmatched_tracklet_indices + new_unmatched_tracklets_indices],
+            frame=frame
         )
 
         # (9) Delete duplicate between ACTIVE and LOST tracklets

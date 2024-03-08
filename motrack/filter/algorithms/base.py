@@ -2,7 +2,7 @@
 Defines interface for motion model filter (predict - update)
 """
 from abc import ABC, abstractmethod
-from typing import Tuple, Any
+from typing import Tuple, Any, Optional
 
 import numpy as np
 
@@ -14,12 +14,13 @@ class StateModelFilter(ABC):
     Defines interface for motion model filter (predict - update)
     """
     @abstractmethod
-    def initiate(self, measurement: np.ndarray) -> State:
+    def initiate(self, measurement: np.ndarray, image: Optional[np.ndarray] = None) -> State:
         """
         Initializes model state with initial measurement.
 
         Args:
             measurement: Starting measurement
+            image: Frame image
 
         Returns:
             Initial state
@@ -27,12 +28,13 @@ class StateModelFilter(ABC):
         pass
 
     @abstractmethod
-    def predict(self, state: State) -> State:
+    def predict(self, state: State, image: Optional[np.ndarray] = None) -> State:
         """
         Predicts prior state.
 
         Args:
             state: Previous posterior state.
+            image: Frame image
 
         Returns:
             Prior state (prediction)
@@ -40,13 +42,14 @@ class StateModelFilter(ABC):
         pass
 
     @abstractmethod
-    def multistep_predict(self, state: State, n_steps: int) -> State:
+    def multistep_predict(self, state: State, n_steps: int, image: Optional[np.ndarray] = None) -> State:
         """
         Estimates prior state for multiple steps ahead
 
         Args:
             state: Current state
             n_steps: Number of prediction steps
+            image: Frame image
 
         Returns:
             Estimations for n_steps ahead
@@ -54,13 +57,14 @@ class StateModelFilter(ABC):
         pass
 
     @abstractmethod
-    def update(self, state: State, measurement: np.ndarray) -> State:
+    def update(self, state: State, measurement: np.ndarray, image: Optional[np.ndarray] = None) -> State:
         """
         Updates state model based on new measurement.
 
         Args:
             state: Prior state.
             measurement: New measurement
+            image: Frame image
 
         Returns:
             Posterior state.
@@ -68,12 +72,13 @@ class StateModelFilter(ABC):
         pass
 
     @abstractmethod
-    def missing(self, state: State) -> State:
+    def missing(self, state: State, image: Optional[np.ndarray] = None) -> State:
         """
         Update state when measurement is missing (replacement for update function for that case).
 
         Args:
             state: State (prior)
+            image: Frame image
 
         Returns:
             Updated state

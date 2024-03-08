@@ -24,16 +24,16 @@ class BotSortKalmanWrapFilter(StateModelFilter):
             override_std_weight_position=override_std_weight_position
         )
 
-    def initiate(self, measurement: np.ndarray) -> State:
+    def initiate(self, measurement: np.ndarray, image: Optional[np.ndarray] = None) -> State:
         mean, covariance = self._kf.initiate(measurement)
         return mean, covariance
 
-    def predict(self, state: State) -> State:
+    def predict(self, state: State, image: Optional[np.ndarray] = None) -> State:
         mean, covariance = state
         mean_hat, covariance_hat = self._kf.predict(mean, covariance)
         return mean_hat, covariance_hat
 
-    def multistep_predict(self, state: State, n_steps: int) -> State:
+    def multistep_predict(self, state: State, n_steps: int, image: Optional[np.ndarray] = None) -> State:
         mean, covariance = state
         mean_hat_list, cov_hat_list = [], []
         for _ in range(n_steps):
@@ -45,7 +45,7 @@ class BotSortKalmanWrapFilter(StateModelFilter):
         covariance_hat = np.stack(cov_hat_list)
         return mean_hat, covariance_hat
 
-    def update(self, state: State, measurement: np.ndarray) -> State:
+    def update(self, state: State, measurement: np.ndarray, image: Optional[np.ndarray] = None) -> State:
         mean_hat, covariance_hat = state
         mean, covariance = self._kf.update(mean_hat, covariance_hat, measurement)
         return mean, covariance
@@ -54,7 +54,7 @@ class BotSortKalmanWrapFilter(StateModelFilter):
         mean, covariance = state
         return mean.unsqueeze(0), covariance.unsqueeze(0)
 
-    def missing(self, state: State) -> State:
+    def missing(self, state: State, image: Optional[np.ndarray] = None) -> State:
         return state  # Use prior instead of posterior
 
     def project(self, state: State) -> Tuple[np.ndarray, np.ndarray]:

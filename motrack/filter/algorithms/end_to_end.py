@@ -1,16 +1,17 @@
 """
 Wrapper for Motrack-motion end-to-end filter.
 """
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 import torch
-from motrack.filter.algorithms.base import StateModelFilter, State
-from motrack.filter.catalog import FILTER_CATALOG
 from motrack_motion.datasets import transforms
 from motrack_motion.filter.factory import filter_factory
 from motrack_motion.models import model_factory
 from torch import nn
+
+from motrack.filter.algorithms.base import StateModelFilter, State
+from motrack.filter.catalog import FILTER_CATALOG
 
 
 @FILTER_CATALOG.register('motrack-motion-end-to-end')
@@ -70,22 +71,27 @@ class MotrackMotionFilterEndToEnd(StateModelFilter):
         model.load_state_dict(model_state_dict)
         return model
 
-    def initiate(self, measurement: np.ndarray) -> State:
+    def initiate(self, measurement: np.ndarray, image: Optional[np.ndarray] = None) -> State:
         measurement = torch.from_numpy(measurement)
-        return self._core.initiate(measurement)
+        image = torch.from_numpy(image) if image is not None else None
+        return self._core.initiate(measurement, image=image)
 
-    def predict(self, state: State) -> State:
-        return self._core.predict(state)
+    def predict(self, state: State, image: Optional[np.ndarray] = None) -> State:
+        image = torch.from_numpy(image) if image is not None else None
+        return self._core.predict(state, image=image)
 
-    def multistep_predict(self, state: State, n_steps: int) -> State:
-        return self._core.multistep_predict(state, n_steps=n_steps)
+    def multistep_predict(self, state: State, n_steps: int, image: Optional[np.ndarray] = None) -> State:
+        image = torch.from_numpy(image) if image is not None else None
+        return self._core.multistep_predict(state, n_steps=n_steps, image=image)
 
-    def update(self, state: State, measurement: np.ndarray) -> State:
+    def update(self, state: State, measurement: np.ndarray, image: Optional[np.ndarray] = None) -> State:
         measurement = torch.from_numpy(measurement)
-        return self._core.update(state, measurement)
+        image = torch.from_numpy(image) if image is not None else None
+        return self._core.update(state, measurement, image=image)
 
-    def missing(self, state: State) -> State:
-        return self._core.missing(state)
+    def missing(self, state: State, image: Optional[np.ndarray] = None) -> State:
+        image = torch.from_numpy(image) if image is not None else None
+        return self._core.missing(state, image=image)
 
     def project(self, state: State) -> Tuple[np.ndarray, np.ndarray]:
         mean, cov = self._core.project(state)

@@ -1,7 +1,7 @@
 """
 NoMotion filter (just uses the last detection).
 """
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 
@@ -18,22 +18,22 @@ class NoMotionFilter(StateModelFilter):
     def __init__(self, det_uncertainty = 1e-6):
         self._det_uncertainty = det_uncertainty
 
-    def initiate(self, measurement: np.ndarray) -> State:
+    def initiate(self, measurement: np.ndarray, image: Optional[np.ndarray] = None) -> State:
         return measurement
 
-    def predict(self, state: State) -> State:
+    def predict(self, state: State, image: Optional[np.ndarray] = None) -> State:
         measurement = state
         return measurement
 
-    def multistep_predict(self, state: State, n_steps: int) -> State:
+    def multistep_predict(self, state: State, n_steps: int, image: Optional[np.ndarray] = None) -> State:
         measurement = state
         return np.stack([measurement for _ in range(n_steps)])
 
-    def update(self, state: State, measurement: np.ndarray) -> State:
+    def update(self, state: State, measurement: np.ndarray, image: Optional[np.ndarray] = None) -> State:
         _ = state  # ignore previous state
         return measurement
 
-    def missing(self, state: State) -> State:
+    def missing(self, state: State, image: Optional[np.ndarray] = None) -> State:
         return state
 
     def project(self, state: State) -> Tuple[np.ndarray, np.ndarray]:

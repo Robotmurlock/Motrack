@@ -114,42 +114,45 @@ class MotionReIDBasedTracker(Tracker, ABC):
             conf=tracklet.bbox.conf if conf is None else conf
         )
 
-    def _initiate(self, tracklet_id: int, detection: PredBBox) -> None:
+    def _initiate(self, tracklet_id: int, detection: PredBBox, frame: Optional[np.ndarray] = None) -> None:
         """
         Initiates new tracking object state.
 
         Args:
             tracklet_id: Tracklet id
             detection: Initial object detection
+            frame: Current frame image
         """
         measurement = detection.as_numpy_xywh(dtype=np.float32)
-        state = self._filter.initiate(measurement)
+        state = self._filter.initiate(measurement, image=frame)
         self._filter_states[tracklet_id] = state
 
-    def _predict(self, tracklet: Tracklet) -> Tuple[PredBBox, np.ndarray, np.ndarray]:
+    def _predict(self, tracklet: Tracklet, frame: Optional[np.ndarray] = None) -> Tuple[PredBBox, np.ndarray, np.ndarray]:
         """
         Estimates object prior position
 
         Args:
             tracklet: Tracklet (required to fetch state, and bbox info)
+            frame: Current frame image
 
         Returns:
             Motion model prior estimation
         """
         assert tracklet.id in self._filter_states, f'Tracklet id "{tracklet.id}" can\'t be found in filter states!'
         state = self._filter_states[tracklet.id]
-        state = self._filter.predict(state)
+        state = self._filter.predict(state, image=frame)
         prior_mean, prior_std = self._filter.project(state)
         self._filter_states[tracklet.id] = state
         bbox = self._raw_to_bbox(tracklet, prior_mean)
         return bbox, prior_mean, prior_std
 
-    def _update(self, tracklet: Tracklet, detection: PredBBox) -> Tuple[PredBBox, np.ndarray, np.ndarray]:
+    def _update(self, tracklet: Tracklet, detection: PredBBox, frame: Optional[np.ndarray] = None) -> Tuple[PredBBox, np.ndarray, np.ndarray]:
         """
         Estimates object posterior position based on the matched detection.
 
         Args:
             tracklet: Tracklet (required to fetch state, and bbox info)
+            frame: Current frame image
 
         Returns:
             Motion model posterior estimation
@@ -157,24 +160,25 @@ class MotionReIDBasedTracker(Tracker, ABC):
         measurement = detection.as_numpy_xywh()
 
         state = self._filter_states[tracklet.id]
-        state = self._filter.update(state, measurement)
+        state = self._filter.update(state, measurement, image=frame)
         posterior_mean, posterior_std = self._filter.project(state)
         self._filter_states[tracklet.id] = state
         bbox = self._raw_to_bbox(tracklet, posterior_mean, conf=detection.conf)
         return bbox, posterior_mean, posterior_std
 
-    def _missing(self, tracklet: Tracklet) -> Tuple[PredBBox, np.ndarray, np.ndarray]:
+    def _missing(self, tracklet: Tracklet, frame: Optional[np.ndarray] = None) -> Tuple[PredBBox, np.ndarray, np.ndarray]:
         """
         Estimates object posterior position for unmatched tracklets (with any detections)
 
         Args:
             tracklet: Tracklet (required to fetch state, and bbox info)
+            frame: Current frame image
 
         Returns:
             Motion model posterior (missing) estimation
         """
         state = self._filter_states[tracklet.id]
-        state = self._filter.missing(state)
+        state = self._filter.missing(state, image=frame)
         posterior_mean, posterior_std = self._filter.project(state)
         self._filter_states[tracklet.id] = state
         bbox = self._raw_to_bbox(tracklet, posterior_mean)
@@ -193,6 +197,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         self,
         detections: List[PredBBox],
         frame_index: int,
+        frame: Optional[np.ndarray] = None,
         objects_features: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
         """
@@ -201,6 +206,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         Args:
             detections: List of unmatched detections
             frame_index: Current frame index
+            frame: Current frame image
             objects_features: List of unmatched detections' object features
 
         Returns:
@@ -219,7 +225,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
             )
             self._next_id += 1
             new_tracklets.append(new_tracklet)
-            self._initiate(new_tracklet.id, detection)
+            self._initiate(new_tracklet.id, detection, frame=frame)
 
             # Set initial tracklet feature if ReId model is used
             if objects_features is not None:
@@ -236,7 +242,8 @@ class MotionReIDBasedTracker(Tracker, ABC):
         matched_tracklets: List[Tracklet],
         matched_detections: List[PredBBox],
         matched_object_features: Union[np.ndarray, List[Optional[np.ndarray]]],
-        frame_index: int
+        frame_index: int,
+        frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
         """
         Updates tracklets with detections and object appearance features (if used).
@@ -245,6 +252,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
             matched_tracklets: List of matched tracklets
             matched_detections: List of matched detections
             frame_index: Current frame index
+            frame: Current frame image
 
         Returns:
             List of updated tracklets
@@ -254,7 +262,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
             f'Got: {len(matched_tracklets)}, {len(matched_tracklets)}'
 
         for tracklet, det_bbox in zip(matched_tracklets, matched_detections):
-            tracklet_bbox, _, _ = self._update(tracklet, det_bbox)
+            tracklet_bbox, _, _ = self._update(tracklet, det_bbox, frame=frame)
             new_bbox = det_bbox # tracklet_bbox if tracklet.state == TrackletState.ACTIVE else det_bbox
 
             new_state = TrackletState.ACTIVE
@@ -303,7 +311,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
                 buffer = tracklet.get(TrackletCommonData.APPEARANCE_BUFFER)
                 buffer.append(current_emb)
 
-    def _handle_lost_tracklets(self, lost_tracklets: List[Tracklet]) -> None:
+    def _handle_lost_tracklets(self, lost_tracklets: List[Tracklet], frame: Optional[np.ndarray] = None,) -> None:
         """
         Handles lost tracklets:
         - Deletes tracklets that are lost for more than `self._remember_threshold` frames
@@ -312,6 +320,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
         Args:
             lost_tracklets: Lost tracklets that potentially should be deleted
+            frame: Current frame image
         """
         for tracklet in lost_tracklets:
             if tracklet.lost_time > self._remember_threshold \
@@ -319,7 +328,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
                 tracklet.state = TrackletState.DELETED
                 self._delete(tracklet.id)
             else:
-                tracklet_bbox, _, _ = self._missing(tracklet)
+                tracklet_bbox, _, _ = self._missing(tracklet, frame=frame)
                 tracklet.update(tracklet_bbox, tracklet.frame_index, state=TrackletState.LOST)
 
     def _perform_cmc(self, frame: np.ndarray, frame_index: int, bboxes: List[PredBBox]) -> List[PredBBox]:
@@ -407,7 +416,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         tracklets = [t for t in tracklets if t.state != TrackletState.DELETED]  # Remove deleted tracklets
 
         # Estimate priors for all tracklets
-        prior_tracklet_estimates = [self._predict(t) for t in tracklets]
+        prior_tracklet_estimates = [self._predict(t, frame=frame) for t in tracklets]
         prior_tracklet_bboxes = [bbox for bbox, _, _ in prior_tracklet_estimates]
         prior_tracklet_bboxes = self._perform_cmc(frame, frame_index, prior_tracklet_bboxes)
 
