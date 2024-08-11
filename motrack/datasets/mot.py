@@ -58,7 +58,8 @@ class MOTDataset(BaseDataset):
         sequence_list: Optional[List[str]] = None,
         image_shape: Union[None, List[int], Tuple[int, int]] = None,
         image_bgr_to_rgb: bool = True,
-        test: bool = False
+        test: bool = False,
+        ignore_not_evaluated_fields: bool = True
     ) -> None:
         """
         Args:
@@ -77,7 +78,11 @@ class MOTDataset(BaseDataset):
         self._path = path
 
         self._scene_info_index, self._n_digits = self._index_dataset(path, sequence_list, test=test)
-        self._data_labels, self._n_labels = self._parse_labels(self._scene_info_index, test=test)
+        self._data_labels, self._n_labels = self._parse_labels(
+            scene_infos=self._scene_info_index,
+            test=test,
+            ignore_not_evaluated_fields=ignore_not_evaluated_fields
+        )
 
     @property
     def scenes(self) -> List[str]:
@@ -221,7 +226,7 @@ class MOTDataset(BaseDataset):
                 # Check number of digits used in image name (e.g. DanceTrack and MOT20 have different convention)
                 img1_path = os.path.join(scene_directory, 'img1')
                 image_names = file_system.listdir(img1_path)
-                assert len(image_names) > 0, 'Image folder exists but it is empty!'
+                assert len(image_names) > 0, f'Image folder exists but it is empty for scene {scene_name}!'
                 image_name = Path(image_names[0]).stem
                 n_digits = len(image_name)
 
@@ -240,7 +245,12 @@ class MOTDataset(BaseDataset):
 
         return scene_info_index, n_digits
 
-    def  _parse_labels(self, scene_infos: SceneInfoIndex, test: bool = False) -> Tuple[Dict[str, List[ObjectFrameData]], int]:
+    def  _parse_labels(
+        self,
+        scene_infos: SceneInfoIndex,
+        test: bool = False,
+        ignore_not_evaluated_fields: bool = False
+    ) -> Tuple[Dict[str, List[ObjectFrameData]], int]:
         """
         Loads all labels dictionary with format:
         {
@@ -266,7 +276,8 @@ class MOTDataset(BaseDataset):
             seqlength = self._scene_info_index[scene_name].seqlength
 
             df = pd.read_csv(scene_info.gt_path, header=None)
-            df = df[df[7] == 1]  # Ignoring values that are not evaluated
+            if ignore_not_evaluated_fields:
+                df = df[df[7] == 1]  # Ignoring values that are not evaluated
 
             df = df.iloc[:, :6]
             df.columns = ['frame_id', 'object_id', 'xmin', 'ymin', 'w', 'h']  # format: yxwh

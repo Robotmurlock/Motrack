@@ -1,0 +1,38 @@
+name: byte
+params:
+  filter_name: bot-sort
+  filter_params:
+    override_std_weight_position: 0.05
+  initialization_threshold: 3
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+  detection_threshold: 0.6
+  duplicate_iou_threshold: 1.00  # Disable
+  high_matcher_algorithm: compose
+  high_matcher_params:
+    matchers:
+      - name: iou
+        params:
+         match_threshold: 0.05
+      - name: reid
+        params: {}
+    weights:
+      - 1.0
+      - 2.0
+  low_matcher_algorithm: iou
+  low_matcher_params:
+    match_threshold: 0.25
+  new_matcher_algorithm: iou
+  new_matcher_params:
+    match_threshold: 0.05
+
+  # ReID extension
+  reid_name: fastreid-onnx
+  reid_params:
+    model_path: /media/home/models/reid/sport.onnx
+    height: 384
+    width: 128
+    # cache_path: /workspace/motrack/reid/soccernet_yolov8_sbs50
+    cache_path: /workspace/motrack/reid/yolox_from_sportsmot_yolov8_sbs50
+    # cache_path: /workspace/motrack/reid/soccernet_oracle_sbs50
+    batch_inference: false

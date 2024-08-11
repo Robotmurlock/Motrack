@@ -7,4 +7,4 @@ params:
   model_path: /media/home/models/detection/mot17.pth.tar
 lookup_path: /media/home/models/detection/mot17.lookup.json
 oracle: false
-cache_path: '/workspace/motrack/mot17_ablation_yolox_low_conf'  # Inference on the second run is 10-20 times faster
+cache_path: '/workspace/motrack/mot17_yolox_low_conf'  # Inference on the second run is 10-20 times faster

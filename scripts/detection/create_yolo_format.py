@@ -26,6 +26,7 @@ import yaml
 import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
+import shutil
 
 from motrack.common.project import DANCETRACK_CONFIG_PATH
 from motrack.config_parser import GlobalConfig
@@ -104,10 +105,22 @@ def run_inference(cfg: GlobalConfig) -> None:
                         continue
 
                     bbox = data.create_bbox_object()
+                    bbox.clip()
+                    if bbox.area == 0:
+                        logger.warning(f'Bounding box on scene "{scene}" for frame {frame_index + 1} for object "{object_id}" has zero area!')
+                        continue
+
                     labels.append([CATEGORY_INDEX, bbox.center.x, bbox.center.y, bbox.width, bbox.height])
 
+                if cfg.script.detection.yolo.skip_empty_images and len(labels) == 0:
+                    continue
+
                 save_labels(labels, yolo_dataset_labels_filepath)
-                os.symlink(image_filepath, yolo_dataset_image_filepath)
+                # Save image
+                if cfg.script.detection.yolo.use_symlink:
+                    os.symlink(image_filepath, yolo_dataset_image_filepath)
+                else:
+                    shutil.copy(image_filepath, yolo_dataset_image_filepath)
 
                 if split == 'val' and cfg.utility.use_validation_for_training:
                     # Save validation dataset in training

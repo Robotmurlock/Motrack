@@ -22,6 +22,7 @@ class YOLOXInference(ObjectDetectionInference):
         accelerator: str,
         conf: float = 0.01,
         min_bbox_area: int = 0,
+        input_shape: Optional[Union[Tuple[int, int], List[int]]] = None,
         legacy: bool = True,
         lookup: Optional[LookupTable] = None
     ):
@@ -36,6 +37,7 @@ class YOLOXInference(ObjectDetectionInference):
             checkpoint_path=model_path,
             accelerator=accelerator,
             conf_threshold=conf,
+            input_shape=input_shape,
             legacy=legacy
         )
         self._min_bbox_area = min_bbox_area

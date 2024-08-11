@@ -14,6 +14,7 @@ from motrack.object_detection import DetectionManager
 from motrack.tools import run_visualize_detections
 from motrack.utils import pipeline
 
+
 logger = logging.getLogger('Script-VisualizeDetections')
 
 
@@ -43,7 +44,7 @@ def inference(cfg: GlobalConfig) -> None:
         detection_manager=detection_manager,
         output_path=output_path,
         fps=cfg.visualize.fps,
-        is_rbg=cfg.visualize.is_rgb
+        is_rgb=cfg.visualize.is_rgb
     )
 
 

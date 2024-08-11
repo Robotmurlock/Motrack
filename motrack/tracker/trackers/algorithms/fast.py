@@ -26,7 +26,8 @@ class FastTracker(SortTracker):
         remember_threshold: int = 1,
         initialization_threshold: int = 3,
         new_tracklet_detection_threshold: Optional[float] = None,
-        use_observation_if_lost: bool = False
+        use_observation_if_lost: bool = False,
+        use_filtering: bool = True
     ):
         """
         Args:
@@ -69,5 +70,6 @@ class FastTracker(SortTracker):
             remember_threshold=remember_threshold,
             initialization_threshold=initialization_threshold,
             new_tracklet_detection_threshold=new_tracklet_detection_threshold,
-            use_observation_if_lost=use_observation_if_lost
+            use_observation_if_lost=use_observation_if_lost,
+            use_filtering=use_filtering
         )

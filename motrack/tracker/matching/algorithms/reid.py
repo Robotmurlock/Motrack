@@ -24,6 +24,7 @@ class ReIDAssociation(AssociationAlgorithm):
         self,
         appearance_threshold: float = 0.0,
         appearance_metric: str = 'cosine',
+        proximity_threshold: float = 0.0,
         fast_linear_assignment: bool = False
     ):
         """
@@ -31,6 +32,7 @@ class ReIDAssociation(AssociationAlgorithm):
             appearance_threshold: Appearance metric minimum threshold
                 - Disabled by default
             appearance_metric: Appearance metric (default: cosine)
+            proximity_threshold: Allow appearance matching only if the object is close enough
             fast_linear_assignment: Use faster linear assignment
         """
         super().__init__(
@@ -38,7 +40,8 @@ class ReIDAssociation(AssociationAlgorithm):
         )
 
         self._appearance_threshold = appearance_threshold
-        self._appearance_metric: str = appearance_metric
+        self._appearance_metric = appearance_metric
+        self._proximity_threshold = proximity_threshold
 
     def form_cost_matrix(
         self,
@@ -59,7 +62,16 @@ class ReIDAssociation(AssociationAlgorithm):
         tracklet_features = self._get_features(tracklets)
         # noinspection PyTypeChecker
         cost_matrix = np.maximum(0.0, cdist(tracklet_features, object_features, metric=self._appearance_metric))
-        cost_matrix[cost_matrix > 1 - self._appearance_threshold] = np.inf
+
+        if self._appearance_threshold > 0.0:
+            cost_matrix[cost_matrix > 1 - self._appearance_threshold] = np.inf
+
+        if self._proximity_threshold > 0.0:
+            for t_i in range(n_tracklets):
+                for d_i in range(n_detections):
+                    if tracklet_estimations[t_i].iou(detections[d_i]) < self._proximity_threshold:
+                        cost_matrix[t_i, d_i] = 1.0
+
         return cost_matrix
 
     @staticmethod
@@ -142,6 +154,56 @@ class ReIDIoUAssociation(ComposeAssociationAlgorithm):
             ReIDAssociation(
                 appearance_threshold=appearance_threshold,
                 appearance_metric=appearance_metric
+            )
+        ]
+
+        weights = [1 - appearance_weight, appearance_weight]
+
+        super().__init__(
+            matchers=matchers,
+            weights=weights,
+            fast_linear_assignment=fast_linear_assignment
+        )
+
+@ASSOCIATION_CATALOG.register('reid-iou-fusion')
+class ReIDIoUFusionAssociation(ComposeAssociationAlgorithm):
+    """
+    BoT-Sort's association method based on IoU and appearance.
+    """
+    def __init__(
+        self,
+        appearance_weight: float = 0.5,
+        appearance_threshold: float = 0.0,
+        appearance_metric: str = 'cosine',
+        match_threshold: float = 0.30,
+        proximity_threshold: float = 0.0,
+        fuse_score: bool = False,
+        label_gating: Optional[LabelGatingType] = None,
+        fast_linear_assignment: bool = False
+    ):
+        """
+        Args:
+            appearance_weight: Appearance to IoU association weight
+            appearance_threshold: Appearance metric minimum threshold
+            appearance_metric: Appearance metric (default: cosine)
+            match_threshold: IoU match threshold
+            proximity_threshold: Allow appearance matching only if the object is close enough
+            fuse_score: Fuse detection score with IoU match
+            label_gating: Allow different labels to be matched
+            fast_linear_assignment: Use faster linear assignment
+        """
+        assert 0 <= appearance_weight <= 1.0, '"appearance_weight" must be in interval [0, 1]!'
+
+        matchers = [
+            IoUAssociation(
+                match_threshold=match_threshold,
+                fuse_score=fuse_score,
+                label_gating=label_gating
+            ),
+            ReIDAssociation(
+                appearance_threshold=appearance_threshold,
+                appearance_metric=appearance_metric,
+                proximity_threshold=proximity_threshold
             )
         ]
 

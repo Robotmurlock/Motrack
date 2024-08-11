@@ -1,0 +1,9 @@
+type: 'yolov8'
+params:
+  accelerator: cuda:0
+  conf: 0.6
+  # Model source: https://github.com/ifzhang/ByteTrack, ByteTrack_ablation
+  model_path: /media/home/models/detection/yolov8m.pt
+lookup_path: /media/home/models/detection/sportsmot.lookup.json
+oracle: false
+cache_path: '/workspace/motrack/detection/sportsmot_yolov8'  # Inference on the second run is 10-20 times faster

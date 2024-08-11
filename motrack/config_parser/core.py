@@ -8,6 +8,7 @@ from typing import Optional
 
 from hydra.core.config_store import ConfigStore
 
+from motrack.config_parser.script import ScriptConfig
 from motrack.common import project
 from motrack.utils.lookup import LookupTable
 
@@ -79,6 +80,7 @@ class ObjectDetectionInferenceConfig:
     lookup_path: Optional[str] = None
     cache_path: Optional[str] = None
     oracle: bool = False
+    noise_magnitude: float = field(default=0.0)
 
     def load_lookup(self) -> LookupTable:
         """
@@ -152,6 +154,7 @@ class GlobalConfig:
     postprocess: TrackerPostprocessConfig = field(default_factory=TrackerPostprocessConfig)
     visualize: TrackerVisualizeConfig = field(default_factory=TrackerVisualizeConfig)
     utility: UtilityConfig = field(default_factory=UtilityConfig)
+    script: ScriptConfig = field(default_factory=ScriptConfig)
 
     @property
     def experiment_path(self) -> str:

@@ -36,7 +36,8 @@ class SortTracker(MotionReIDBasedTracker):
         use_observation_if_lost: bool = False,
         duplicate_iou_threshold: float = 1.00,
         appearance_ema_momentum: float = 0.95,
-        appearance_buffer: int = 0
+        appearance_buffer: int = 0,
+        use_filtering: bool = True
     ):
         """
         Args:
@@ -77,7 +78,8 @@ class SortTracker(MotionReIDBasedTracker):
             duplicate_iou_threshold=duplicate_iou_threshold,
 
             appearance_ema_momentum=appearance_ema_momentum,
-            appearance_buffer=appearance_buffer
+            appearance_buffer=appearance_buffer,
+            use_filtering=use_filtering
         )
 
         matcher_params = {} if matcher_params is None else matcher_params

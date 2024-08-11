@@ -1,7 +1,7 @@
 """
 Support for YOLOX inference (only pretrained models)
 """
-from typing import Tuple, Dict, Any, Optional
+from typing import Tuple, Dict, Any, Optional, Union, List
 
 import numpy as np
 import torch
@@ -19,6 +19,7 @@ class YOLOXPredictor:
         accelerator: str,
         legacy: bool = True,
         conf_threshold: Optional[float] = None,
+        input_shape: Optional[Union[Tuple[int, int], List[int]]] = None,
         exp_path: str = DEFAULT_EXP_PATH,
         exp_name: str = DEFAULT_EXP_NAME
     ):
@@ -37,7 +38,15 @@ class YOLOXPredictor:
 
         # Load Exp
         self._exp = get_exp(exp_path, exp_name)
-        self._conf_threshold = self._exp.test_conf if conf_threshold is None else conf_threshold
+
+        if conf_threshold is not None:
+            self._exp.test_conf = conf_threshold
+        if input_shape is not None:
+            assert len(input_shape) == 2
+            input_shape = tuple(input_shape)
+
+            self._exp.input_sie = input_shape
+            self._exp.test_size = input_shape
 
         # Load model
         ckpt = torch.load(checkpoint_path)
@@ -87,7 +96,7 @@ class YOLOXPredictor:
         outputs = outputs.detach().cpu()
 
         # Postprocess
-        outputs = postprocess(outputs, self._exp.num_classes, self._conf_threshold, self._exp.nmsthre, class_agnostic=True)
+        outputs = postprocess(outputs, self._exp.num_classes, self._exp.test_conf, self._exp.nmsthre, class_agnostic=True)
         output = outputs[0]
         if output is None:
             # Nothing detected

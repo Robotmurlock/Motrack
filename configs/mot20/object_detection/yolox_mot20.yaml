@@ -2,6 +2,7 @@ type: 'yolox'
 params:
   accelerator: cuda:0
   conf: 0.6
+  input_shape: [896, 1600]
   min_bbox_area: 0
   # Model source: https://github.com/ifzhang/ByteTrack, ByteTrack_ablation
   model_path: /media/home/models/detection/mot20.pth.tar

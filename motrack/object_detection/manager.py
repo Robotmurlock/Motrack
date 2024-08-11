@@ -28,7 +28,8 @@ class DetectionManager:
         dataset: BaseDataset,
         lookup: Optional[LookupTable] = None,
         cache_path: Optional[str] = None,
-        oracle: bool = False
+        oracle: bool = False,
+        noise_magnitude: float = 0.0,
     ):
         """
         Args:
@@ -38,12 +39,16 @@ class DetectionManager:
             lookup: Lookup (if set then returns string labels instead of ints)
             cache_path: If set then cache is used
             oracle: Use GT predictions instead of running inference
+            noise_magnitude: Includes Gaussian noise proportional to the bbox size multiplied by `noise_magnitude`
+                to all bounding boxes
         """
         self._inference = object_detection_inference_factory(name=inference_name, params=inference_params, lookup=lookup)
         self._dataset = dataset
         self._lookup = lookup
         self._cache_path = cache_path
         self._oracle = oracle
+
+        self._noise_magnitude = noise_magnitude
 
     def predict(self, scene: str, frame_index: int) -> List[PredBBox]:
         """
@@ -54,7 +59,7 @@ class DetectionManager:
 
         Args:
             scene: Scene name
-            frame_index: Frame inde
+            frame_index: Frame indez
 
         Returns:
             List of inference bboxes
@@ -70,6 +75,9 @@ class DetectionManager:
                 bboxes, classes, confidences = self._inference.predict_with_postprocess(image)
                 if self._cache_path is not None:
                     self._store_cache(scene, frame_index, bboxes, classes, confidences)
+
+        if self._noise_magnitude > 0.0:
+            bboxes = self._add_noise(bboxes)
 
         return self._inference.pack_bboxes(bboxes, classes, confidences)
 
@@ -151,7 +159,15 @@ class DetectionManager:
             frame_classes.append(cls)
             frame_confidences.append(1.0)
 
-        bboxes = np.stack(frame_bboxes)
+        bboxes = np.stack(frame_bboxes) if len(frame_bboxes) > 0 else np.zeros(shape=(0, 4), dtype=np.float32)
         classes = np.array(frame_classes, dtype=np.float32)
         confidences = np.array(frame_confidences, dtype=np.float32)
         return bboxes, classes, confidences
+
+    def _add_noise(self, bboxes: np.ndarray) -> np.ndarray:
+        w = bboxes[:, 2] - bboxes[:, 0]
+        h = bboxes[:, 3] - bboxes[:, 1]
+
+        bboxes[:, [0, 2]] += np.random.randn(bboxes.shape[0], 2) * np.repeat(w[:, np.newaxis], 2, axis=1) * self._noise_magnitude
+        bboxes[:, [1, 3]] += np.random.randn(bboxes.shape[0], 2) * np.repeat(h[:, np.newaxis], 2, axis=1) * self._noise_magnitude
+        return bboxes

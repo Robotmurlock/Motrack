@@ -72,6 +72,11 @@ def run_inference(cfg: GlobalConfig) -> None:
                         continue
 
                     bbox = data.create_bbox_object()
+                    bbox.clip()
+                    if bbox.area == 0:
+                        logger.warning(f'Bounding box on scene "{scene}" for frame {frame_index + 1} for object "{object_id}" has zero area!')
+                        continue
+
                     crop = bbox.crop(image)
                     track_id = object_id_to_track_id[object_id]
 

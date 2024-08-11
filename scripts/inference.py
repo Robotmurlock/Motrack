@@ -53,7 +53,8 @@ def run_inference(cfg: GlobalConfig) -> None:
         lookup=cfg.object_detection.load_lookup() if cfg.object_detection.lookup_path is not None else None,
         dataset=dataset,
         cache_path=cfg.object_detection.cache_path,
-        oracle=cfg.object_detection.oracle
+        oracle=cfg.object_detection.oracle,
+        noise_magnitude=cfg.object_detection.noise_magnitude
     )
 
     tracker = tracker_factory(

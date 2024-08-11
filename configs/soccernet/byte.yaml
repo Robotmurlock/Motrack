@@ -1,0 +1,11 @@
+defaults:
+  - global_config
+  - dataset: soccernet.yaml
+  - eval: val.yaml
+  - object_detection: yolox_low_conf_sportsmot.yaml
+  - algorithm: byte.yaml
+  - postprocess: soccernet.yaml
+  - path: default.yaml
+  - _self_
+
+experiment: 'soccernet-byte'

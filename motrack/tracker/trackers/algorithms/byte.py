@@ -54,7 +54,8 @@ class ByteTracker(MotionReIDBasedTracker):
         use_observation_if_lost: bool = False,
         appearance_ema_momentum: float = 0.95,
         appearance_buffer: int = 0,
-        use_reid_for_low_matching: bool = False
+        use_reid_for_low_matching: bool = False,
+        use_filtering: bool = True
     ):
         if filter_params is None:
             filter_params = {}
@@ -77,7 +78,8 @@ class ByteTracker(MotionReIDBasedTracker):
 
             appearance_ema_momentum=appearance_ema_momentum,
             appearance_buffer=appearance_buffer,
-            reid_detection_threshold=detection_threshold if not use_reid_for_low_matching else None
+            reid_detection_threshold=detection_threshold if not use_reid_for_low_matching else None,
+            use_filtering=use_filtering
         )
 
         if high_matcher_algorithm == 'default':

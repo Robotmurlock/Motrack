@@ -39,7 +39,8 @@ class MotionReIDBasedTracker(Tracker, ABC):
         use_observation_if_lost: bool = False,
         duplicate_iou_threshold: float = 1.00,
         appearance_ema_momentum: float = 0.95,
-        appearance_buffer: int = 0
+        appearance_buffer: int = 0,
+        use_filtering: bool = True
     ):
         """
         Args:
@@ -63,6 +64,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
             duplicate_iou_threshold: Remove lost/active tracklets that overlap
             appearance_ema_momentum: Appearance EMA (Exponential Moving Average) momentum
             appearance_buffer: Appearance buffer length (set to a non-zero non-negative integer to activate)
+            use_filtering: Use filtering to update matched detections
         """
         super().__init__()
 
@@ -85,6 +87,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         self._remember_threshold = remember_threshold
         self._use_observation_if_lost = use_observation_if_lost
         self._duplicate_iou_threshold = duplicate_iou_threshold
+        self._use_filtering = use_filtering
 
         # ReID hyperparameters
         self._appearance_ema_momentum = appearance_ema_momentum
@@ -263,7 +266,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
         for tracklet, det_bbox in zip(matched_tracklets, matched_detections):
             tracklet_bbox, _, _ = self._update(tracklet, det_bbox, frame=frame)
-            new_bbox = det_bbox # tracklet_bbox if tracklet.state == TrackletState.ACTIVE else det_bbox
+            new_bbox = tracklet_bbox if self._use_filtering and tracklet.state == TrackletState.ACTIVE else det_bbox
 
             new_state = TrackletState.ACTIVE
             if tracklet.state == TrackletState.NEW and tracklet.total_matches + 1 < self._initialization_threshold:

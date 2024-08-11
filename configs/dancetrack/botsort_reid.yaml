@@ -1,0 +1,12 @@
+defaults:
+  - global_config
+  - dataset: dancetrack.yaml
+  - eval: val.yaml
+  - object_detection: yolox_low_conf_dancetrack.yaml
+  - algorithm: botsort_reid.yaml
+  - postprocess: dancetrack.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'botsort-reid'

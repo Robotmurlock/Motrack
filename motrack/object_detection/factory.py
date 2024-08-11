@@ -9,6 +9,8 @@ from motrack.object_detection.algorithms.base import ObjectDetectionInference
 from motrack.object_detection.algorithms.yolov8 import YOLOv8Inference  # pylint: disable=unused-import
 # noinspection PyUnresolvedReferences
 from motrack.object_detection.algorithms.yolox import YOLOXInference  # pylint: disable=unused-import
+# noinspection PyUnresolvedReferences
+from motrack.object_detection.algorithms.oracle import OracleInference  # pylint: disable=unused-import
 from motrack.object_detection.catalog import OBJECT_DETECTION_CATALOG
 from motrack.utils.lookup import LookupTable
 

@@ -1,0 +1,4 @@
+type: 'mot'
+path: 'soccernet/dataset'
+params:
+  ignore_not_evaluated_fields: false

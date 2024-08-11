@@ -32,7 +32,8 @@ class SparseTracker(ByteTracker):
         initialization_threshold: int = 3,
         new_tracklet_detection_threshold: Optional[float] = None,
         duplicate_iou_threshold: float = 0.85,
-        use_observation_if_lost: bool = False
+        use_observation_if_lost: bool = False,
+        use_filtering: bool = True
     ):
         if filter_params is None:
             filter_params = {}
@@ -80,5 +81,6 @@ class SparseTracker(ByteTracker):
             initialization_threshold=initialization_threshold,
             new_tracklet_detection_threshold=new_tracklet_detection_threshold,
             duplicate_iou_threshold=duplicate_iou_threshold,
-            use_observation_if_lost=use_observation_if_lost
+            use_observation_if_lost=use_observation_if_lost,
+            use_filtering=use_filtering
         )

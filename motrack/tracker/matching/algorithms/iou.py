@@ -8,7 +8,7 @@ import numpy as np
 from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
-from motrack.tracker.tracklet import Tracklet, TrackletState
+from motrack.tracker.tracklet import Tracklet
 
 LabelType = Union[int, str]
 LabelGatingType = Union[LabelType, List[Tuple[LabelType, LabelType]]]
