@@ -240,7 +240,7 @@ class MOTDataset(BaseDataset):
 
         return scene_info_index, n_digits
 
-    def  _parse_labels(self, scene_infos: SceneInfoIndex, test: bool = False) -> Tuple[Dict[str, List[ObjectFrameData]], int]:
+    def _parse_labels(self, scene_infos: SceneInfoIndex, test: bool = False) -> Tuple[Dict[str, List[ObjectFrameData]], int]:
         """
         Loads all labels dictionary with format:
         {

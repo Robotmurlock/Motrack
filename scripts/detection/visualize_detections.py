@@ -18,7 +18,7 @@ logger = logging.getLogger('Script-VisualizeDetections')
 
 
 @pipeline.task('visualize-detections')
-def inference(cfg: GlobalConfig) -> None:
+def visualize_detections(cfg: GlobalConfig) -> None:
     output_path = os.path.join(cfg.experiment_path, 'visualize_detections')
     logger.info(f'Saving detection visualizations at "{output_path}".')
 
@@ -43,7 +43,7 @@ def inference(cfg: GlobalConfig) -> None:
         detection_manager=detection_manager,
         output_path=output_path,
         fps=cfg.visualize.fps,
-        is_rbg=cfg.visualize.is_rgb
+        is_rgb=cfg.visualize.is_rgb
     )
 
 
@@ -51,7 +51,7 @@ def inference(cfg: GlobalConfig) -> None:
 @hydra.main(config_path=DANCETRACK_CONFIG_PATH, config_name='movesort', version_base='1.1')
 def main(cfg: DictConfig):
     # noinspection PyTypeChecker
-    inference(cfg)
+    visualize_detections(cfg)
 
 
 if __name__ == '__main__':
