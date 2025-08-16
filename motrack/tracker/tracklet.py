@@ -2,14 +2,22 @@
 Tracklet Dataclass.
 """
 import enum
+from dataclasses import dataclass
 from multiprocessing import Value, Lock
-from typing import Tuple, ClassVar, Optional, List, Any, Union
+from typing import ClassVar, Optional, List, Any, Union
 
 from motrack.library.cv.bbox import PredBBox
 
 _TRACKLET_DEFAULT_MAX_HISTORY = 32
 
-TrackletHistoryType = List[Tuple[int, PredBBox]]
+@dataclass
+class TrackletHistoryFrameData:
+    frame_index: int
+    bbox: PredBBox
+    data: Optional[Any] = None
+
+
+TrackletHistoryType = List[TrackletHistoryFrameData]
 
 
 # Conventions
@@ -47,7 +55,8 @@ class Tracklet:
         frame_index: int,
         max_history: int = _TRACKLET_DEFAULT_MAX_HISTORY,
         _id: Optional[int] = None,
-        state: TrackletState = TrackletState.NEW
+        state: TrackletState = TrackletState.NEW,
+        frame_data: Optional[Any] = None
     ):
         """
         Initializes new tracklet.
@@ -58,6 +67,7 @@ class Tracklet:
             max_history: Max tracklet history (old data is deleted)
             _id: Set tracklet if explicitly
             state: Initial state
+            frame_data: Arbitrary frame specific data
 
         Returns:
             Initialized tracklet
@@ -69,14 +79,11 @@ class Tracklet:
         else:
             self._id = _id
 
-        # Update bbox
-        bbox.id = self._id
-
         self._max_history = max_history
         self._start_frame_index = frame_index
 
         # State
-        self._history: TrackletHistoryType = [(frame_index, bbox)]
+        self._history: TrackletHistoryType = [TrackletHistoryFrameData(frame_index, bbox, frame_data)]
         self._total_matches = 1
         self._total_lost = 0
         self._total_active = 1
@@ -175,7 +182,7 @@ class Tracklet:
 
 
     @property
-    def latest(self) -> Tuple[int, PredBBox]:
+    def latest(self) -> TrackletHistoryFrameData:
         """
         The latest detection of one tracklet.
 
@@ -185,7 +192,7 @@ class Tracklet:
         return self._history[-1]
 
     @property
-    def first(self) -> Tuple[int, PredBBox]:
+    def first(self) -> TrackletHistoryFrameData:
         """
         First detection (last detection in history) of one tracklet.
 
@@ -212,7 +219,7 @@ class Tracklet:
         Returns:
             Current bbox
         """
-        return self.latest[1]
+        return self.latest.bbox
 
     @property
     def frame_index(self) -> int:
@@ -222,7 +229,7 @@ class Tracklet:
         Returns:
             Frame index
         """
-        return self.latest[0]
+        return self.latest.frame_index
 
     @property
     def total_matches(self) -> int:
@@ -241,7 +248,7 @@ class Tracklet:
         """
         return len(self._history)
 
-    def update(self, bbox: PredBBox, frame_index: int, state: Optional[TrackletState] = None) -> 'Tracklet':
+    def update(self, bbox: PredBBox, frame_index: int, state: Optional[TrackletState] = None, frame_data: Optional[Any] = None) -> 'Tracklet':
         """
         Updates tracklet BBox (and history).
         Disclaimer: Updates bbox id!
@@ -250,10 +257,11 @@ class Tracklet:
             bbox: New bbox
             frame_index: Current frame index
             state: New tracklet state
+            frame_data: Frame specific data
         """
         bbox.id = self._id  # Update bbox id
 
-        self._history.append((frame_index, bbox))
+        self._history.append(TrackletHistoryFrameData(frame_index, bbox, frame_data))
 
         # Remove `obsolete` history
         while len(self._history) > self._max_history:
