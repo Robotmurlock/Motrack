@@ -31,7 +31,8 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
         linear_prediction: bool = False,
         lower_bound: float = 0.1,
         upper_bound: float = 0.9,
-        fast_linear_assignment: bool = False
+        fast_linear_assignment: bool = False,
+        adaptive: bool = False
     ):
         """
         Args:
@@ -50,7 +51,8 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
             initial_P_conf=initial_P_conf,
             Q_conf=Q_conf,
             Q_conf_velocity=Q_conf_velocity,
-            R_conf=R_conf
+            R_conf=R_conf,
+            adaptive=adaptive
         )
         self._linear_prediction = linear_prediction
         self._lower_bound = lower_bound
@@ -78,9 +80,9 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
             if history_len < 2:
                 return self._postprocess_conf(tracklet.bbox.conf)
 
-            last_bbox_frame_index, last_bbox = observation_history[-1]
+            last_bbox_frame_index, last_bbox = observation_history[-1].frame_index, observation_history[-1].bbox
             last_bbox_conf = last_bbox.conf
-            prev_bbox_frame_index, prev_bbox = observation_history[-2]
+            prev_bbox_frame_index, prev_bbox = observation_history[-2].frame_index, observation_history[-2].bbox
             prev_bbox_conf = prev_bbox.conf
 
             if last_bbox_frame_index - prev_bbox_frame_index > 1:
@@ -134,3 +136,4 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
         tracklet_conf_estimations = np.array([self._predict_conf(t) for t in tracklets], dtype=np.float32).reshape(-1, 1)
         detection_confs = np.array([bbox.conf for bbox in detections], dtype=np.float32).reshape(-1, 1)
         return np.maximum(0.0, cdist(tracklet_conf_estimations, detection_confs, metric='cityblock'))
+

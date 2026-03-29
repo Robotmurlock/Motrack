@@ -20,10 +20,11 @@ def filter_observations(history: TrackletHistoryType) -> TrackletHistoryType:
     last_frame_index: int = -1
 
     observation_history: TrackletHistoryType = []
-    for index, bbox in history:
-        if last_frame_index == index:
+    for tracklet_data in history:
+        if last_frame_index == tracklet_data.frame_index:
             continue
-        last_frame_index = index
-        observation_history.append((index, bbox))
+        last_frame_index = tracklet_data.frame_index
+        observation_history.append(tracklet_data)
 
     return observation_history
+

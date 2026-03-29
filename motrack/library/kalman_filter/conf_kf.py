@@ -37,7 +37,8 @@ class ConfidenceKalmanFilter(object):
         initial_P_conf: float = 10.0,
         Q_conf: float = 1.0,
         Q_conf_velocity: float = 1e-3,
-        R_conf: float = 100.0
+        R_conf: float = 100.0,
+        adaptive: bool = True
     ):
         ndim, dt = 1, 1.
 
@@ -52,6 +53,7 @@ class ConfidenceKalmanFilter(object):
         self._Q_conf = Q_conf
         self._Q_conf_velocity = Q_conf_velocity
         self._R_conf = R_conf
+        self._adaptive = adaptive
 
     def initiate(self, measurement):
         mean_pos = measurement
@@ -75,7 +77,8 @@ class ConfidenceKalmanFilter(object):
 
     def project(self, mean, covariance):
         conf = mean[0]
-        std = [self._R_conf * (1 - conf)]
+
+        std = [self._R_conf * (1 - conf)] if self._adaptive else [self._R_conf]
         innovation_cov = np.diag(np.square(std))
 
         mean = np.dot(self._update_mat, mean)
