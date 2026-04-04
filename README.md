@@ -97,11 +97,22 @@ Any custom dataset can be added by extending the base dataset.
 
 List of tool entrypoints:
 
-  - Inference: Perform any tracker inference that can directly evaluated with TrackEval framework.
-  - Postprocess: Perform offline postprocessing (linear interpolation, etc...) for more accuracy tracklets.
-  - Visualize: Visualize tracker inference.
+  - **Inference** (`tools/inference.py`): Run tracker inference. Outputs are stored under a deterministic hash-based directory.
+  - **Postprocess** (`tools/postprocess.py`): Perform offline postprocessing (linear interpolation, etc.) for more accurate tracklets.
+  - **Eval** (`tools/eval.py`): Evaluate tracker outputs with HOTA, CLEAR, and Identity metrics. Results are logged and saved as JSON.
+  - **Visualize** (`tools/visualize_inference.py`): Visualize tracker inference.
 
 ### Evaluation
+
+Motrack includes a built-in evaluation module (`motrack/eval`) that computes
+HOTA, CLEAR (MOTA/MOTP), Identity (IDF1), and Count metrics — no external
+TrackEval installation required. Run evaluation after inference:
+
+```bash
+python tools/eval.py
+```
+
+Results are saved as `eval_results.json` inside the tracker run directory.
 
 Evaluation of different supported methods can be found [here](https://github.com/Robotmurlock/Motrack/blob/main/docs/evaluation.md).
 

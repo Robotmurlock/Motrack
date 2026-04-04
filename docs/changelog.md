@@ -1,18 +1,24 @@
 # Changelog
 
-## 0.7.0 (unreleased)
+## 1.0.0 (unreleased)
 
 ### Features
 - Added mmdetection-based YOLOX inference with ByteTrack checkpoint weight remapping
 - Migrated from `setup.py` to `pyproject.toml` with `uv` package management
 - Split Docker into mmdet (`Dockerfile`) and legacy YOLOX (`yolox.Dockerfile`) images
 - Added centralized filesystem conventions for tracker outputs with dataset-level naming and deterministic run hashes
+- Added integrated evaluation module (`motrack/eval`) with HOTA, CLEAR, Identity, and Count metrics — replaces external TrackEval CLI dependency
+- Added `tools/eval.py` entrypoint for evaluating tracker outputs with JSON result export
+- Added configurable eval/distractor class IDs per dataset for evaluation preprocessing
 
 ### Refactor
 - Restructured configs into `trackers/`, `od/`, and `deprecated/` standalone directories
 - Lazy YOLOX imports to avoid hard dependency when using mmdet
 - Renamed executable entrypoints from `scripts/` to `tools/`
 - Renamed tracker output directories from `active` / `all` / `postprocess` to `online` / `debug` / `offline`
+- Renamed `motrack/evaluation` package to `motrack/inference` (IO module)
+- Renamed `TrackerEvalConfig` to `TrackerInferenceConfig` and config group `eval` to `inference` (the previous name conflicted with the new evaluation module)
+- Switched run directory naming from `{datetime}_{hash}` to hash-only for deterministic path lookup
 
 ### Fixes
 - Fixed pandas `drop()` compatibility with newer versions
