@@ -10,7 +10,7 @@ import hydra
 import yaml
 from omegaconf import DictConfig
 
-from motrack.common.project import DANCETRACK_CONFIG_PATH
+from motrack.common.project import DANCETRACK_TRACKERS_CONFIG_PATH
 from motrack.config_parser import GlobalConfig
 from motrack.datasets import dataset_factory
 from motrack.object_detection import DetectionManager
@@ -91,7 +91,7 @@ def run_inference(cfg: GlobalConfig) -> None:
         )
 
 
-@hydra.main(config_path=DANCETRACK_CONFIG_PATH, config_name='movesort', version_base='1.1')
+@hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='movesort', version_base='1.1')
 def main(cfg: DictConfig):
     # noinspection PyTypeChecker
     run_inference(cfg)

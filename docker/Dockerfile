@@ -1,7 +1,4 @@
-FROM ubuntu:20.04
-
-ENV TZ=Europe/Belgrade
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+FROM ubuntu:22.04
 
 RUN apt update
 RUN apt-get update && \
@@ -15,28 +12,27 @@ RUN apt-get update && \
     libgl1-mesa-glx unzip \
     curl cron ffmpeg \
     ssh openssh-client \
-    vim
-
-RUN pip3 install -U pip
-
-# Install motrack
-ADD requirements.txt /tmp/
-RUN pip install -r /tmp/requirements.txt
-
-# Install YOLOX
-RUN apt-get install -y git
-RUN git clone https://github.com/Megvii-BaseDetection/YOLOX /YOLOX
-WORKDIR /YOLOX
-RUN pip3 install -v -e .  # or  python3 setup.py develop
-
-# Install ultralytics
-RUN pip3 install ultralytics
-
-# Install ONNX inference
-RUN pip3 install onnxruntime-gpu  # Change this to onnxruntime if not GPU is used.
-
-ENV PYTHONPATH="/motrack"
+    vim \
+    git
 
 WORKDIR /motrack
+ENV PYTHONPATH="/motrack"
+
+RUN pip install uv
+
+# Install project Python environment to /opt/venv so it is not overridden
+# by the ${CODE}:/motrack volume mount at runtime.
+COPY pyproject.toml uv.lock ./
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+RUN uv sync
+ENV PATH="/opt/venv/bin:$PATH"
+
+# mmcv prebuilt wheel with CUDA support from the OpenMMLab index.
+# Must match the torch+CUDA version installed by uv (torch 2.1 + cu121).
+RUN /opt/venv/bin/pip install "mmcv>=2.0.0,<2.2.0" \
+    -f https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/index.html
+
+# Install ultralytics + onnxruntime (optional deps)
+RUN /opt/venv/bin/pip install ultralytics onnxruntime-gpu
 
 CMD ["bash"]

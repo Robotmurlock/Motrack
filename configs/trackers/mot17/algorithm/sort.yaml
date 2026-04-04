@@ -1,0 +1,12 @@
+name: sort
+params:
+  filter_name: bot-sort
+  filter_params:
+    override_std_weight_position: 0.05
+  initialization_threshold: 2
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+  matcher_algorithm: iou
+  matcher_params:
+    match_threshold: 0.20
+    fuse_score: true

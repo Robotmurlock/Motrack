@@ -27,7 +27,7 @@ import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from motrack.common.project import DANCETRACK_CONFIG_PATH
+from motrack.common.project import DANCETRACK_TRACKERS_CONFIG_PATH
 from motrack.config_parser import GlobalConfig
 from motrack.datasets import dataset_factory
 from motrack.utils import pipeline
@@ -134,7 +134,7 @@ def run_inference(cfg: GlobalConfig) -> None:
     logger.info(f'Saved YOLO dataset config at path "{yolo_dataset_config_path}".')
 
 
-@hydra.main(config_path=DANCETRACK_CONFIG_PATH, config_name='movesort', version_base='1.1')
+@hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='movesort', version_base='1.1')
 def main(cfg: DictConfig):
     # noinspection PyTypeChecker
     run_inference(cfg)

@@ -272,7 +272,7 @@ class MOTDataset(BaseDataset):
             df.columns = ['frame_id', 'object_id', 'xmin', 'ymin', 'w', 'h']  # format: yxwh
             df['object_global_id'] = \
                 scene_name + ID_SEPARATOR + df['object_id'].astype(str)  # object id is not unique over all scenes
-            df = df.drop(columns='object_id', axis=1)
+            df = df.drop(columns='object_id')
             df = df.sort_values(by=['object_global_id', 'frame_id'])
             n_labels += df.shape[0]
 
@@ -281,7 +281,7 @@ class MOTDataset(BaseDataset):
                 assert object_global_id.count(ID_SEPARATOR) == 1, f'Object id "{object_global_id}" contains separator in scene name or object id.'
 
                 track_id = int(object_global_id.split(ID_SEPARATOR)[-1])
-                df_grp = df_grp.drop(columns='object_global_id', axis=1).set_index('frame_id')
+                df_grp = df_grp.drop(columns='object_global_id').set_index('frame_id')
 
                 data[object_global_id] = [None for _ in range(seqlength)]
                 for frame_id, row in df_grp.iterrows():

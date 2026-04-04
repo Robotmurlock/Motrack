@@ -1,0 +1,12 @@
+defaults:
+  - global_config
+  - dataset: dancetrack.yaml
+  - eval: val.yaml
+  - object_detection: mmdet_yolox_dancetrack.yaml
+  - algorithm: movesort_gmc.yaml
+  - postprocess: dancetrack.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'movesort_with_gmc'

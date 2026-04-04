@@ -2,11 +2,36 @@
 version: "3.9"
 services:
   motrack-env:
-    container_name: motrack-env
+    container_name: ${CONT_NAME:-motrack-env}
     build:
       context: ..
       dockerfile: docker/Dockerfile
     image: motrack-env
+    stdin_open: true
+    tty: true
+    command: bash
+
+    shm_size: 16gb
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [ '${GPU}' ]
+              capabilities: [ gpu ]
+          cpus: '${CPUS:-1.0}'
+
+    volumes:
+      - '/tmp:/tmp'
+      - '${DATA}:/media/home'
+      - '${CODE:-$PWD}:/motrack'
+
+  motrack-env-yolox:  # deprecated: back-compatibility
+    container_name: ${YOLOX_CONT_NAME:-motrack-env-yolox}
+    build:
+      context: ..
+      dockerfile: docker/yolox.Dockerfile
+    image: motrack-env-yolox
     stdin_open: true
     tty: true
     command: bash

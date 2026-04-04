@@ -3,7 +3,10 @@ Default Exp form the YOLOX inference.
 """
 import os
 
-from yolox.exp import Exp as MyExp
+try:
+    from yolox.exp import Exp as MyExp
+except ImportError:
+    MyExp = object
 
 
 class Exp(MyExp):

@@ -1,0 +1,22 @@
+name: byte
+params:
+  filter_name: bot-sort
+  filter_params:
+    override_std_weight_position: 0.05
+  initialization_threshold: 3
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+  detection_threshold: 0.6
+  high_matcher_algorithm: move
+  high_matcher_params:
+    distance_name: l1
+    match_threshold: 0.25
+    motion_lambda: 5
+  low_matcher_algorithm: move
+  low_matcher_params:
+    distance_name: l1
+    match_threshold: 0.5
+    motion_lambda: 5
+  new_matcher_algorithm: iou
+  new_matcher_params:
+    match_threshold: 0.25

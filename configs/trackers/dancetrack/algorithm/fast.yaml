@@ -1,0 +1,6 @@
+name: fast
+params:
+  filter_name: no-motion
+  filter_params: {}
+  initialization_threshold: 3
+  remember_threshold: 30

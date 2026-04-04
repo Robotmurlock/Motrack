@@ -1,0 +1,12 @@
+defaults:
+  - global_config
+  - dataset: dancetrack.yaml
+  - eval: val.yaml
+  - object_detection: mmdet_yolox_low_conf_dancetrack.yaml
+  - algorithm: bytetrack.yaml
+  - postprocess: dancetrack.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'bytetrack'

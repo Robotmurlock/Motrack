@@ -1,0 +1,40 @@
+name: byte
+params:
+  filter_name: bot-sort
+  filter_params:
+    override_std_weight_position: 0.05
+  initialization_threshold: 3
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 60
+  detection_threshold: 0.6
+  high_matcher_algorithm: compose
+  high_matcher_params:
+    matchers:
+      - name: iou
+        params:
+         match_threshold: 0.15
+      - name: reid
+        params: {}
+    weights:
+      - 1.0
+      - 1.5
+  low_matcher_algorithm: compose
+  low_matcher_params:
+    matchers:
+      - name: iou
+        params:
+         match_threshold: 0.5
+    weights:
+      - 1.0
+  new_matcher_algorithm: iou
+  new_matcher_params:
+    match_threshold: 0.15
+
+  # ReID extension
+  reid_name: fastreid-onnx
+  reid_params:
+    model_path: /media/home/reid/SBS.onnx
+    height: 384
+    width: 128
+    cache_path: /tmp/reid_sbs50  # Cache inference for faster future runs (should be deleted if the detector changed)
+    batch_inference: false

@@ -1,0 +1,42 @@
+name: byte
+params:
+  filter_name: bot-sort
+  filter_params:
+    override_std_weight_position: 0.05
+  initialization_threshold: 3
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+  detection_threshold: 0.6
+  high_matcher_algorithm: compose
+  high_matcher_params:
+    matchers:
+      - name: iou
+        params:
+         match_threshold: 0.25
+      - name: distance
+        params:
+          distance_name: l1
+      - name: hybrid-conf
+        params: {}
+    weights:
+      - 1
+      - 5
+      - 4
+  low_matcher_algorithm: compose
+  low_matcher_params:
+    matchers:
+      - name: iou
+        params:
+         match_threshold: 0.5
+      - name: distance
+        params:
+          distance_name: l1
+      - name: hybrid-conf
+        params: {}
+    weights:
+      - 1
+      - 5
+      - 2
+  new_matcher_algorithm: iou
+  new_matcher_params:
+    match_threshold: 0.25
