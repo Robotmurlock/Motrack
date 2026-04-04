@@ -1,6 +1,7 @@
 """
-Tracker config for tools scripts.
+Tracker config for tool entrypoints.
 """
+from datetime import datetime
 import json
 import os
 from dataclasses import dataclass, field
@@ -8,7 +9,7 @@ from typing import Optional
 
 from hydra.core.config_store import ConfigStore
 
-from motrack.common import project
+from motrack.common import conventions, formats, project
 from motrack.utils.lookup import LookupTable
 
 
@@ -39,12 +40,13 @@ class PathConfig:
 class DatasetConfig:
     """
     Dataset config.
-    - name: Dataset name
+    - name: Optional dataset output name
     - path: Path to the dataset
     - params: Ctor parameters
     """
     type: str
     path: str
+    name: Optional[str] = None
     params: dict = field(default_factory=dict)
 
     def __post_init__(self):
@@ -102,15 +104,14 @@ class TrackerAlgorithmConfig:
 class TrackerVisualizeConfig:
     fps: int = 20
     new_object_length: int = 5
-    option: str = 'all'
+    option: str = 'debug'
     is_rgb: bool = field(default=True)
 
     def __post_init__(self) -> None:
         """
         Validation.
         """
-        options = ['active', 'all', 'postprocess']
-        assert self.option in options, f'Invalid option "{self.option}". Available: {options}.'
+        self.option = conventions.normalize_tracker_output_name(self.option)
 
 
 @dataclass
@@ -154,18 +155,64 @@ class GlobalConfig:
     utility: UtilityConfig = field(default_factory=UtilityConfig)
 
     @property
+    def hash(self) -> str:
+        """
+        Gets deterministic hash of the crucial tracking setup.
+
+        Returns:
+            Deterministic tracking hash.
+        """
+        return conventions.get_dt_hash(
+            dataset_type=self.dataset.type,
+            dataset_path=self.dataset.path,
+            dataset_params=self.dataset.params,
+            algorithm_name=self.algorithm.name,
+            algorithm_params=self.algorithm.params,
+            object_detection_type=self.object_detection.type,
+            object_detection_params=self.object_detection.params,
+            object_detection_lookup_path=self.object_detection.lookup_path,
+            object_detection_oracle=self.object_detection.oracle,
+            scene_pattern=self.dataset_filter.scene_pattern,
+            clip=self.eval.clip
+        )
+
+    @property
+    def run_identifier(self) -> str:
+        """
+        Gets filesystem-safe run identifier for the current execution.
+
+        Returns:
+            Run identifier with `{datetime}_{hash}` format.
+        """
+        return self._run_identifier
+
+    @property
     def experiment_path(self) -> str:
         """
         Path where tracker results can be found.
-        """
-        return os.path.join(self.path.master, self.dataset.type, self.algorithm.name, self.experiment, self.eval.split)
 
-    def __post_init__(self):
+        Returns:
+            Tracker run directory path.
+        """
+        return conventions.get_tracker_run_path(
+            master_path=self.path.master,
+            dataset_type=self.dataset.type,
+            dataset_name=self.dataset.name,
+            experiment_name=self.experiment,
+            split=self.eval.split,
+            run_identifier=self.run_identifier
+        )
+
+    def __post_init__(self) -> None:
         """
         Postprocess.
+
+        Ignore Returns: This function returns None.
         """
         self.dataset.basepath = os.path.join(self.path.assets, self.dataset.path)
         self.dataset.fullpath = os.path.join(self.dataset.basepath, self.eval.split)
+        self._run_datetime = datetime.now().strftime(formats.RUN_DATETIME_FORMAT)
+        self._run_identifier = conventions.get_run_identifier(self._run_datetime, self.hash)
 
 
 # Configuring hydra config store

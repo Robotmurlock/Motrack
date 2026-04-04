@@ -44,7 +44,7 @@ def run_inference(cfg: GlobalConfig) -> None:
             'annotations': [],
             'videos': [],
             'categories': [
-                {'id': CATEGORY_ID, 'name': CATEGORY_NAME}  # FIXME: Currently only supports dataset with a single category
+                {'id': CATEGORY_ID, 'name': CATEGORY_NAME}
             ]
         }
 
@@ -92,7 +92,7 @@ def run_inference(cfg: GlobalConfig) -> None:
                         'image_id': frame_index + 1,
                         'track_id': data.track_id,
                         'bbox': bbox.as_numpy_xywh().tolist(),
-                        'conf': 1.0,  # weak labels are not supported
+                        'conf': 1.0,
                         'iscrowd': 0,
                         'area': bbox.area
                     }

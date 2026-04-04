@@ -1,24 +1,25 @@
 """
 Tracker inference. Output can directly be evaluated using the TrackEval repo.
 """
+from dataclasses import asdict
 import logging
 import os
 import shutil
-from dataclasses import asdict
+
+import yaml
 
 import hydra
-import yaml
-from omegaconf import DictConfig
-
+from motrack.common import conventions
 from motrack.common.project import DANCETRACK_TRACKERS_CONFIG_PATH
 from motrack.config_parser import GlobalConfig
 from motrack.datasets import dataset_factory
 from motrack.object_detection import DetectionManager
+from motrack.tools import run_tracker_inference, run_tracker_postprocess
 from motrack.tracker import tracker_factory
 from motrack.utils import pipeline
-from motrack.tools import run_tracker_inference, run_tracker_postprocess
+from omegaconf import DictConfig
 
-logger = logging.getLogger('Script-TrackerInference')
+logger = logging.getLogger('Tool-TrackerInference')
 
 
 @pipeline.task('inference')
@@ -35,8 +36,14 @@ def run_inference(cfg: GlobalConfig) -> None:
             logger.info('Aborting!')
             return
 
-    tracker_active_output = os.path.join(cfg.experiment_path, 'active')
-    tracker_all_output = os.path.join(cfg.experiment_path, 'all')
+    tracker_online_output = conventions.get_tracker_output_path(
+        cfg.experiment_path,
+        conventions.TrackerOutputType.ONLINE
+    )
+    tracker_debug_output = conventions.get_tracker_output_path(
+        cfg.experiment_path,
+        conventions.TrackerOutputType.DEBUG
+    )
 
     logger.info(f'Saving tracker inference on path "{cfg.experiment_path}".')
 
@@ -65,26 +72,28 @@ def run_inference(cfg: GlobalConfig) -> None:
         dataset=dataset,
         tracker=tracker,
         detection_manager=detection_manager,
-        tracker_active_output=tracker_active_output,
-        tracker_all_output=tracker_all_output,
+        tracker_active_output=tracker_online_output,
+        tracker_all_output=tracker_debug_output,
         clip=cfg.eval.clip,
         scene_pattern=cfg.dataset_filter.scene_pattern,
         load_image=cfg.eval.load_image
     )
 
-    # Save tracker config
-    tracker_config_path = os.path.join(cfg.experiment_path, 'config.yaml')
+    tracker_config_path = conventions.get_config_snapshot_path(cfg.experiment_path)
     with open(tracker_config_path, 'w', encoding='utf-8') as f:
         yaml.safe_dump(asdict(cfg), f)
 
     if cfg.eval.postprocess:
         logger.info('Performing inference postprocessing...')
-        tracker_postprocess_output = os.path.join(cfg.experiment_path, 'postprocess')
+        tracker_offline_output = conventions.get_tracker_output_path(
+            cfg.experiment_path,
+            conventions.TrackerOutputType.OFFLINE
+        )
         run_tracker_postprocess(
             dataset=dataset,
-            tracker_active_output=tracker_active_output,
-            tracker_all_output=tracker_all_output,
-            tracker_postprocess_output=tracker_postprocess_output,
+            tracker_active_output=tracker_online_output,
+            tracker_all_output=tracker_debug_output,
+            tracker_postprocess_output=tracker_offline_output,
             postprocess_cfg=cfg.postprocess,
             scene_pattern=cfg.dataset_filter.scene_pattern,
             clip=cfg.eval.clip

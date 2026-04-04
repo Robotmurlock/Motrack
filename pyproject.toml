@@ -43,7 +43,7 @@ reid = ["onnxruntime"]
 Homepage = "https://github.com/Robotmurlock/Motrack"
 
 [tool.setuptools.packages.find]
-exclude = ["tests", "tests.*", "scripts"]
+exclude = ["tests", "tests.*", "tools"]
 
 [tool.uv]
 environments = ["sys_platform == 'linux'"]

@@ -1,5 +1,5 @@
 """
-Mines detections. Can be used for object motion model training.
+Visualize detections. Can be used to visually evaluate detector performance without tracking component.
 """
 import logging
 import os
@@ -11,22 +11,22 @@ from motrack.common.project import DANCETRACK_TRACKERS_CONFIG_PATH
 from motrack.config_parser import GlobalConfig
 from motrack.datasets import dataset_factory
 from motrack.object_detection import DetectionManager
-from motrack.tools import run_detection_mining
+from motrack.tools import run_visualize_detections
 from motrack.utils import pipeline
 
-logger = logging.getLogger('Script-DetectionMining')
+logger = logging.getLogger('Tool-VisualizeDetections')
 
 
-@pipeline.task('detection-mining')
-def inference(cfg: GlobalConfig) -> None:
-    output_path = os.path.join(cfg.experiment_path, 'detection_mining')
-    logger.info(f'Saving mined detections at path "{output_path}".')
+@pipeline.task('visualize-detections')
+def visualize_detections(cfg: GlobalConfig) -> None:
+    output_path = os.path.join(cfg.experiment_path, 'visualize_detections')
+    logger.info(f'Saving detection visualizations at "{output_path}".')
 
     dataset = dataset_factory(
         dataset_type=cfg.dataset.type,
         path=cfg.dataset.fullpath,
         params=cfg.dataset.params,
-        test=False
+        test=cfg.eval.split == 'test'
     )
 
     detection_manager = DetectionManager(
@@ -38,20 +38,19 @@ def inference(cfg: GlobalConfig) -> None:
         oracle=cfg.object_detection.oracle
     )
 
-    run_detection_mining(
+    run_visualize_detections(
         dataset=dataset,
         detection_manager=detection_manager,
         output_path=output_path,
-        iou_threshold=0.7,
-        min_confidence=0.3
+        fps=cfg.visualize.fps,
+        is_rgb=cfg.visualize.is_rgb
     )
-
 
 
 @hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='movesort', version_base='1.1')
 def main(cfg: DictConfig):
     # noinspection PyTypeChecker
-    inference(cfg)
+    visualize_detections(cfg)
 
 
 if __name__ == '__main__':

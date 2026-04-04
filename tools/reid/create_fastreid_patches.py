@@ -12,16 +12,16 @@ Each crop has naming format:
 import logging
 import os
 from pathlib import Path
-import cv2
 
+import cv2
 import hydra
 from omegaconf import DictConfig
+from tqdm import tqdm
 
 from motrack.common.project import DANCETRACK_TRACKERS_CONFIG_PATH
 from motrack.config_parser import GlobalConfig
 from motrack.datasets import dataset_factory
 from motrack.utils import pipeline
-from tqdm import tqdm
 
 logger = logging.getLogger('CreateFastReIDPatches')
 

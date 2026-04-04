@@ -51,8 +51,7 @@ def save_labels(labels: List[List[float]], filepath: str) -> None:
         labels: List of labels
         filepath: Path where the labels are stored
 
-    Returns:
-
+    Ignore Returns: This function returns None.
     """
     with open(filepath, 'w', encoding='utf-8') as f:
         label_lines = [' '.join([str(v) for v in label]) for label in labels]
@@ -67,7 +66,6 @@ def run_inference(cfg: GlobalConfig) -> None:
     Path(yolo_dataset_path).mkdir(parents=True, exist_ok=True)
     frame_global_index = 1
 
-    # Used in case `cfg.utility.use_validation_for_training == True`
     train_images_path = os.path.join(yolo_dataset_path, 'train', IMAGES_DIRNAME)
     train_labels_path = os.path.join(yolo_dataset_path, 'train', LABELS_DIRNAME)
 
@@ -110,8 +108,6 @@ def run_inference(cfg: GlobalConfig) -> None:
                 os.symlink(image_filepath, yolo_dataset_image_filepath)
 
                 if split == 'val' and cfg.utility.use_validation_for_training:
-                    # Save validation dataset in training
-                    # Warning: This detector can't be used for tracker hyperparameter tuning on validation dataset!
                     yolo_dataset_train_images_filepath = os.path.join(train_images_path, f'{image_id}.jpg')
                     yolo_dataset_train_labels_filepath = os.path.join(train_labels_path, f'{image_id}.txt')
 
