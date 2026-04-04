@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.0 (unreleased)
+
+### Features
+- Added mmdetection-based YOLOX inference with ByteTrack checkpoint weight remapping
+- Migrated from `setup.py` to `pyproject.toml` with `uv` package management
+- Split Docker into mmdet (`Dockerfile`) and legacy YOLOX (`yolox.Dockerfile`) images
+
+### Refactor
+- Restructured configs into `trackers/`, `od/`, and `deprecated/` standalone directories
+- Lazy YOLOX imports to avoid hard dependency when using mmdet
+
+### Fixes
+- Fixed pandas `drop()` compatibility with newer versions
+
 ## 0.4.1 - 2024-02-26
 
 ### Features
