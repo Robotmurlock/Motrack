@@ -7,6 +7,7 @@ from typing import Optional, List
 
 import cv2
 import numpy as np
+from pydantic import BaseModel, ConfigDict
 
 from motrack.reid.algorithms.base import BaseReID
 from motrack.reid.catalog import REID_CATALOG
@@ -14,20 +15,28 @@ from motrack.reid.catalog import REID_CATALOG
 logger = logging.getLogger('FastReIDOnnx')
 
 
+@REID_CATALOG.register_config('fastreid-onnx')
+class FastReIDOnnxConfig(BaseModel):
+    """
+    Config for FastReID ONNX inference.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    model_path: str
+    height: int = 256
+    width: int = 256
+    cache_path: Optional[str] = None
+    batch_inference: bool = False
+    providers: Optional[List[str]] = None
+
+
 @REID_CATALOG.register('fastreid-onnx')
 class FastReIDOnnx(BaseReID):
     """
     FastReIDOnnx framework support for any models exported in ONNX format.
     """
-    def __init__(
-        self,
-        model_path: str,
-        height: int = 256,
-        width: int = 256,
-        cache_path: Optional[str] = None,
-        batch_inference: bool = False,
-        providers: Optional[List[str]] = None
-    ):
+    def __init__(self, config: FastReIDOnnxConfig):
         """
         Args:
             model_path: Path where the ONNX model export is stored
@@ -38,17 +47,18 @@ class FastReIDOnnx(BaseReID):
                 - This makes inference faster
             providers: Use CUDA/CPU providers
         """
-        super().__init__(cache_path=cache_path, batch_inference=batch_inference)
+        super().__init__(cache_path=config.cache_path, batch_inference=config.batch_inference)
 
         import onnxruntime
+        providers = config.providers
         if providers is None:
             providers = ['CUDAExecutionProvider']
 
         sess_options = onnxruntime.SessionOptions()
-        self._ort_session = onnxruntime.InferenceSession(model_path, providers=providers, sess_options=sess_options)
+        self._ort_session = onnxruntime.InferenceSession(config.model_path, providers=providers, sess_options=sess_options)
         self._input_name = self._ort_session.get_inputs()[0].name
-        self._height = height
-        self._width = width
+        self._height = config.height
+        self._width = config.width
 
     def preprocess(self, image: np.ndarray) -> np.ndarray:
         # the model expects RGB inputs

@@ -4,6 +4,7 @@ Wrapper of Bot-Sort KF.
 from typing import Tuple, Optional
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict
 
 from motrack.filter.algorithms.base import State
 from motrack.filter.algorithms.base import StateModelFilter
@@ -11,17 +12,25 @@ from motrack.filter.catalog import FILTER_CATALOG
 from motrack.library.kalman_filter.botsort_kf import BotSortKalmanFilter
 
 
+@FILTER_CATALOG.register_config('bot-sort')
+class BotSortKalmanFilterConfig(BaseModel):
+    """
+    Config for the Bot-SORT Kalman filter wrapper.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    override_std_weight_position: Optional[float] = None
+
+
 @FILTER_CATALOG.register('bot-sort')
 class BotSortKalmanWrapFilter(StateModelFilter):
     """
     Wrapper for BotSortKalman filter for StateModelFilter interface.
     """
-    def __init__(
-        self,
-        override_std_weight_position: Optional[float] = None
-    ):
+    def __init__(self, config: BotSortKalmanFilterConfig):
         self._kf = BotSortKalmanFilter(
-            override_std_weight_position=override_std_weight_position
+            override_std_weight_position=config.override_std_weight_position
         )
 
     def initiate(self, measurement: np.ndarray) -> State:

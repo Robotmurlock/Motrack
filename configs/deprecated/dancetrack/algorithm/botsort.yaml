@@ -1,24 +1,29 @@
 # Bot-Sort without ReID = ByteTrack + CMC
 name: byte
 params:
-  filter_name: bot-sort
-  filter_params:
-    override_std_weight_position: 0.05
+  filter:
+    name: bot-sort
+    params:
+      override_std_weight_position: 0.05
   initialization_threshold: 3
   remember_threshold: 30
   new_tracklet_detection_threshold: 0.7
   detection_threshold: 0.6
-  high_matcher_algorithm: iou
-  high_matcher_params:
-    match_threshold: 0.25
-  low_matcher_algorithm: iou
-  low_matcher_params:
-    match_threshold: 0.50
-  new_matcher_algorithm: iou
-  new_matcher_params:
-    match_threshold: 0.25
+  high_matcher:
+    name: iou
+    params:
+      match_threshold: 0.25
+  low_matcher:
+    name: iou
+    params:
+      match_threshold: 0.50
+  new_matcher:
+    name: iou
+    params:
+      match_threshold: 0.25
 
   # CMC extension
-  cmc_name: gmc-from-file
-  cmc_params:
-    dirpath: /media/home/GMC_files/DanceTrack
+  cmc:
+    name: gmc-from-file
+    params:
+      dirpath: /media/home/GMC_files/DanceTrack

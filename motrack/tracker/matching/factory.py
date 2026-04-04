@@ -3,13 +3,12 @@ Tracker association factory method.
 Use `ASSOCIATION_CATALOG.register` to extend supported tracker association algorithms.
 """
 # pylint: disable=unused-import
-import copy
 from typing import Dict, Any, List
 
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 # noinspection PyUnresolvedReferences
 from motrack.tracker.matching.algorithms.biou import HungarianCBIoU, HungarianBIoU
-from motrack.tracker.matching.algorithms.compose import ComposeAssociationAlgorithm
+from motrack.tracker.matching.algorithms.compose import ComposeAssociationAlgorithm, ComposeAssociationConfig
 # noinspection PyUnresolvedReferences
 from motrack.tracker.matching.algorithms.conf import HybridConfidenceAssociation
 # noinspection PyUnresolvedReferences
@@ -25,6 +24,8 @@ from motrack.tracker.matching.algorithms.move import Move
 # noinspection PyUnresolvedReferences
 from motrack.tracker.matching.algorithms.reid import ReIDIoUAssociation
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
+
+ASSOCIATION_CATALOG.validate()
 
 
 def association_factory(name: str, params: Dict[str, Any]) -> AssociationAlgorithm:
@@ -53,26 +54,23 @@ def association_factory(name: str, params: Dict[str, Any]) -> AssociationAlgorit
 
     Returns:
         AssociationAlgorithm object
+
+    Raises:
+        TypeError: If association params are not a dictionary or None.
+        ValueError: If association params are invalid.
     """
-    if name == 'compose':
-        params = copy.deepcopy(params)
+    normalized_name = name.lower()
+    association_config = ASSOCIATION_CATALOG.create_config(normalized_name, params, params_label='association')
 
-        assert 'matchers' in params, 'Expected "matchers" to be defined in parameters'
-        matchers = params.pop('matchers')
-        assert isinstance(matchers, list), f'Expected list for "matchers" by found {type(matchers)} instead!'
-
-        assert 'weights' in params, 'Expected "weights" to be defined in parameters'
-        weights = params.pop('weights')
-
+    if normalized_name == 'compose':
+        compose_config = association_config
+        assert isinstance(compose_config, ComposeAssociationConfig)
         matcher_objs: List[AssociationAlgorithm] = []
-        for matcher in matchers:
-            combined_params = {**matcher['params'], **params}
-            matcher_obj = association_factory(matcher['name'], combined_params)
+        for matcher in compose_config.matchers:
+            matcher_obj = association_factory(matcher.name, matcher.params)
             matcher_objs.append(matcher_obj)
 
-        return ComposeAssociationAlgorithm(
-            matchers=matcher_objs,
-            weights=weights
-        )
+        return ComposeAssociationAlgorithm(compose_config, matcher_objs)
 
-    return ASSOCIATION_CATALOG[name](**params)
+    association_cls = ASSOCIATION_CATALOG[normalized_name]
+    return association_cls(association_config)

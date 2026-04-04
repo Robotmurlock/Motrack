@@ -4,6 +4,7 @@ Standard SORT association method based solely on IoU.
 from typing import Optional, Union, List, Tuple
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict, Field
 
 from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
@@ -14,16 +15,64 @@ LabelType = Union[int, str]
 LabelGatingType = Union[LabelType, List[Tuple[LabelType, LabelType]]]
 
 
+class IoUBasedAssociationConfig(BaseModel):
+    """
+    Shared IoU-based association config.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    label_gating: Optional[LabelGatingType] = None
+    fast_linear_assignment: bool = False
+
+
+@ASSOCIATION_CATALOG.register_config('iou')
+class IoUAssociationConfig(IoUBasedAssociationConfig):
+    """
+    Config for IoU association.
+    """
+
+    match_threshold: float = 0.30
+    fuse_score: bool = False
+
+
+@ASSOCIATION_CATALOG.register_config('adaptive-iou')
+class AdaptiveIoUAssociationConfig(IoUAssociationConfig):
+    """
+    Config for adaptive IoU association.
+    """
+
+    gating_factor: float = 1.0
+
+
+@ASSOCIATION_CATALOG.register_config('hmiou')
+class HMIoUAssociationConfig(IoUBasedAssociationConfig):
+    """
+    Config for HMIoU association.
+    """
+
+    match_threshold: float = 0.30
+
+
+@ASSOCIATION_CATALOG.register_config('decay-iou')
+class DecayIoUAssociationConfig(IoUBasedAssociationConfig):
+    """
+    Config for decay IoU association.
+    """
+
+    min_threshold: float = 0.30
+    max_threshold: float = 0.50
+    threshold_decay: float = 0.02
+    fuse_score: bool = False
+    expansion_rate: float = Field(default=0.0, ge=0.0)
+
+
 class IoUBasedAssociation(AssociationAlgorithm):
     """
     Standard negative IoU association with gating.
     """
 
-    def __init__(
-        self,
-        label_gating: Optional[LabelGatingType] = None,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: IoUBasedAssociationConfig):
         """
         Args:
             label_gating: Define which object labels can be matched
@@ -31,9 +80,10 @@ class IoUBasedAssociation(AssociationAlgorithm):
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(fast_linear_assignment=fast_linear_assignment)
+        super().__init__(fast_linear_assignment=config.fast_linear_assignment)
 
-        self._label_gating = {tuple(e) for e in label_gating} if label_gating is not None else None
+        label_gating = config.label_gating
+        self._label_gating = {tuple(e) for e in label_gating} if label_gating is not None and isinstance(label_gating, list) else None
 
     def _can_match_labels(self, tracklet_label: LabelType, det_label: LabelType) -> bool:
         """
@@ -104,13 +154,7 @@ class IoUAssociation(IoUBasedAssociation):
     """
     Standard negative IoU association with gating.
     """
-    def __init__(
-        self,
-        match_threshold: float = 0.30,
-        fuse_score: bool = False,
-        label_gating: Optional[LabelGatingType] = None,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: IoUAssociationConfig):
         """
         Args:
             match_threshold: Min threshold do match tracklet with object.
@@ -121,13 +165,10 @@ class IoUAssociation(IoUBasedAssociation):
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(
-            label_gating=label_gating,
-            fast_linear_assignment=fast_linear_assignment
-        )
+        super().__init__(config)
 
-        self._match_threshold = match_threshold
-        self._fuse_score = fuse_score
+        self._match_threshold = config.match_threshold
+        self._fuse_score = config.fuse_score
 
     def _calc_score(self, tracklet: Tracklet, tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
         _ = tracklet
@@ -146,14 +187,7 @@ class IoUAssociationAdaptiveGating(IoUBasedAssociation):
     Adaptive IoU scales the match threshold based on the object's velocity.
     Object's that have less movement should have more overlap in the next frame.
     """
-    def __init__(
-        self,
-        match_threshold: float = 0.30,
-        fuse_score: bool = False,
-        gating_factor: float = 1.0,
-        label_gating: Optional[LabelGatingType] = None,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: AdaptiveIoUAssociationConfig):
         """
         Args:
             match_threshold: Min threshold do match tracklet with object.
@@ -165,14 +199,11 @@ class IoUAssociationAdaptiveGating(IoUBasedAssociation):
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(
-            label_gating=label_gating,
-            fast_linear_assignment=fast_linear_assignment
-        )
+        super().__init__(config)
 
-        self._match_threshold = match_threshold
-        self._fuse_score = fuse_score
-        self._gating_factor = gating_factor
+        self._match_threshold = config.match_threshold
+        self._fuse_score = config.fuse_score
+        self._gating_factor = config.gating_factor
 
     def _calc_score(self, tracklet: Tracklet, tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
         # Estimate variable gating threshold
@@ -194,12 +225,7 @@ class HMIoUAssociation(IoUBasedAssociation):
     """
     Height modulated IoU. Reference: https://arxiv.org/pdf/2308.00783.pdf
     """
-    def __init__(
-        self,
-        match_threshold: float = 0.30,
-        label_gating: Optional[LabelGatingType] = None,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: HMIoUAssociationConfig):
         """
         Args:
             match_threshold: Min threshold do match tracklet with object.
@@ -209,12 +235,9 @@ class HMIoUAssociation(IoUBasedAssociation):
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(
-            label_gating=label_gating,
-            fast_linear_assignment=fast_linear_assignment
-        )
+        super().__init__(config)
 
-        self._match_threshold = match_threshold
+        self._match_threshold = config.match_threshold
 
     @staticmethod
     def hiou(tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
@@ -252,16 +275,7 @@ class DecayIoU(IoUBasedAssociation):
     """
     IoU but with threshold decay.
     """
-    def __init__(
-        self,
-        min_threshold: float = 0.30,
-        max_threshold: float = 0.50,
-        threshold_decay: float = 0.02,
-        fuse_score: bool = False,
-        label_gating: Optional[LabelGatingType] = None,
-        expansion_rate: float = 0.0,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: DecayIoUAssociationConfig):
         """
         Args:
             min_threshold: Min IoU threshold
@@ -274,18 +288,13 @@ class DecayIoU(IoUBasedAssociation):
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(
-            label_gating=label_gating,
-            fast_linear_assignment=fast_linear_assignment
-        )
+        super().__init__(config)
 
-        self._min_threshold = min_threshold
-        self._max_threshold = max_threshold
-        self._threshold_decay = threshold_decay
-        self._fuse_score = fuse_score
-
-        assert expansion_rate >= 0.0, f'Invalid value for expansion rate: {expansion_rate}.'
-        self._expansion_rate = expansion_rate
+        self._min_threshold = config.min_threshold
+        self._max_threshold = config.max_threshold
+        self._threshold_decay = config.threshold_decay
+        self._fuse_score = config.fuse_score
+        self._expansion_rate = config.expansion_rate
 
     def _expand_bbox(self, bbox: PredBBox) -> PredBBox:
         """

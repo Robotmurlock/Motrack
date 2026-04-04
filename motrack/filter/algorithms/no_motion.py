@@ -4,10 +4,22 @@ NoMotion filter (just uses the last detection).
 from typing import Tuple
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict
 
 from motrack.filter.algorithms.base import StateModelFilter, State
 from motrack.filter.catalog import FILTER_CATALOG
 from motrack.library.numpy_utils.bbox import affine_transform
+
+
+@FILTER_CATALOG.register_config('no-motion')
+class NoMotionFilterConfig(BaseModel):
+    """
+    Config for the no-motion filter.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    det_uncertainty: float = 1e-6
 
 
 @FILTER_CATALOG.register('no-motion')
@@ -15,8 +27,8 @@ class NoMotionFilter(StateModelFilter):
     """
     Baseline filter trusts fully detector and is completely certain in detector accuracy.
     """
-    def __init__(self, det_uncertainty = 1e-6):
-        self._det_uncertainty = det_uncertainty
+    def __init__(self, config: NoMotionFilterConfig):
+        self._det_uncertainty = config.det_uncertainty
 
     def initiate(self, measurement: np.ndarray) -> State:
         return measurement

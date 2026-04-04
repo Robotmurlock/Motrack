@@ -1,11 +1,12 @@
 """
 Implementation of Filter Sort tracker
 """
-from typing import Tuple, Optional, List, Union
+from typing import Tuple, Optional, List, Union, Any
 
 import numpy as np
 from abc import ABC, abstractmethod
 import copy
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from motrack.filter import filter_factory
 from motrack.library.cv.bbox import PredBBox, BBox
@@ -17,6 +18,66 @@ from motrack.reid import reid_inference_factory
 from collections import deque
 
 
+class MotionReIDTrackerConfig(BaseModel):
+    """
+    Shared config for motion/ReID trackers.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    filter: 'FactoryConfig' = Field(default_factory=lambda: FactoryConfig(name='bot-sort'))
+    cmc: Optional['FactoryConfig'] = None
+    reid: Optional['FactoryConfig'] = None
+    initialization_threshold: int = Field(default=3, ge=0)
+    remember_threshold: int = Field(default=1, ge=0)
+    new_tracklet_detection_threshold: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    use_observation_if_lost: bool = False
+
+class FactoryConfig(BaseModel):
+    """
+    Generic nested factory config.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    name: str
+    params: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator('name')
+    @classmethod
+    def _normalize_name(cls, value: str) -> str:
+        """
+        Normalizes factory names.
+
+        Args:
+            value: Raw factory name.
+
+        Returns:
+            Normalized factory name.
+        """
+        return value.lower()
+
+    @field_validator('params', mode='before')
+    @classmethod
+    def _normalize_params(cls, value: Any) -> dict[str, Any]:
+        """
+        Normalizes factory params.
+
+        Args:
+            value: Raw params value.
+
+        Returns:
+            Normalized params dictionary.
+
+        Raises:
+            TypeError: If params are not a dictionary or None.
+        """
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise TypeError(f'Expected params to be a dictionary, but got {type(value).__name__}.')
+        return value
+
 class MotionReIDBasedTracker(Tracker, ABC):
     """
     Baseline Sort tracker components:
@@ -26,17 +87,8 @@ class MotionReIDBasedTracker(Tracker, ABC):
     """
     def __init__(
         self,
-        filter_name: str,
-        filter_params: dict,
-        cmc_name: Optional[str] = None,
-        cmc_params: Optional[dict] = None,
-        reid_name: Optional[str] = None,
-        reid_params: Optional[str] = None,
+        config: MotionReIDTrackerConfig,
         reid_detection_threshold: Optional[float] = None,
-        initialization_threshold: int = 3,
-        remember_threshold: int = 1,
-        new_tracklet_detection_threshold: Optional[float] = None,
-        use_observation_if_lost: bool = False,
         duplicate_iou_threshold: float = 1.00,
         appearance_ema_momentum: float = 0.95,
         appearance_buffer: int = 0
@@ -66,24 +118,22 @@ class MotionReIDBasedTracker(Tracker, ABC):
         """
         super().__init__()
 
-        self._filter = filter_factory(filter_name, filter_params)
+        self._filter = filter_factory(config.filter.name, config.filter.params)
 
         self._cmc = None
-        if cmc_name is not None:
-            cmc_params = {} if cmc_params is None else cmc_params
-            self._cmc = cmc_factory(cmc_name, cmc_params)
+        if config.cmc is not None:
+            self._cmc = cmc_factory(config.cmc.name, config.cmc.params)
 
         self._reid = None
-        if reid_name is not None:
-            reid_params = {} if reid_params is None else reid_params
-            self._reid = reid_inference_factory(reid_name, reid_params)
+        if config.reid is not None:
+            self._reid = reid_inference_factory(config.reid.name, config.reid.params)
 
         # Hyperparameters
         self._reid_detection_threshold = reid_detection_threshold
-        self._new_tracklet_detection_threshold = new_tracklet_detection_threshold
-        self._initialization_threshold = initialization_threshold
-        self._remember_threshold = remember_threshold
-        self._use_observation_if_lost = use_observation_if_lost
+        self._new_tracklet_detection_threshold = config.new_tracklet_detection_threshold
+        self._initialization_threshold = config.initialization_threshold
+        self._remember_threshold = config.remember_threshold
+        self._use_observation_if_lost = config.use_observation_if_lost
         self._duplicate_iou_threshold = duplicate_iou_threshold
 
         # ReID hyperparameters

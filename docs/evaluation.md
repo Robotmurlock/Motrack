@@ -11,7 +11,6 @@ Default ReID model is the fast-reid SBS(S50). Default detection model is the YOL
 
 | Method Name | Description                                            | HOTA | MOTA | IDF1 | config           |
 |-------------|--------------------------------------------------------|------|------|------|------------------|
-| FastTracker | no motion filter + IoU + Greedy                        | 46.0 | 88.7 | 44.4 | fast.yaml        |
 | Bot-SORT    | [arxiv: Bot-SORT](https://arxiv.org/abs/2206.14651)    | 51.3 | 90.4 | 52.2 | botsort.yaml     |
 | SORT        | [arxiv: SORT](https://arxiv.org/pdf/1602.00763.pdf)    | 51.5 | 89.6 | 51.2 | sort.yaml        |
 | ByteTrack   | [arxiv: ByteTrack](https://arxiv.org/abs/2110.06864)   | 52.9 | 90.8 | 54.4 | bytetrack.yaml   |
