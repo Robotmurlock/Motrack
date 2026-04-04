@@ -6,7 +6,7 @@ Also, version with the updated numpy package can be found here: [Robotmurlock/Tr
 
 ## DanceTrack validation dataset
 
-All configs can be found in `configs/dancetrack` repository directory. 
+All configs can be found in the `configs/trackers/dancetrack` directory.
 Default ReID model is the fast-reid SBS(S50). Default detection model is the YOLOX model.
 
 | Method Name | Description                                            | HOTA | MOTA | IDF1 | config           |
@@ -30,7 +30,7 @@ Custom architectures:
 
 ## MOT17 validation dataset
 
-All configs can be found in `configs/mot17` repository directory. 
+All configs can be found in the `configs/trackers/mot17` directory.
 Default ReID model is the fast-reid SBS(S50). Default detection model is the YOLOX model.
 
 | Method Name   | Description                                          | HOTA | MOTA | IDF1 | config            |

@@ -6,13 +6,27 @@
 - Added mmdetection-based YOLOX inference with ByteTrack checkpoint weight remapping
 - Migrated from `setup.py` to `pyproject.toml` with `uv` package management
 - Split Docker into mmdet (`Dockerfile`) and legacy YOLOX (`yolox.Dockerfile`) images
+- Added centralized filesystem conventions for tracker outputs with dataset-level naming and deterministic run hashes
 
 ### Refactor
 - Restructured configs into `trackers/`, `od/`, and `deprecated/` standalone directories
 - Lazy YOLOX imports to avoid hard dependency when using mmdet
+- Renamed executable entrypoints from `scripts/` to `tools/`
+- Renamed tracker output directories from `active` / `all` / `postprocess` to `online` / `debug` / `offline`
 
 ### Fixes
 - Fixed pandas `drop()` compatibility with newer versions
+- Added explicit dataset output names to tracker and deprecated configs so MOT-family datasets no longer share the same `mot` result directory
+
+## 0.6.0 - 2026-03-29
+
+### Features
+- Tracklet can now store frame data in its history
+- Kalman filter adaptive parameter can be set to true/false
+- Pixel density analysis script
+
+### Experimental
+- Motion models with image features
 
 ## 0.4.1 - 2024-02-26
 

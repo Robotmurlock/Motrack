@@ -78,14 +78,14 @@ Evaluation of these methods on different datasets can be found in [evaluation.md
 | YOLOX       | [arxiv: Simple Online and Realtime Tracking](https://arxiv.org/pdf/1602.00763.pdf) | 
 | YOLOv8      | [github: Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics)                             |
 
-Use `motrack/create_yolo_format.py` to create YOLOv8 training dataset and `motrack/create_coco_format.py` 
-to create YOLOX training dataset.
+Use `tools/detection/create_yolo_format.py` to create a YOLOv8 training dataset and
+`tools/detection/create_coco_format.py` to create a YOLOX training dataset.
 
 ### FastReID integration
 
 Any [FastReID](https://github.com/JDAI-CV/fast-reid) model for appearance matching can be used.
 Model has to be exported in ONNX. Please check [deploy documentation](https://github.com/JDAI-CV/fast-reid/tree/master/tools/deploy) for mode info.
-Use `scrips/create_fastreid_patches.py` to create fast-reid dataset in order to train an appearance model.
+Use `tools/reid/create_fastreid_patches.py` to create a FastReID dataset for training an appearance model.
 
 ### Supported datasets
 
@@ -95,7 +95,7 @@ Any custom dataset can be added by extending the base dataset.
 
 ### Tools
 
-List of script tools:
+List of tool entrypoints:
 
   - Inference: Perform any tracker inference that can directly evaluated with TrackEval framework.
   - Postprocess: Perform offline postprocessing (linear interpolation, etc...) for more accuracy tracklets.
