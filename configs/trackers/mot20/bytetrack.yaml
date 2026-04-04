@@ -2,6 +2,7 @@ defaults:
   - global_config
   - dataset: mot20.yaml
   - inference: val.yaml
+  - eval: default.yaml
   - object_detection: mmdet_yolox_ablation_low_conf_mot20.yaml
   - algorithm: bytetrack.yaml
   - postprocess: default.yaml

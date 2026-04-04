@@ -4,7 +4,7 @@ Tracker config for tool entrypoints.
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Optional
 
 from hydra.core.config_store import ConfigStore
 
@@ -141,6 +141,30 @@ class TrackerInferenceConfig:
 
 
 @dataclass
+class TrackerEvalConfig:
+    """
+    Controls how tracker evaluation is executed.
+
+    - eval_output: Which tracker output directory to evaluate. Accepts
+      canonical names ('online', 'debug', 'offline') or legacy aliases
+      ('active', 'all', 'postprocess').
+    - eval_classes: GT class IDs that count as evaluation targets (e.g.
+      ``[1]`` for the pedestrian class in MOT Challenge datasets).
+    - distractor_classes: GT class IDs whose detections are matched against
+      tracker output and removed before scoring. The default covers the
+      standard MOT17 distractors (person_on_vehicle=2, static_person=7,
+      distractor=8, reflection=12). MOT20 additionally includes
+      non_mot_vehicle=6.
+    """
+    eval_output: str = 'online'
+    eval_classes: List[int] = field(default_factory=lambda: [1])
+    distractor_classes: List[int] = field(default_factory=lambda: [2, 7, 8, 12])
+
+    def __post_init__(self) -> None:
+        self.eval_output = conventions.normalize_tracker_output_name(self.eval_output)
+
+
+@dataclass
 class DatasetFilterConfig:
     scene_pattern: str = '(.*?)'  # All
 
@@ -161,6 +185,7 @@ class GlobalConfig:
     path: PathConfig = field(default_factory=PathConfig)
     postprocess: TrackerPostprocessConfig = field(default_factory=TrackerPostprocessConfig)
     visualize: TrackerVisualizeConfig = field(default_factory=TrackerVisualizeConfig)
+    eval: TrackerEvalConfig = field(default_factory=TrackerEvalConfig)
     utility: UtilityConfig = field(default_factory=UtilityConfig)
 
     @property

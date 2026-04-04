@@ -2,6 +2,7 @@ defaults:
   - global_config
   - dataset: dancetrack.yaml
   - inference: val.yaml
+  - eval: default.yaml
   - object_detection: mmdet_yolox_dancetrack.yaml
   - algorithm: fast.yaml
   - postprocess: dancetrack.yaml

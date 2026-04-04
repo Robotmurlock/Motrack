@@ -45,6 +45,9 @@ Homepage = "https://github.com/Robotmurlock/Motrack"
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*", "tools"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.uv]
 environments = ["sys_platform == 'linux'"]
 
