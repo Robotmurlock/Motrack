@@ -2,6 +2,8 @@
 Tracker inference. Output can directly be evaluated using the TrackEval repo.
 """
 from dataclasses import asdict
+from datetime import datetime
+import json
 import logging
 import os
 import shutil
@@ -25,7 +27,7 @@ logger = logging.getLogger('Tool-TrackerInference')
 @pipeline.task('inference')
 def run_inference(cfg: GlobalConfig) -> None:
     if os.path.exists(cfg.experiment_path):
-        if cfg.eval.override:
+        if cfg.inference.override:
             user_input = 'yes'  # `input` from config
         else:
             user_input = input(f'Experiment on path "{cfg.experiment_path}" already exists. '
@@ -51,7 +53,7 @@ def run_inference(cfg: GlobalConfig) -> None:
         dataset_type=cfg.dataset.type,
         path=cfg.dataset.fullpath,
         params=cfg.dataset.params,
-        test=cfg.eval.split == 'test'
+        test=cfg.inference.split == 'test'
     )
 
     detection_manager = DetectionManager(
@@ -74,16 +76,20 @@ def run_inference(cfg: GlobalConfig) -> None:
         detection_manager=detection_manager,
         tracker_active_output=tracker_online_output,
         tracker_all_output=tracker_debug_output,
-        clip=cfg.eval.clip,
+        clip=cfg.inference.clip,
         scene_pattern=cfg.dataset_filter.scene_pattern,
-        load_image=cfg.eval.load_image
+        load_image=cfg.inference.load_image
     )
 
     tracker_config_path = conventions.get_config_snapshot_path(cfg.experiment_path)
     with open(tracker_config_path, 'w', encoding='utf-8') as f:
         yaml.safe_dump(asdict(cfg), f)
 
-    if cfg.eval.postprocess:
+    run_meta_path = conventions.get_run_meta_path(cfg.experiment_path)
+    with open(run_meta_path, 'w', encoding='utf-8') as f:
+        json.dump({'created_at': datetime.now().isoformat()}, f, indent=2)
+
+    if cfg.inference.postprocess:
         logger.info('Performing inference postprocessing...')
         tracker_offline_output = conventions.get_tracker_output_path(
             cfg.experiment_path,
@@ -96,7 +102,7 @@ def run_inference(cfg: GlobalConfig) -> None:
             tracker_postprocess_output=tracker_offline_output,
             postprocess_cfg=cfg.postprocess,
             scene_pattern=cfg.dataset_filter.scene_pattern,
-            clip=cfg.eval.clip
+            clip=cfg.inference.clip
         )
 
 

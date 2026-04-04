@@ -1,7 +1,7 @@
 defaults:
   - global_config
   - dataset: dancetrack.yaml
-  - eval: val.yaml
+  - inference: val.yaml
   - object_detection: yolox_low_conf_dancetrack.yaml
   - algorithm: sparsetrack.yaml
   - postprocess: dancetrack.yaml

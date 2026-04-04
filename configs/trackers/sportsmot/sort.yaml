@@ -1,7 +1,7 @@
 defaults:
   - global_config
   - dataset: sportsmot.yaml
-  - eval: val.yaml
+  - inference: val.yaml
   - object_detection: mmdet_yolox_sportsmot.yaml
   - algorithm: sort.yaml
   - postprocess: sportsmot.yaml

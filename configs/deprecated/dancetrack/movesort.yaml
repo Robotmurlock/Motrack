@@ -1,7 +1,7 @@
 defaults:
   - global_config
   - dataset: dancetrack.yaml
-  - eval: val.yaml
+  - inference: val.yaml
   - object_detection: yolox_dancetrack.yaml
   - algorithm: movesort.yaml
   - postprocess: dancetrack.yaml

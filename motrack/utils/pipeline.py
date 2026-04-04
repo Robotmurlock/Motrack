@@ -90,9 +90,10 @@ def validate_global_config(cfg: object, task_name: str) -> None:
         f'but received `{received_type}` instead. This usually means the tracker config '
         f'is missing `- global_config` in `defaults`, or one of the config groups does '
         f'not match the schema expected by `GlobalConfig`. Please verify that your main '
-        f'config includes `- global_config`, and that `dataset`, `eval`, '
+        f'config includes `- global_config`, and that `dataset`, `inference`, '
         f'`object_detection`, `algorithm`, `postprocess`, `path`, and `visualize` are '
-        f'loaded from the expected config groups.'
+        f'loaded from the expected config groups. Note: the inference config '
+        f'group was recently renamed from `eval` to `inference`.'
     )
 
 
@@ -116,8 +117,8 @@ def store_run_history_config(
         dataset_type=cfg.dataset.type,
         dataset_name=cfg.dataset.name,
         experiment_name=cfg.experiment,
-        split=cfg.eval.split,
-        run_identifier=cfg.run_identifier
+        split=cfg.inference.split,
+        config_hash=cfg.hash
     )
     config_dirpath = conventions.get_run_configs_path(tracker_run_path)
     dt = datetime.now().strftime(formats.DATETIME_FORMAT)

@@ -33,7 +33,7 @@ def visualize_inference(cfg: GlobalConfig) -> None:
         dataset_type=cfg.dataset.type,
         path=cfg.dataset.fullpath,
         params=cfg.dataset.params,
-        test=cfg.eval.split == 'test'
+        test=cfg.inference.split == 'test'
     )
 
     run_visualize_tracker_inference(

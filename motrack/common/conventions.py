@@ -1,14 +1,15 @@
 """
 File system conventions used by Motrack.
 
-Tracker results are stored under a deterministic run directory so multiple
-configurations can coexist without overwriting each other:
+Tracker results are stored under a deterministic directory keyed by a
+configuration hash so that outputs can be located without knowing when
+inference was executed:
 
 {master_path}/
   {dataset_name}/
     {experiment_name}/
       {split}/
-        {run_identifier}/
+        {config_hash}/
           online/
             {scene_name}.txt
           debug/
@@ -16,8 +17,10 @@ configurations can coexist without overwriting each other:
           offline/
             {scene_name}.txt
           config.yaml
+          run_meta.json
           run_configs/
             {datetime}_{task_name}.yaml
+          eval_results.json
 
 Definitions:
 - master_path: Root directory that contains all saved outputs.
@@ -26,9 +29,9 @@ Definitions:
 - experiment_name: User-selected experiment namespace that keeps runs easy to
   browse.
 - split: Dataset split such as `train`, `val`, or `test`.
-- run_identifier: Run directory name with format `{datetime}_{hash}`. The
-  datetime distinguishes repeated executions of the same configuration, while
-  the hash captures the crucial tracking setup.
+- config_hash: Deterministic hash of the crucial tracking setup. Using the
+  hash alone (without a datetime prefix) allows tools like evaluation to
+  locate a run directory from the config without knowing the execution time.
 
 Tracker outputs use the canonical mode names below:
 - online: Results equivalent to the previous `active` output.
@@ -51,6 +54,8 @@ DEBUG_DIRNAME = 'debug'
 OFFLINE_DIRNAME = 'offline'
 RUN_CONFIGS_DIRNAME = 'run_configs'
 CONFIG_FILENAME = 'config.yaml'
+RUN_META_FILENAME = 'run_meta.json'
+EVAL_RESULTS_FILENAME = 'eval_results.json'
 
 _OUTPUT_NAME_ALIASES = {
     'active': ONLINE_DIRNAME,
@@ -249,26 +254,12 @@ def get_dt_hash(
     return digest[:hash_length]
 
 
-def get_run_identifier(run_datetime: str, config_hash: str) -> str:
-    """
-    Gets tracker run identifier.
-
-    Args:
-        run_datetime: Run datetime formatted for filesystem usage.
-        config_hash: Deterministic tracking configuration hash.
-
-    Returns:
-        Run identifier with `{datetime}_{hash}` format.
-    """
-    return f'{run_datetime}_{config_hash}'
-
-
 def get_tracker_run_path(
     master_path: str,
     dataset_type: str,
     experiment_name: str,
     split: str,
-    run_identifier: str,
+    config_hash: str,
     dataset_name: Optional[str] = None
 ) -> str:
     """
@@ -279,7 +270,7 @@ def get_tracker_run_path(
         dataset_type: Dataset type used by the pipeline.
         experiment_name: Human-readable experiment name.
         split: Dataset split.
-        run_identifier: Run directory name with `{datetime}_{hash}` format.
+        config_hash: Deterministic tracking configuration hash.
         dataset_name: Optional dataset folder override.
 
     Returns:
@@ -293,7 +284,7 @@ def get_tracker_run_path(
             split=split,
             dataset_name=dataset_name
         ),
-        run_identifier
+        config_hash
     )
 
 
@@ -341,6 +332,32 @@ def get_config_snapshot_path(tracker_run_path: str) -> str:
         Tracker config snapshot path.
     """
     return os.path.join(tracker_run_path, CONFIG_FILENAME)
+
+
+def get_run_meta_path(tracker_run_path: str) -> str:
+    """
+    Gets the run metadata JSON path.
+
+    Args:
+        tracker_run_path: Root directory of the tracker run.
+
+    Returns:
+        Path to the run metadata file.
+    """
+    return os.path.join(tracker_run_path, RUN_META_FILENAME)
+
+
+def get_eval_results_path(tracker_run_path: str) -> str:
+    """
+    Gets the evaluation results JSON path.
+
+    Args:
+        tracker_run_path: Root directory of the tracker run.
+
+    Returns:
+        Path to the evaluation results file.
+    """
+    return os.path.join(tracker_run_path, EVAL_RESULTS_FILENAME)
 
 
 def get_artifact_path(tracker_run_path: str, artifact_name: str) -> str:

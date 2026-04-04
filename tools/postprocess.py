@@ -38,7 +38,7 @@ def run_postprocess(cfg: GlobalConfig) -> None:
         dataset_type=cfg.dataset.type,
         path=cfg.dataset.fullpath,
         params=cfg.dataset.params,
-        test=cfg.eval.split == 'test'
+        test=cfg.inference.split == 'test'
     )
 
     run_tracker_postprocess(
@@ -48,7 +48,7 @@ def run_postprocess(cfg: GlobalConfig) -> None:
         tracker_postprocess_output=tracker_offline_output,
         postprocess_cfg=cfg.postprocess,
         scene_pattern=cfg.dataset_filter.scene_pattern,
-        clip=cfg.eval.clip
+        clip=cfg.inference.clip
     )
 
 

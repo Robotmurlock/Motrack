@@ -26,7 +26,7 @@ def visualize_detections(cfg: GlobalConfig) -> None:
         dataset_type=cfg.dataset.type,
         path=cfg.dataset.fullpath,
         params=cfg.dataset.params,
-        test=cfg.eval.split == 'test'
+        test=cfg.inference.split == 'test'
     )
 
     detection_manager = DetectionManager(

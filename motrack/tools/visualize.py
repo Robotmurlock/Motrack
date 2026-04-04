@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from motrack.config_parser import TrackerVisualizeConfig
 from motrack.datasets import BaseDataset
-from motrack.evaluation.io import TrackerInferenceReader
+from motrack.inference.io import TrackerInferenceReader
 from motrack.library.cv import color_palette
 from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.library.cv.drawing import draw_text

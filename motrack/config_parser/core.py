@@ -1,7 +1,6 @@
 """
 Tracker config for tool entrypoints.
 """
-from datetime import datetime
 import json
 import os
 from dataclasses import dataclass, field
@@ -9,7 +8,7 @@ from typing import Optional
 
 from hydra.core.config_store import ConfigStore
 
-from motrack.common import conventions, formats, project
+from motrack.common import conventions, project
 from motrack.utils.lookup import LookupTable
 
 
@@ -123,7 +122,17 @@ class TrackerPostprocessConfig:
 
 
 @dataclass
-class TrackerEvalConfig:
+class TrackerInferenceConfig:
+    """
+    Controls how tracker inference is executed.
+
+    - split: Dataset split to run on ('train', 'val', or 'test').
+    - postprocess: Whether to run offline postprocessing after inference.
+    - override: If True, silently overwrite existing experiment outputs.
+    - load_image: Whether to load images during inference (disable for speed
+      when the tracker/detector doesn't need raw frames).
+    - clip: Clip predicted bounding boxes to the image boundaries.
+    """
     split: str
     postprocess: bool = field(default=False)
     override: bool = field(default=False)
@@ -145,7 +154,7 @@ class UtilityConfig:
 class GlobalConfig:
     experiment: str
     dataset: DatasetConfig
-    eval: TrackerEvalConfig
+    inference: TrackerInferenceConfig
     object_detection: ObjectDetectionInferenceConfig
     algorithm: TrackerAlgorithmConfig
     dataset_filter: DatasetFilterConfig = field(default_factory=DatasetFilterConfig)
@@ -173,18 +182,8 @@ class GlobalConfig:
             object_detection_lookup_path=self.object_detection.lookup_path,
             object_detection_oracle=self.object_detection.oracle,
             scene_pattern=self.dataset_filter.scene_pattern,
-            clip=self.eval.clip
+            clip=self.inference.clip
         )
-
-    @property
-    def run_identifier(self) -> str:
-        """
-        Gets filesystem-safe run identifier for the current execution.
-
-        Returns:
-            Run identifier with `{datetime}_{hash}` format.
-        """
-        return self._run_identifier
 
     @property
     def experiment_path(self) -> str:
@@ -199,20 +198,16 @@ class GlobalConfig:
             dataset_type=self.dataset.type,
             dataset_name=self.dataset.name,
             experiment_name=self.experiment,
-            split=self.eval.split,
-            run_identifier=self.run_identifier
+            split=self.inference.split,
+            config_hash=self.hash
         )
 
     def __post_init__(self) -> None:
         """
         Postprocess.
-
-        Ignore Returns: This function returns None.
         """
         self.dataset.basepath = os.path.join(self.path.assets, self.dataset.path)
-        self.dataset.fullpath = os.path.join(self.dataset.basepath, self.eval.split)
-        self._run_datetime = datetime.now().strftime(formats.RUN_DATETIME_FORMAT)
-        self._run_identifier = conventions.get_run_identifier(self._run_datetime, self.hash)
+        self.dataset.fullpath = os.path.join(self.dataset.basepath, self.inference.split)
 
 
 # Configuring hydra config store
