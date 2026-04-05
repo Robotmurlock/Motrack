@@ -3,10 +3,10 @@ Tracker inference. Output can directly be evaluated using the TrackEval repo.
 """
 from dataclasses import asdict
 from datetime import datetime
-import json
 import logging
 import os
 import shutil
+from typing import Optional
 
 import yaml
 
@@ -19,13 +19,13 @@ from motrack.object_detection import DetectionManager
 from motrack.tools import run_tracker_inference, run_tracker_postprocess
 from motrack.tracker import tracker_factory
 from motrack.utils import pipeline
-from omegaconf import DictConfig
+from tools.data import InferenceOutputData
 
 logger = logging.getLogger('Tool-TrackerInference')
 
 
-@pipeline.task('inference')
-def run_inference(cfg: GlobalConfig) -> None:
+def _run_inference_inner(cfg: GlobalConfig, inference_output: Optional[InferenceOutputData] = None) -> None:
+    """Core inference logic. Called by both the CLI wrapper and the optimizer."""
     if os.path.exists(cfg.experiment_path):
         if cfg.inference.override:
             user_input = 'yes'  # `input` from config
@@ -85,9 +85,10 @@ def run_inference(cfg: GlobalConfig) -> None:
     with open(tracker_config_path, 'w', encoding='utf-8') as f:
         yaml.safe_dump(asdict(cfg), f)
 
-    run_meta_path = conventions.get_run_meta_path(cfg.experiment_path)
-    with open(run_meta_path, 'w', encoding='utf-8') as f:
-        json.dump({'created_at': datetime.now().isoformat()}, f, indent=2)
+    inference_output_path = conventions.get_run_meta_path(cfg.experiment_path)
+    if inference_output is None:
+        inference_output = InferenceOutputData(created_at=datetime.now().isoformat())
+    inference_output.save(inference_output_path)
 
     if cfg.inference.postprocess:
         logger.info('Performing inference postprocessing...')
@@ -107,9 +108,9 @@ def run_inference(cfg: GlobalConfig) -> None:
 
 
 @hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='movesort', version_base='1.1')
-def main(cfg: DictConfig):
-    # noinspection PyTypeChecker
-    run_inference(cfg)
+@pipeline.task('inference')
+def main(cfg: GlobalConfig) -> None:
+    _run_inference_inner(cfg)
 
 
 if __name__ == '__main__':

@@ -56,6 +56,7 @@ RUN_CONFIGS_DIRNAME = 'run_configs'
 CONFIG_FILENAME = 'config.yaml'
 RUN_META_FILENAME = 'run_meta.json'
 EVAL_RESULTS_FILENAME = 'eval_results.json'
+OPTIMIZATION_RESULTS_FILENAME = 'optimization_results.json'
 
 _OUTPUT_NAME_ALIASES = {
     'active': ONLINE_DIRNAME,
@@ -358,6 +359,22 @@ def get_eval_results_path(tracker_run_path: str) -> str:
         Path to the evaluation results file.
     """
     return os.path.join(tracker_run_path, EVAL_RESULTS_FILENAME)
+
+
+def get_optimization_results_path(split_results_path: str) -> str:
+    """
+    Gets the optimization results JSON path.
+
+    Optimization results are saved at the split level because they aggregate
+    across all trial config hashes.
+
+    Args:
+        split_results_path: Split-level directory path.
+
+    Returns:
+        Path to the optimization results file.
+    """
+    return os.path.join(split_results_path, OPTIMIZATION_RESULTS_FILENAME)
 
 
 def get_artifact_path(tracker_run_path: str, artifact_name: str) -> str:
