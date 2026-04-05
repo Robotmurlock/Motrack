@@ -165,6 +165,33 @@ class BBox:
 
         return intersection.area / union_area
 
+    @staticmethod
+    def batch_iou(bboxes_a: np.ndarray, bboxes_b: np.ndarray) -> np.ndarray:
+        """
+        Vectorized IoU computation between two sets of bboxes.
+
+        Args:
+            bboxes_a: (N, 4) array in xyxy format
+            bboxes_b: (M, 4) array in xyxy format
+
+        Returns:
+            (N, M) IoU matrix
+        """
+        x1 = np.maximum(bboxes_a[:, 0:1], bboxes_b[:, 0:1].T)
+        y1 = np.maximum(bboxes_a[:, 1:2], bboxes_b[:, 1:2].T)
+        x2 = np.minimum(bboxes_a[:, 2:3], bboxes_b[:, 2:3].T)
+        y2 = np.minimum(bboxes_a[:, 3:4], bboxes_b[:, 3:4].T)
+
+        intersection = np.maximum(0.0, x2 - x1) * np.maximum(0.0, y2 - y1)
+
+        area_a = (bboxes_a[:, 2] - bboxes_a[:, 0]) * (bboxes_a[:, 3] - bboxes_a[:, 1])
+        area_b = (bboxes_b[:, 2] - bboxes_b[:, 0]) * (bboxes_b[:, 3] - bboxes_b[:, 1])
+
+        union = area_a[:, None] + area_b[None, :] - intersection
+        union = np.maximum(union, 1e-8)
+
+        return intersection / union
+
     def max_iou(self, others: List['BBox']) -> Tuple[float, int]:
         """
         Max iou over all other bboxes

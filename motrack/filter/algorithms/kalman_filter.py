@@ -88,6 +88,14 @@ class BotSortKalmanWrapFilter(StateModelFilter):
 
         return mean_proj, np.diagonal(covariance_proj, axis1=-2, axis2=-1)
 
+    def batch_predict(self, states: list) -> list:
+        if not states:
+            return []
+        means = np.stack([s[0] for s in states])
+        covs = np.stack([s[1] for s in states])
+        means_hat, covs_hat = self._kf.multi_predict(means, covs)
+        return [(means_hat[i], covs_hat[i]) for i in range(len(states))]
+
     def affine_transform(self, state: State, warp: np.ndarray) -> State:
         measurement, covariance = state
         L = np.kron(np.eye(4, dtype=np.float32), warp[:, :2])

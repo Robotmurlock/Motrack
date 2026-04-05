@@ -456,9 +456,20 @@ class MotionReIDBasedTracker(Tracker, ABC):
         """
         tracklets = [t for t in tracklets if t.state != TrackletState.DELETED]  # Remove deleted tracklets
 
-        # Estimate priors for all tracklets
-        prior_tracklet_estimates = [self._predict(t) for t in tracklets]
-        prior_tracklet_bboxes = [bbox for bbox, _, _ in prior_tracklet_estimates]
+        # Batch predict all tracklets
+        if tracklets:
+            states = [self._filter_states[t.id] for t in tracklets]
+            predicted_states = self._filter.batch_predict(states)
+
+            prior_tracklet_bboxes = []
+            for tracklet, state in zip(tracklets, predicted_states):
+                self._filter_states[tracklet.id] = state
+                mean_proj, _ = self._filter.project(state)
+                bbox = self._raw_to_bbox(tracklet, mean_proj)
+                prior_tracklet_bboxes.append(bbox)
+        else:
+            prior_tracklet_bboxes = []
+
         prior_tracklet_bboxes = self._perform_cmc(frame, frame_index, prior_tracklet_bboxes)
 
         return tracklets, prior_tracklet_bboxes

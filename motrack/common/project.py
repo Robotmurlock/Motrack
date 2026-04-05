@@ -15,3 +15,4 @@ MASTER_PATH = '/media/home/'
 
 TRACKERS_CONFIG_PATH = os.path.join(CONFIGS_PATH, 'trackers')
 DANCETRACK_TRACKERS_CONFIG_PATH = os.path.join(TRACKERS_CONFIG_PATH, 'dancetrack')
+SPORTSMOT_TRACKERS_CONFIG_PATH = os.path.join(TRACKERS_CONFIG_PATH, 'sportsmot')
