@@ -105,6 +105,19 @@ class StateModelFilter(ABC):
         """
         pass
 
+    def batch_predict(self, states: list) -> list:
+        """
+        Batch predict for multiple states. Default: loops through predict().
+        Subclasses can override for vectorized implementations.
+
+        Args:
+            states: List of states
+
+        Returns:
+            List of predicted states
+        """
+        return [self.predict(state) for state in states]
+
     def affine_transform(self, state: State, warp: np.ndarray) -> State:
         """
         Applies affine transform to the filter state.

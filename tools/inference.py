@@ -70,6 +70,7 @@ def _run_inference_inner(cfg: GlobalConfig, inference_output: Optional[Inference
         params=cfg.algorithm.params
     )
 
+    fps_output_path = os.path.join(cfg.experiment_path, 'fps_stats.json')
     run_tracker_inference(
         dataset=dataset,
         tracker=tracker,
@@ -78,7 +79,8 @@ def _run_inference_inner(cfg: GlobalConfig, inference_output: Optional[Inference
         tracker_all_output=tracker_debug_output,
         clip=cfg.inference.clip,
         scene_pattern=cfg.dataset_filter.scene_pattern,
-        load_image=cfg.inference.load_image
+        load_image=cfg.inference.load_image,
+        fps_output_path=fps_output_path,
     )
 
     tracker_config_path = conventions.get_config_snapshot_path(cfg.experiment_path)

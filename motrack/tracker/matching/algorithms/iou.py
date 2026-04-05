@@ -117,21 +117,40 @@ class IoUBasedAssociation(AssociationAlgorithm):
         _ = object_features  # Unused
 
         n_tracklets, n_detections = len(tracklet_estimations), len(detections)
+        if n_tracklets == 0 or n_detections == 0:
+            return np.zeros(shape=(n_tracklets, n_detections), dtype=np.float32)
+
+        t_xyxy = np.array([t.as_numpy_xyxy() for t in tracklet_estimations])
+        d_xyxy = np.array([d.as_numpy_xyxy() for d in detections])
+        iou_matrix = BBox.batch_iou(t_xyxy, d_xyxy)
+
+        cost_matrix = self._calc_score_matrix(iou_matrix, tracklets, tracklet_estimations, detections)
+
+        # Apply label gating
+        for t_i in range(n_tracklets):
+            for d_i in range(n_detections):
+                if not self._can_match_labels(tracklet_estimations[t_i].label, detections[d_i].label):
+                    cost_matrix[t_i][d_i] = np.inf
+
+        return cost_matrix
+
+    def _calc_score_matrix(
+        self,
+        iou_matrix: np.ndarray,
+        tracklets: Optional[List[Tracklet]],
+        tracklet_estimations: List[PredBBox],
+        detections: List[PredBBox],
+    ) -> np.ndarray:
+        """
+        Compute cost matrix from a precomputed IoU matrix (vectorized path).
+        Subclasses override this for vectorized scoring.
+        Falls back to per-element _calc_score() by default.
+        """
+        n_tracklets, n_detections = iou_matrix.shape
         cost_matrix = np.zeros(shape=(n_tracklets, n_detections), dtype=np.float32)
         for t_i in range(n_tracklets):
-            tracklet = tracklets[t_i]
-            tracklet_bbox = tracklet_estimations[t_i]
-
             for d_i in range(n_detections):
-                det_bbox = detections[d_i]
-
-                # Check if matching is possible
-                if not self._can_match_labels(tracklet_bbox.label, det_bbox.label):
-                    cost_matrix[t_i][d_i] = np.inf
-                    continue
-
-                cost_matrix[t_i][d_i] = self._calc_score(tracklet, tracklet_bbox, det_bbox)
-
+                cost_matrix[t_i][d_i] = self._calc_score(tracklets[t_i], tracklet_estimations[t_i], detections[d_i])
         return cost_matrix
 
     def _calc_score(self, tracklet: Tracklet, tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
@@ -169,6 +188,17 @@ class IoUAssociation(IoUBasedAssociation):
 
         self._match_threshold = config.match_threshold
         self._fuse_score = config.fuse_score
+
+    def _calc_score_matrix(self, iou_matrix, tracklets, tracklet_estimations, detections):
+        if self._fuse_score:
+            confs = np.array([d.conf for d in detections], dtype=np.float32)
+            score_matrix = iou_matrix * confs[None, :]
+        else:
+            score_matrix = iou_matrix.copy()
+
+        cost_matrix = -score_matrix
+        cost_matrix[score_matrix <= self._match_threshold] = np.inf
+        return cost_matrix
 
     def _calc_score(self, tracklet: Tracklet, tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
         _ = tracklet
@@ -261,6 +291,23 @@ class HMIoUAssociation(IoUBasedAssociation):
 
         return (intersection_bottom - intersection_top) / (union_bottom - union_top)
 
+    def _calc_score_matrix(self, iou_matrix, tracklets, tracklet_estimations, detections):
+        t_xyxy = np.array([t.as_numpy_xyxy() for t in tracklet_estimations])
+        d_xyxy = np.array([d.as_numpy_xyxy() for d in detections])
+
+        # Vectorized height IoU
+        int_bottom = np.minimum(t_xyxy[:, 3:4], d_xyxy[:, 3:4].T)
+        int_top = np.maximum(t_xyxy[:, 1:2], d_xyxy[:, 1:2].T)
+        union_bottom = np.maximum(t_xyxy[:, 3:4], d_xyxy[:, 3:4].T)
+        union_top = np.minimum(t_xyxy[:, 1:2], d_xyxy[:, 1:2].T)
+
+        valid = (union_top < union_bottom) & (int_top < int_bottom)
+        hiou = np.where(valid, (int_bottom - int_top) / np.maximum(union_bottom - union_top, 1e-8), 0.0)
+
+        cost_matrix = -(iou_matrix * hiou * hiou)
+        cost_matrix[iou_matrix <= self._match_threshold] = np.inf
+        return cost_matrix
+
     def _calc_score(self, tracklet: Tracklet, tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
         _ = tracklet
 
@@ -316,6 +363,36 @@ class DecayIoU(IoUBasedAssociation):
             label=bbox.label,
             conf=bbox.conf
         )
+
+    def _calc_score_matrix(self, iou_matrix, tracklets, tracklet_estimations, detections):
+        if self._expansion_rate > 0.0:
+            # Recompute IoU with expanded bboxes
+            t_xyxy = np.array([t.as_numpy_xyxy() for t in tracklet_estimations])
+            d_xyxy = np.array([d.as_numpy_xyxy() for d in detections])
+
+            # Expand: increase w and h by expansion_rate, keep center
+            def expand_xyxy(coords):
+                cx = (coords[:, 0] + coords[:, 2]) / 2
+                cy = (coords[:, 1] + coords[:, 3]) / 2
+                w = (coords[:, 2] - coords[:, 0]) * (1 + self._expansion_rate)
+                h = (coords[:, 3] - coords[:, 1]) * (1 + self._expansion_rate)
+                return np.stack([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=1)
+
+            iou_matrix = BBox.batch_iou(expand_xyxy(t_xyxy), expand_xyxy(d_xyxy))
+
+        if self._fuse_score:
+            confs = np.array([d.conf for d in detections], dtype=np.float32)
+            score_matrix = iou_matrix * confs[None, :]
+        else:
+            score_matrix = iou_matrix.copy()
+
+        # Per-tracklet threshold based on lost_time
+        lost_times = np.array([t.lost_time for t in tracklets], dtype=np.float32)
+        thresholds = np.maximum(self._min_threshold, self._max_threshold - self._threshold_decay * lost_times)
+
+        cost_matrix = -score_matrix
+        cost_matrix[score_matrix <= thresholds[:, None]] = np.inf
+        return cost_matrix
 
     def _calc_score(self, tracklet: Tracklet, tracklet_bbox: PredBBox, det_bbox: PredBBox) -> float:
         _ = tracklet

@@ -1,0 +1,13 @@
+defaults:
+  - global_config
+  - dataset: sportsmot.yaml
+  - inference: val.yaml
+  - eval: default.yaml
+  - object_detection: mmdet_yolox_sportsmot.yaml
+  - algorithm: movesort.yaml
+  - postprocess: sportsmot.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'sportsmot-movesort'

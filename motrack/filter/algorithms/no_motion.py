@@ -53,6 +53,9 @@ class NoMotionFilter(StateModelFilter):
         det_mat = np.ones_like(measurement) * self._det_uncertainty
         return state, det_mat
 
+    def batch_predict(self, states: list) -> list:
+        return list(states)
+
     def singlestep_to_multistep_state(self, state: State) -> State:
         return state.unsqueeze(0)
 

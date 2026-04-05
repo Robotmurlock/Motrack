@@ -1,0 +1,13 @@
+defaults:
+  - global_config
+  - dataset: sportsmot.yaml
+  - inference: val.yaml
+  - eval: default.yaml
+  - object_detection: mmdet_yolox_low_conf_sportsmot.yaml
+  - algorithm: bytetrack.yaml
+  - postprocess: sportsmot.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'sportsmot-bytetrack'

@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
-from motrack.tracker.matching.algorithms.compose import ComposeAssociationAlgorithm, ComposeAssociationConfig
+from motrack.tracker.matching.algorithms.compose import ComposeAssociationAlgorithm, ComposeAssociationConfig, AssociationReferenceConfig
 from motrack.tracker.matching.algorithms.iou import IoUAssociation, IoUAssociationConfig, LabelGatingType
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 from motrack.tracker.tracklet import Tracklet
@@ -129,9 +129,11 @@ class Move(ComposeAssociationAlgorithm):
         ]
         weights = [1, config.motion_lambda]
 
+        # Dummy matcher refs to satisfy config validation; actual matchers passed separately
+        dummy_refs = [AssociationReferenceConfig(name='iou')] * len(matchers)
         super().__init__(
             ComposeAssociationConfig(
-                matchers=[],
+                matchers=dummy_refs,
                 weights=weights,
                 fast_linear_assignment=config.fast_linear_assignment,
             ),
