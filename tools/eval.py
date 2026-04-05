@@ -3,6 +3,7 @@ Tracker evaluation. Computes HOTA, CLEAR, Identity, and Count metrics.
 """
 import logging
 import os
+from typing import Any, Dict
 
 import hydra
 from motrack.common import conventions
@@ -12,13 +13,12 @@ from motrack.datasets import dataset_factory
 from motrack.eval import evaluate_tracker_output
 from motrack.eval.reporting import log_eval_results, dump_eval_results_json
 from motrack.utils import pipeline
-from omegaconf import DictConfig
 
 logger = logging.getLogger('Tool-TrackerEvaluation')
 
 
-@pipeline.task('eval')
-def run_eval(cfg: GlobalConfig) -> None:
+def _run_eval_inner(cfg: GlobalConfig) -> Dict[str, Any]:
+    """Core eval logic. Returns the results dict."""
     assert cfg.inference.split != 'test', \
         'Cannot evaluate on test split — ground-truth is typically unavailable.'
     assert os.path.exists(cfg.experiment_path), \
@@ -59,11 +59,13 @@ def run_eval(cfg: GlobalConfig) -> None:
     json_path = conventions.get_eval_results_path(cfg.experiment_path)
     dump_eval_results_json(results, json_path)
 
+    return results
+
 
 @hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='movesort', version_base='1.1')
-def main(cfg: DictConfig):
-    # noinspection PyTypeChecker
-    run_eval(cfg)
+@pipeline.task('eval')
+def main(cfg: GlobalConfig) -> None:
+    _run_eval_inner(cfg)
 
 
 if __name__ == '__main__':

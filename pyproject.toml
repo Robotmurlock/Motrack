@@ -39,6 +39,7 @@ dependencies = [
 [project.optional-dependencies]
 yolov8 = ["ultralytics"]
 reid = ["onnxruntime"]
+optuna = ["optuna>=3.0"]
 
 [dependency-groups]
 dev = ["pytest"]

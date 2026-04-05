@@ -1,0 +1,32 @@
+defaults:
+  - global_config
+  - dataset: dancetrack.yaml
+  - inference: val.yaml
+  - eval: default.yaml
+  - object_detection: mmdet_yolox_dancetrack.yaml
+  - algorithm: sort.yaml
+  - postprocess: dancetrack.yaml
+  - path: default.yaml
+  - _self_
+
+
+experiment: 'sort-optuna'
+
+optimizer:
+  n_trials: 10
+  sampler: tpe
+  direction: maximize
+  study_name: dancetrack_sort_optuna
+  search_space:
+    algorithm.params.initialization_threshold:
+      type: int
+      low: 1
+      high: 10
+    algorithm.params.remember_threshold:
+      type: int
+      low: 1
+      high: 60
+    algorithm.params.filter_params.override_std_weight_position:
+      type: float
+      low: 0.01
+      high: 0.20

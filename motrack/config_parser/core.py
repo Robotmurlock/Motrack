@@ -1,15 +1,20 @@
 """
 Tracker config for tool entrypoints.
 """
+import copy
+import dataclasses
 import json
+import logging
 import os
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from hydra.core.config_store import ConfigStore
 
 from motrack.common import conventions, project
 from motrack.utils.lookup import LookupTable
+
+logger = logging.getLogger('GlobalConfig')
 
 
 @dataclass
@@ -175,6 +180,27 @@ class UtilityConfig:
 
 
 @dataclass
+class SearchSpaceParam:
+    """Single parameter in the Optuna search space."""
+    type: str  # 'int', 'float', 'categorical'
+    low: Optional[float] = None
+    high: Optional[float] = None
+    step: Optional[float] = None
+    log: bool = False
+    choices: Optional[List[Union[bool, int, float, str]]] = None
+
+
+@dataclass
+class TrackerOptimizerConfig:
+    """Optuna optimization settings."""
+    n_trials: int = 10
+    sampler: str = 'tpe'  # 'random', 'tpe', 'warm_tpe'
+    direction: str = 'maximize'
+    study_name: str = 'motrack_optuna'
+    search_space: Dict[str, SearchSpaceParam] = field(default_factory=dict)
+
+
+@dataclass
 class GlobalConfig:
     experiment: str
     dataset: DatasetConfig
@@ -187,6 +213,58 @@ class GlobalConfig:
     visualize: TrackerVisualizeConfig = field(default_factory=TrackerVisualizeConfig)
     eval: TrackerEvalConfig = field(default_factory=TrackerEvalConfig)
     utility: UtilityConfig = field(default_factory=UtilityConfig)
+    optimizer: Optional[TrackerOptimizerConfig] = None
+
+    def resolve(self, dotpath: str) -> Any:
+        """
+        Resolve a dotpath to its current value in the config.
+
+        Args:
+            dotpath: Dot-separated path (e.g. 'algorithm.params.remember_threshold').
+
+        Returns:
+            The value at the given path.
+        """
+        obj: Any = self
+        for part in dotpath.split('.'):
+            obj = obj[part] if isinstance(obj, dict) else getattr(obj, part)
+        return obj
+
+    def override(self, overrides: Dict[str, Any]) -> 'GlobalConfig':
+        """
+        Deep-copy and apply dotpath overrides to config values.
+        Logs a warning for each override applied.
+
+        After applying overrides, ``__post_init__`` is re-invoked on every
+        nested dataclass field (and on GlobalConfig itself) so that
+        normalization / validation logic is re-executed.
+
+        Args:
+            overrides: Mapping of dotpath (e.g. 'algorithm.params.remember_threshold') to value.
+
+        Returns:
+            New GlobalConfig with overrides applied.
+        """
+        cfg = copy.deepcopy(self)
+        for dotpath, value in overrides.items():
+            logger.warning(f'Overriding config: {dotpath} = {value}')
+            parts = dotpath.split('.')
+            obj = cfg
+            for part in parts[:-1]:
+                obj = obj[part] if isinstance(obj, dict) else getattr(obj, part)
+            if isinstance(obj, dict):
+                obj[parts[-1]] = value
+            else:
+                setattr(obj, parts[-1], value)
+
+        # Re-validate nested dataclass fields that define __post_init__
+        for f in dataclasses.fields(cfg):
+            child = getattr(cfg, f.name)
+            if dataclasses.is_dataclass(child) and hasattr(child, '__post_init__'):
+                child.__post_init__()
+
+        cfg.__post_init__()
+        return cfg
 
     @property
     def hash(self) -> str:
