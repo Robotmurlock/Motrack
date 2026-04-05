@@ -5,6 +5,7 @@ from typing import Tuple
 
 import numpy as np
 import torch
+from pydantic import BaseModel, ConfigDict
 from motrack.filter.algorithms.base import StateModelFilter, State
 from motrack.filter.catalog import FILTER_CATALOG
 from motrack_motion.datasets import transforms
@@ -13,21 +14,29 @@ from motrack_motion.models import model_factory
 from torch import nn
 
 
+@FILTER_CATALOG.register_config('motrack-motion-end-to-end')
+class MotrackMotionEndToEndFilterConfig(BaseModel):
+    """
+    Config for the end-to-end Motrack motion filter.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    name: str
+    params: dict
+    model_type: str
+    model_params: dict
+    checkpoint_path: str
+    transform_type: str
+    transform_params: dict
+
+
 @FILTER_CATALOG.register('motrack-motion-end-to-end')
 class MotrackMotionFilterEndToEnd(StateModelFilter):
     """
     Motrack-motion framework end-to-end filters
     """
-    def __init__(
-        self,
-        name: str,
-        params: dict,
-        model_type: str,
-        model_params: dict,
-        checkpoint_path: str,
-        transform_type: str,
-        transform_params: dict
-    ):
+    def __init__(self, config: MotrackMotionEndToEndFilterConfig):
         """
         Args:
             name: Filter name
@@ -38,12 +47,12 @@ class MotrackMotionFilterEndToEnd(StateModelFilter):
             transform_type: Transform type
             transform_params: Transform parameters
         """
-        transform = transforms.transform_factory(transform_type, transform_params)
+        transform = transforms.transform_factory(config.transform_type, config.transform_params)
 
         self._core = filter_factory(
-            name=name,
-            params=params,
-            model=self._load_model_from_checkpoint(model_type, model_params, checkpoint_path),
+            name=config.name,
+            params=config.params,
+            model=self._load_model_from_checkpoint(config.model_type, config.model_params, config.checkpoint_path),
             transform=transform,
         )
 

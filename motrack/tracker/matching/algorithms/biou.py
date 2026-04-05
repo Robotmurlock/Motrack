@@ -4,12 +4,37 @@ Implementation of C-BIoU and BIoU association methods.
 from typing import Optional, List, Tuple
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict
 
 from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
-from motrack.tracker.matching.algorithms.iou import IoUAssociation, LabelGatingType
+from motrack.tracker.matching.algorithms.iou import IoUAssociation, IoUAssociationConfig, LabelGatingType
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 from motrack.tracker.tracklet import Tracklet
+
+
+@ASSOCIATION_CATALOG.register_config('biou')
+class HungarianBIoUConfig(IoUAssociationConfig):
+    """
+    Config for BIoU association.
+    """
+
+    b: float = 0.3
+
+
+@ASSOCIATION_CATALOG.register_config('cbiou')
+class HungarianCBIoUConfig(BaseModel):
+    """
+    Config for C-BIoU association.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    b1: float = 0.3
+    b2: float = 0.4
+    match_threshold: float = 0.30
+    label_gating: Optional[LabelGatingType] = None
+    fast_linear_assignment: bool = False
 
 
 @ASSOCIATION_CATALOG.register('biou')
@@ -17,13 +42,7 @@ class HungarianBIoU(IoUAssociation):
     """
     BIoU matching algorithm. Ref: https://arxiv.org/pdf/2211.14317.pdf
     """
-    def __init__(
-        self,
-        b: float = 0.3,
-        match_threshold: float = 0.30,
-        label_gating: Optional[LabelGatingType] = None,
-        *args, **kwargs
-    ):
+    def __init__(self, config: HungarianBIoUConfig):
         """
         Args:
             b: BBox buffer
@@ -31,11 +50,14 @@ class HungarianBIoU(IoUAssociation):
             label_gating: Gating between different types of objects
         """
         super().__init__(
-            match_threshold=match_threshold,
-            label_gating=label_gating,
-            *args, **kwargs
+            IoUAssociationConfig(
+                match_threshold=config.match_threshold,
+                label_gating=config.label_gating,
+                fuse_score=config.fuse_score,
+                fast_linear_assignment=config.fast_linear_assignment,
+            )
         )
-        self._b = b
+        self._b = config.b
 
     def _buffer_bbox(self, bbox: PredBBox) -> PredBBox:
         center = bbox.center
@@ -68,14 +90,7 @@ class HungarianCBIoU(AssociationAlgorithm):
     """
     C-BIoU matching algorithm. Ref: https://arxiv.org/pdf/2211.14317.pdf
     """
-    def __init__(
-        self,
-        b1: float = 0.3,
-        b2: float = 0.4,
-        match_threshold: float = 0.30,
-        label_gating: Optional[LabelGatingType] = None,
-        fast_linear_assignment: bool = False,
-    ):
+    def __init__(self, config: HungarianCBIoUConfig):
         """
         Args:
             b1: First buffer matching threshold
@@ -85,18 +100,22 @@ class HungarianCBIoU(AssociationAlgorithm):
             fast_linear_assignment: Use greedy algorithm for linear assignment
             - This might be more efficient in case of large cost matrix
         """
-        super().__init__(fast_linear_assignment=fast_linear_assignment)
+        super().__init__(fast_linear_assignment=config.fast_linear_assignment)
 
         self._biou1_matcher = HungarianBIoU(
-            b=b1,
-            match_threshold=match_threshold,
-            label_gating=label_gating,
+            HungarianBIoUConfig(
+                b=config.b1,
+                match_threshold=config.match_threshold,
+                label_gating=config.label_gating,
+            )
         )
 
         self._biou1_matcher = HungarianBIoU(
-            b=b2,
-            match_threshold=match_threshold,
-            label_gating=label_gating,
+            HungarianBIoUConfig(
+                b=config.b2,
+                match_threshold=config.match_threshold,
+                label_gating=config.label_gating,
+            )
         )
 
     def match(

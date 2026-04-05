@@ -5,14 +5,46 @@ from typing import List
 from typing import Optional
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict, Field
 from scipy.spatial.distance import cdist
 
 from motrack.library.cv import PredBBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
-from motrack.tracker.matching.algorithms.compose import ComposeAssociationAlgorithm
-from motrack.tracker.matching.algorithms.iou import LabelGatingType, IoUAssociation
+from motrack.tracker.matching.algorithms.compose import ComposeAssociationAlgorithm, ComposeAssociationConfig
+from motrack.tracker.matching.algorithms.iou import LabelGatingType, IoUAssociation, IoUAssociationConfig
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 from motrack.tracker.tracklet import TrackletCommonData, Tracklet
+
+
+@ASSOCIATION_CATALOG.register_config('reid')
+class ReIDAssociationConfig(BaseModel):
+    """
+    Config for ReID association.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    appearance_threshold: float = 0.0
+    appearance_metric: str = 'cosine'
+    fast_linear_assignment: bool = False
+
+
+@ASSOCIATION_CATALOG.register_config('long-term-reid')
+class LongTermReIdAssociationConfig(ReIDAssociationConfig):
+    """
+    Config for long-term ReID association.
+    """
+
+
+@ASSOCIATION_CATALOG.register_config('reid-iou')
+class ReIDIoUAssociationConfig(IoUAssociationConfig):
+    """
+    Config for ReID + IoU association.
+    """
+
+    appearance_weight: float = Field(default=0.5, ge=0.0, le=1.0)
+    appearance_threshold: float = 0.0
+    appearance_metric: str = 'cosine'
 
 
 @ASSOCIATION_CATALOG.register('reid')
@@ -20,12 +52,7 @@ class ReIDAssociation(AssociationAlgorithm):
     """
     Standard ReID association method appearance.
     """
-    def __init__(
-        self,
-        appearance_threshold: float = 0.0,
-        appearance_metric: str = 'cosine',
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: ReIDAssociationConfig):
         """
         Args:
             appearance_threshold: Appearance metric minimum threshold
@@ -34,11 +61,11 @@ class ReIDAssociation(AssociationAlgorithm):
             fast_linear_assignment: Use faster linear assignment
         """
         super().__init__(
-            fast_linear_assignment=fast_linear_assignment,
+            fast_linear_assignment=config.fast_linear_assignment,
         )
 
-        self._appearance_threshold = appearance_threshold
-        self._appearance_metric: str = appearance_metric
+        self._appearance_threshold = config.appearance_threshold
+        self._appearance_metric: str = config.appearance_metric
 
     def form_cost_matrix(
         self,
@@ -81,12 +108,7 @@ class LongTermReIdAssociation(ReIDAssociation):
     """
     Long-term based ReID association.
     """
-    def __init__(
-        self,
-        appearance_threshold: float = 0.0,
-        appearance_metric: str = 'cosine',
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: LongTermReIdAssociationConfig):
         """
         Args:
             appearance_threshold: Appearance metric minimum threshold
@@ -94,11 +116,7 @@ class LongTermReIdAssociation(ReIDAssociation):
             appearance_metric: Appearance metric (default: cosine)
             fast_linear_assignment: Use faster linear assignment
         """
-        super().__init__(
-            fast_linear_assignment=fast_linear_assignment,
-            appearance_threshold=appearance_threshold,
-            appearance_metric=appearance_metric
-        )
+        super().__init__(config)
 
     @staticmethod
     def _get_features(tracklets: List[Tracklet]) -> np.ndarray:
@@ -111,16 +129,7 @@ class ReIDIoUAssociation(ComposeAssociationAlgorithm):
     """
     Standard DeepSORT association method based on IoU and appearance.
     """
-    def __init__(
-        self,
-        appearance_weight: float = 0.5,
-        appearance_threshold: float = 0.0,
-        appearance_metric: str = 'cosine',
-        match_threshold: float = 0.30,
-        fuse_score: bool = False,
-        label_gating: Optional[LabelGatingType] = None,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: ReIDIoUAssociationConfig):
         """
         Args:
             appearance_weight: Appearance to IoU association weight
@@ -131,24 +140,29 @@ class ReIDIoUAssociation(ComposeAssociationAlgorithm):
             label_gating: Allow different labels to be matched
             fast_linear_assignment: Use faster linear assignment
         """
-        assert 0 <= appearance_weight <= 1.0, '"appearance_weight" must be in interval [0, 1]!'
-
         matchers = [
             IoUAssociation(
-                match_threshold=match_threshold,
-                fuse_score=fuse_score,
-                label_gating=label_gating
+                IoUAssociationConfig(
+                    match_threshold=config.match_threshold,
+                    fuse_score=config.fuse_score,
+                    label_gating=config.label_gating,
+                )
             ),
             ReIDAssociation(
-                appearance_threshold=appearance_threshold,
-                appearance_metric=appearance_metric
+                ReIDAssociationConfig(
+                    appearance_threshold=config.appearance_threshold,
+                    appearance_metric=config.appearance_metric,
+                )
             )
         ]
 
-        weights = [1 - appearance_weight, appearance_weight]
+        weights = [1 - config.appearance_weight, config.appearance_weight]
 
         super().__init__(
+            ComposeAssociationConfig(
+                matchers=[],
+                weights=weights,
+                fast_linear_assignment=config.fast_linear_assignment,
+            ),
             matchers=matchers,
-            weights=weights,
-            fast_linear_assignment=fast_linear_assignment
         )

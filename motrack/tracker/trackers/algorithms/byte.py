@@ -2,16 +2,43 @@
 Implementation of ByteTrack.
 Reference: https://arxiv.org/abs/2110.06864
 """
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 
 import numpy as np
+from pydantic import Field
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching import association_factory
-from motrack.tracker.trackers.algorithms.motion_reid import MotionReIDBasedTracker
+from motrack.tracker.trackers.algorithms.motion_reid import (
+    FactoryConfig,
+    MotionReIDBasedTracker,
+    MotionReIDTrackerConfig,
+)
 from motrack.tracker.trackers.catalog import TRACKER_CATALOG
 from motrack.tracker.tracklet import Tracklet, TrackletState
 from motrack.utils.collections import unpack_n
+
+
+@TRACKER_CATALOG.register_config('byte')
+class ByteTrackerConfig(MotionReIDTrackerConfig):
+    """
+    Config for ByteTrack trackers.
+    """
+
+    high_matcher: FactoryConfig = Field(
+        default_factory=lambda: FactoryConfig(name='iou', params={'match_threshold': 0.2, 'fuse_score': True})
+    )
+    low_matcher: FactoryConfig = Field(
+        default_factory=lambda: FactoryConfig(name='iou', params={'match_threshold': 0.5})
+    )
+    new_matcher: FactoryConfig = Field(
+        default_factory=lambda: FactoryConfig(name='iou', params={'match_threshold': 0.3, 'fuse_score': True})
+    )
+    detection_threshold: float = Field(default=0.6, ge=0.0, le=1.0)
+    duplicate_iou_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
+    appearance_ema_momentum: float = Field(default=0.95, ge=0.0, le=1.0)
+    appearance_buffer: int = Field(default=0, ge=0)
+    use_reid_for_low_matching: bool = False
 
 
 @TRACKER_CATALOG.register('byte')
@@ -32,86 +59,22 @@ class ByteTracker(MotionReIDBasedTracker):
         8. Delete new unmatched and long-lost tracklets
         9. Delete duplicate between ACTIVE and LOST tracklets
     """
-    def __init__(
-        self,
-        filter_name: str = 'bot-sort',
-        filter_params: Optional[dict] = None,
-        cmc_name: Optional[str] = None,
-        cmc_params: Optional[dict] = None,
-        reid_name: Optional[str] = None,
-        reid_params: Optional[str] = None,
-        high_matcher_algorithm: str = 'default',
-        high_matcher_params: Optional[Dict[str, Any]] = None,
-        low_matcher_algorithm: str = 'default',
-        low_matcher_params: Optional[Dict[str, Any]] = None,
-        new_matcher_algorithm: str = 'default',
-        new_matcher_params: Optional[Dict[str, Any]] = None,
-        detection_threshold: float = 0.6,
-        remember_threshold: int = 1,
-        initialization_threshold: int = 3,
-        new_tracklet_detection_threshold: Optional[float] = None,
-        duplicate_iou_threshold: float = 1.00,
-        use_observation_if_lost: bool = False,
-        appearance_ema_momentum: float = 0.95,
-        appearance_buffer: int = 0,
-        use_reid_for_low_matching: bool = False
-    ):
-        if filter_params is None:
-            filter_params = {}
-
-        new_tracklet_detection_threshold = new_tracklet_detection_threshold if new_tracklet_detection_threshold is not None \
-            else detection_threshold
+    def __init__(self, config: ByteTrackerConfig):
         super().__init__(
-            filter_name=filter_name,
-            filter_params=filter_params,
-            cmc_name=cmc_name,
-            cmc_params=cmc_params,
-            reid_name=reid_name,
-            reid_params=reid_params,
-
-            new_tracklet_detection_threshold=new_tracklet_detection_threshold,
-            remember_threshold=remember_threshold,
-            initialization_threshold=initialization_threshold,
-            use_observation_if_lost=use_observation_if_lost,
-            duplicate_iou_threshold=duplicate_iou_threshold,
-
-            appearance_ema_momentum=appearance_ema_momentum,
-            appearance_buffer=appearance_buffer,
-            reid_detection_threshold=detection_threshold if not use_reid_for_low_matching else None
+            config=config,
+            duplicate_iou_threshold=config.duplicate_iou_threshold,
+            appearance_ema_momentum=config.appearance_ema_momentum,
+            appearance_buffer=config.appearance_buffer,
+            reid_detection_threshold=config.detection_threshold if not config.use_reid_for_low_matching else None
         )
 
-        if high_matcher_algorithm == 'default':
-            assert high_matcher_params is None
-            high_matcher_algorithm = 'iou'
-            high_matcher_params = {
-                'match_threshold': 0.2,
-                'fuse_score': True
-            }
-
-        self._high_match = association_factory(high_matcher_algorithm, high_matcher_params)
-
-        if low_matcher_algorithm == 'default':
-            assert low_matcher_params is None
-            low_matcher_algorithm = 'iou'
-            low_matcher_params = {
-                'match_threshold': 0.5
-            }
-
-        self._low_match = association_factory(low_matcher_algorithm, low_matcher_params)
-
-        if new_matcher_algorithm == 'default':
-            assert new_matcher_params is None
-            new_matcher_algorithm = 'iou'
-            new_matcher_params = {
-                'match_threshold': 0.3,
-                'fuse_score': True
-            }
-
-        self._new_match = association_factory(new_matcher_algorithm, new_matcher_params)
+        self._high_match = association_factory(config.high_matcher.name, config.high_matcher.params)
+        self._low_match = association_factory(config.low_matcher.name, config.low_matcher.params)
+        self._new_match = association_factory(config.new_matcher.name, config.new_matcher.params)
 
         # Parameters
-        self._detection_threshold = detection_threshold
-        self._use_reid_for_low_matching = use_reid_for_low_matching
+        self._detection_threshold = config.detection_threshold
+        self._use_reid_for_low_matching = config.use_reid_for_low_matching
 
     def _track(
         self,

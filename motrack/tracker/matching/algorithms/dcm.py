@@ -4,25 +4,39 @@ Implementation of SparseTrack DCM association method.
 from typing import Optional, List, Tuple
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
-from motrack.tracker.matching.algorithms.iou import IoUAssociation, LabelGatingType
-from motrack.tracker.matching.algorithms.move import Move
+from motrack.tracker.matching.algorithms.iou import IoUAssociation, IoUAssociationConfig, LabelGatingType
+from motrack.tracker.matching.algorithms.move import Move, MoveAssociationConfig
 from motrack.tracker.tracklet import Tracklet
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
+
+
+@ASSOCIATION_CATALOG.register_config('dcm')
+class DCMIoUAssociationConfig(IoUAssociationConfig):
+    """
+    Config for DCM-IoU association.
+    """
+
+    levels: int = 12
+
+
+@ASSOCIATION_CATALOG.register_config('move-dcm')
+class MoveDCMAssociationConfig(MoveAssociationConfig):
+    """
+    Config for Move-DCM association.
+    """
+
+    levels: int = 12
 
 
 class DCM(AssociationAlgorithm):
     """
     SparseTrack DCM: https://arxiv.org/pdf/2306.05238.pdf
     """
-    def __init__(
-        self,
-        matcher: AssociationAlgorithm,
-        levels: int = 12,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, matcher: AssociationAlgorithm, levels: int = 12, fast_linear_assignment: bool = False):
         """
         Args:
             matcher: Base matcher
@@ -114,14 +128,7 @@ class DCMIoU(DCM):
     """
     SparseTrack DCM (original): https://arxiv.org/pdf/2306.05238.pdf
     """
-    def __init__(
-        self,
-        levels: int = 12,
-        match_threshold: float = 0.30,
-        fuse_score: bool = False,
-        label_gating: Optional[LabelGatingType] = None,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: DCMIoUAssociationConfig):
         """
         Args:
             match_threshold: IoU gating match threshold
@@ -131,14 +138,16 @@ class DCMIoU(DCM):
                 - This might be more efficient in case of large cost matrix
         """
         matcher = IoUAssociation(
-            match_threshold=match_threshold,
-            label_gating=label_gating,
-            fuse_score=fuse_score
+            IoUAssociationConfig(
+                match_threshold=config.match_threshold,
+                label_gating=config.label_gating,
+                fuse_score=config.fuse_score,
+            )
         )
         super().__init__(
             matcher=matcher,
-            levels=levels,
-            fast_linear_assignment=fast_linear_assignment
+            levels=config.levels,
+            fast_linear_assignment=config.fast_linear_assignment
         )
 
 
@@ -147,16 +156,7 @@ class MoveDCM(DCM):
     """
     DCM + Move
     """
-    def __init__(
-        self,
-        levels: int = 12,
-        match_threshold: float = 0.30,
-        motion_lambda: float = 5,
-        distance_name: str = 'l1',
-        label_gating: Optional[LabelGatingType] = None,
-        fuse_score: bool = False,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: MoveDCMAssociationConfig):
         """
         Args:
             levels: Number of depth levels to use
@@ -168,14 +168,16 @@ class MoveDCM(DCM):
                 - This might be more efficient in case of large cost matrix
         """
         matcher = Move(
-            match_threshold=match_threshold,
-            motion_lambda=motion_lambda,
-            distance_name=distance_name,
-            label_gating=label_gating,
-            fuse_score=fuse_score,
-            fast_linear_assignment=fast_linear_assignment
+            MoveAssociationConfig(
+                match_threshold=config.match_threshold,
+                motion_lambda=config.motion_lambda,
+                distance_name=config.distance_name,
+                label_gating=config.label_gating,
+                fuse_score=config.fuse_score,
+                fast_linear_assignment=config.fast_linear_assignment,
+            )
         )
         super().__init__(
             matcher=matcher,
-            levels=levels,
+            levels=config.levels,
         )

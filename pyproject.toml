@@ -33,11 +33,15 @@ dependencies = [
     "mmdet>=3.3.0",
     "mmengine>=0.10.0",
     "openmim>=0.3.9",
+    "pydantic>=2.12.5",
 ]
 
 [project.optional-dependencies]
 yolov8 = ["ultralytics"]
 reid = ["onnxruntime"]
+
+[dependency-groups]
+dev = ["pytest"]
 
 [project.urls]
 Homepage = "https://github.com/Robotmurlock/Motrack"

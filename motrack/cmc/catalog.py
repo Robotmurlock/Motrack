@@ -1,7 +1,7 @@
 """
 Dynamic CMC catalog.
 """
-from motrack.utils.patterns import DynamicCatalog
+from motrack.utils.patterns import DynamicConfigBasedCatalog
 
 
-CMC_CATALOG = DynamicCatalog()
+CMC_CATALOG = DynamicConfigBasedCatalog()

@@ -1,7 +1,8 @@
 name: sort
 params:
-  filter_name: bot-sort
-  filter_params:
-    override_std_weight_position: 0.05
+  filter:
+    name: bot-sort
+    params:
+      override_std_weight_position: 0.05
   initialization_threshold: 3
   remember_threshold: 30
