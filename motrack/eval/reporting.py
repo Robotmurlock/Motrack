@@ -1,11 +1,12 @@
 """
 Evaluation result logging and JSON serialization.
 """
-import json
 import logging
 from typing import Any, Dict, List
 
 import numpy as np
+
+from tools.data import EvalResults
 
 logger = logging.getLogger('EvalReporting')
 
@@ -38,8 +39,11 @@ def dump_eval_results_json(results: Dict[str, Any], output_path: str) -> None:
     and all numpy scalars are converted to Python natives.
     """
     serializable = _to_serializable(results)
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(serializable, f, indent=2)
+    eval_results = EvalResults(
+        combined=serializable['combined'],
+        sequences=serializable['sequences'],
+    )
+    eval_results.save(output_path)
     logger.info(f'Evaluation results saved to "{output_path}".')
 
 
