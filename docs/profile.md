@@ -1,7 +1,7 @@
 # Performance Profiling
 
 Tracker FPS = harmonic mean (weights 0.5) of OD and ASSOC steps. Focus is on the ASSOC step.
-Profiling scripts are standalone (synthetic data, no dataset needed): `python -m tools.profile.<script>`.
+Profiling scripts are standalone (synthetic data, no dataset needed): `python -m tools.profiling.<script>`.
 
 ## Before/After Summary
 

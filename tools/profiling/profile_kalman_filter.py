@@ -7,7 +7,7 @@ Benchmarks:
 """
 import numpy as np
 
-from tools.profile._common import (
+from tools.profiling._common import (
     benchmark, print_table, result_cells, generate_kalman_states,
 )
 from motrack.library.kalman_filter.botsort_kf import BotSortKalmanFilter

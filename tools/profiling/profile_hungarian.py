@@ -10,7 +10,7 @@ Benchmarks:
 import numpy as np
 import scipy.optimize
 
-from tools.profile._common import benchmark, print_table, result_cells, generate_cost_matrix
+from tools.profiling._common import benchmark, print_table, result_cells, generate_cost_matrix
 from motrack.tracker.matching.utils import hungarian, greedy, INF
 
 

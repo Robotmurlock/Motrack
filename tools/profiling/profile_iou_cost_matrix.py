@@ -5,7 +5,7 @@ Benchmarks:
 1. IoUAssociation.form_cost_matrix() at various (T x D) sizes
 2. Per-call PredBBox.iou() vs vectorized numpy IoU
 """
-from tools.profile._common import (
+from tools.profiling._common import (
     benchmark, print_table, result_cells,
     generate_bboxes, generate_tracklets, bboxes_to_xyxy_array,
     numpy_vectorized_iou,

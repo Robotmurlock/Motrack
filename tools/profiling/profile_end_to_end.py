@@ -9,7 +9,7 @@ import copy
 
 import numpy as np
 
-from tools.profile._common import (
+from tools.profiling._common import (
     print_table, generate_bboxes, generate_tracklets, generate_kalman_states,
 )
 from motrack.library.cv.bbox import BBox, PredBBox

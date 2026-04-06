@@ -13,7 +13,7 @@ import tempfile
 
 import numpy as np
 
-from tools.profile._common import (
+from tools.profiling._common import (
     benchmark, print_table, generate_npy_cache, generate_npz_cache,
 )
 
