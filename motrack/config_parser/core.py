@@ -251,7 +251,12 @@ class GlobalConfig:
             parts = dotpath.split('.')
             obj = cfg
             for part in parts[:-1]:
-                obj = obj[part] if isinstance(obj, dict) else getattr(obj, part)
+                if isinstance(obj, dict):
+                    if part not in obj:
+                        obj[part] = {}
+                    obj = obj[part]
+                else:
+                    obj = getattr(obj, part)
             if isinstance(obj, dict):
                 obj[parts[-1]] = value
             else:

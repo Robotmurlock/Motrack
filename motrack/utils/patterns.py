@@ -61,6 +61,35 @@ class DynamicConfigBasedCatalog(DynamicCatalog):
         super().__init__()
         self._config_catalog = {}
 
+    @staticmethod
+    def _merge_model_field_defaults(config_cls: Type, params: dict) -> dict:
+        """
+        Merge partial dicts with BaseModel field defaults.
+
+        When a field has a BaseModel default (e.g. ``FactoryConfig(name='iou')``)
+        and the provided params contain a partial dict for that field (e.g.
+        ``{'params': {'match_threshold': 0.2}}``), the partial dict is merged
+        with the serialized default so that required fields like ``name`` are
+        preserved.
+
+        Args:
+            config_cls: Pydantic model class with field definitions.
+            params: Raw params dict to merge defaults into.
+
+        Returns:
+            Params dict with partial BaseModel dicts merged with defaults.
+        """
+        from pydantic import BaseModel
+
+        merged = dict(params)
+        for field_name, field_info in config_cls.model_fields.items():
+            if field_name not in merged or not isinstance(merged[field_name], dict):
+                continue
+            default = field_info.get_default(call_default_factory=True)
+            if isinstance(default, BaseModel):
+                merged[field_name] = {**default.model_dump(), **merged[field_name]}
+        return merged
+
     @property
     def config_keys(self) -> List[str]:
         """
@@ -164,6 +193,7 @@ class DynamicConfigBasedCatalog(DynamicCatalog):
             raise ValueError(f'Invalid {error_label} "{normalized_key}".') from exc
 
         try:
+            normalized_params = self._merge_model_field_defaults(config_cls, normalized_params)
             return config_cls.model_validate(normalized_params)
         except ValidationError as exc:
             raise ValueError(f'Invalid {error_label} "{normalized_key}": {exc}') from exc
