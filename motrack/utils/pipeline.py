@@ -112,15 +112,14 @@ def store_run_history_config(
         raw_cfg_yaml: Raw task config serialized as YAML
         task_name: Task name
     """
-    tracker_run_path = conventions.get_tracker_run_path(
+    split_results_path = conventions.get_split_results_path(
         master_path=output_dir,
         dataset_type=cfg.dataset.type,
-        dataset_name=cfg.dataset.name,
         experiment_name=cfg.experiment,
         split=cfg.inference.split,
-        config_hash=cfg.hash
+        dataset_name=cfg.dataset.name,
     )
-    config_dirpath = conventions.get_run_configs_path(tracker_run_path)
+    config_dirpath = conventions.get_run_configs_path(split_results_path)
     dt = datetime.now().strftime(formats.DATETIME_FORMAT)
     config_path = os.path.join(config_dirpath, f'{dt}_{task_name}.yaml')
     Path(config_dirpath).mkdir(parents=True, exist_ok=True)

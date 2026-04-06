@@ -9,18 +9,22 @@ inference was executed:
   {dataset_name}/
     {experiment_name}/
       {split}/
-        {config_hash}/
-          online/
-            {scene_name}.txt
-          debug/
-            {scene_name}.txt
-          offline/
-            {scene_name}.txt
-          config.yaml
-          run_meta.json
-          run_configs/
+        inference
+            {config_hash}/ - must be unique
+                online/
+                    {scene_name}.txt
+                debug/
+                    {scene_name}.txt
+                offline/
+                    {scene_name}.txt
+                config.yaml
+                run_meta.json
+                eval_results.json
+        run_configs/
             {datetime}_{task_name}.yaml
-          eval_results.json
+        optimizations/
+            {optimization_name}/ - must be unique
+                optimization_results.json
 
 Definitions:
 - master_path: Root directory that contains all saved outputs.
@@ -49,10 +53,12 @@ import os
 from typing import Optional, Union
 
 
+INFERENCE_DIRNAME = 'inference'
 ONLINE_DIRNAME = 'online'
 DEBUG_DIRNAME = 'debug'
 OFFLINE_DIRNAME = 'offline'
 RUN_CONFIGS_DIRNAME = 'run_configs'
+OPTIMIZATIONS_DIRNAME = 'optimizations'
 CONFIG_FILENAME = 'config.yaml'
 RUN_META_FILENAME = 'run_meta.json'
 EVAL_RESULTS_FILENAME = 'eval_results.json'
@@ -255,6 +261,19 @@ def get_dt_hash(
     return digest[:hash_length]
 
 
+def get_inference_path(split_results_path: str) -> str:
+    """
+    Gets the inference directory path under a split.
+
+    Args:
+        split_results_path: Split-level directory path.
+
+    Returns:
+        Inference directory path.
+    """
+    return os.path.join(split_results_path, INFERENCE_DIRNAME)
+
+
 def get_tracker_run_path(
     master_path: str,
     dataset_type: str,
@@ -277,16 +296,14 @@ def get_tracker_run_path(
     Returns:
         Tracker run directory path.
     """
-    return os.path.join(
-        get_split_results_path(
-            master_path=master_path,
-            dataset_type=dataset_type,
-            experiment_name=experiment_name,
-            split=split,
-            dataset_name=dataset_name
-        ),
-        config_hash
+    split_path = get_split_results_path(
+        master_path=master_path,
+        dataset_type=dataset_type,
+        experiment_name=experiment_name,
+        split=split,
+        dataset_name=dataset_name
     )
+    return os.path.join(get_inference_path(split_path), config_hash)
 
 
 def get_tracker_output_path(
@@ -309,17 +326,17 @@ def get_tracker_output_path(
     )
 
 
-def get_run_configs_path(tracker_run_path: str) -> str:
+def get_run_configs_path(split_results_path: str) -> str:
     """
     Gets the stored run-config directory path.
 
     Args:
-        tracker_run_path: Root directory of the tracker run.
+        split_results_path: Split-level directory path.
 
     Returns:
         Path where run configuration snapshots are stored.
     """
-    return os.path.join(tracker_run_path, RUN_CONFIGS_DIRNAME)
+    return os.path.join(split_results_path, RUN_CONFIGS_DIRNAME)
 
 
 def get_config_snapshot_path(tracker_run_path: str) -> str:
@@ -361,20 +378,48 @@ def get_eval_results_path(tracker_run_path: str) -> str:
     return os.path.join(tracker_run_path, EVAL_RESULTS_FILENAME)
 
 
-def get_optimization_results_path(split_results_path: str) -> str:
+def get_optimizations_path(split_results_path: str) -> str:
     """
-    Gets the optimization results JSON path.
-
-    Optimization results are saved at the split level because they aggregate
-    across all trial config hashes.
+    Gets the optimizations directory path under a split.
 
     Args:
         split_results_path: Split-level directory path.
 
     Returns:
+        Optimizations directory path.
+    """
+    return os.path.join(split_results_path, OPTIMIZATIONS_DIRNAME)
+
+
+def get_optimization_path(split_results_path: str, optimization_name: str) -> str:
+    """
+    Gets a named optimization directory path.
+
+    Args:
+        split_results_path: Split-level directory path.
+        optimization_name: Human-readable optimization label (must be unique).
+
+    Returns:
+        Named optimization directory path.
+    """
+    return os.path.join(get_optimizations_path(split_results_path), optimization_name)
+
+
+def get_optimization_results_path(split_results_path: str, optimization_name: str) -> str:
+    """
+    Gets the optimization results JSON path for a named optimization.
+
+    Args:
+        split_results_path: Split-level directory path.
+        optimization_name: Human-readable optimization label.
+
+    Returns:
         Path to the optimization results file.
     """
-    return os.path.join(split_results_path, OPTIMIZATION_RESULTS_FILENAME)
+    return os.path.join(
+        get_optimization_path(split_results_path, optimization_name),
+        OPTIMIZATION_RESULTS_FILENAME,
+    )
 
 
 def get_artifact_path(tracker_run_path: str, artifact_name: str) -> str:

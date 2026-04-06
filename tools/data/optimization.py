@@ -15,6 +15,7 @@ class TrialResult:
     value: float
     params: Dict[str, Any]
     state: str
+    config_hash: str
 
 
 @dataclass

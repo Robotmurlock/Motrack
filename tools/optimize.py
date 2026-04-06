@@ -2,6 +2,7 @@
 Tracker hyperparameter optimization using Optuna.
 """
 import logging
+import os
 from datetime import datetime
 from typing import Any, Callable, Dict
 
@@ -13,6 +14,7 @@ from motrack.common.project import DANCETRACK_TRACKERS_CONFIG_PATH
 from motrack.config_parser import GlobalConfig, SearchSpaceParam
 from motrack.utils import pipeline
 from tools.data import OptimizationResults, OptunaOutputData, InferenceOutputData, TrialResult
+from tools.data.eval import EvalResults
 from tools.eval import _run_eval_inner
 from tools.inference import _run_inference_inner
 
@@ -93,7 +95,8 @@ def create_objective(
 
     Each call to the returned objective runs a full inference + evaluation cycle
     with sampled hyperparameters and returns the mean HOTA score across alpha
-    thresholds.
+    thresholds.  If a trial's config hash already has evaluation results, the
+    existing HOTA is returned without re-running inference or evaluation.
 
     Args:
         cfg: Base global config (deep-copied per trial via ``cfg.override``).
@@ -108,6 +111,16 @@ def create_objective(
         params = sample_params(trial, search_space)
         trial_cfg = cfg.override(params)
         trial_cfg.inference.override = True
+
+        config_hash = trial_cfg.hash
+        trial.set_user_attr('config_hash', config_hash)
+
+        eval_path = conventions.get_eval_results_path(trial_cfg.experiment_path)
+        if os.path.exists(eval_path):
+            eval_results = EvalResults.load(eval_path)
+            hota = float(np.mean(eval_results.combined['HOTA']['HOTA']))
+            logger.info(f'Trial {trial.number}: HOTA={hota:.4f} (cached, hash={config_hash}), params={params}')
+            return hota
 
         inference_output = InferenceOutputData(
             created_at=datetime.now().isoformat(),
@@ -130,10 +143,10 @@ def create_objective(
 
 def save_optimization_results(cfg: GlobalConfig, study: optuna.Study) -> None:
     """
-    Save the optimization results to a JSON file at the split level.
+    Save the optimization results under ``optimizations/{study_name}/``.
 
-    Writes the best trial (number, HOTA value, params) and a summary of all
-    trials to ``optimization_results.json`` under the split results directory.
+    Writes the best trial (number, HOTA value, params, config_hash) and a
+    summary of all trials to ``optimization_results.json``.
 
     Args:
         cfg: Global config used during the optimization run.
@@ -142,23 +155,19 @@ def save_optimization_results(cfg: GlobalConfig, study: optuna.Study) -> None:
     best = study.best_trial
     logger.info(f'Best trial #{best.number}: HOTA={best.value:.4f}, params={best.params}')
 
+    def _trial_result(t: optuna.trial.FrozenTrial) -> TrialResult:
+        return TrialResult(
+            number=t.number,
+            value=t.value,
+            params=t.params,
+            state=t.state.name,
+            config_hash=t.user_attrs['config_hash'],
+        )
+
     results = OptimizationResults(
         study_name=study.study_name,
-        best_trial=TrialResult(
-            number=best.number,
-            value=best.value,
-            params=best.params,
-            state=best.state.name,
-        ),
-        all_trials=[
-            TrialResult(
-                number=t.number,
-                value=t.value,
-                params=t.params,
-                state=t.state.name,
-            )
-            for t in study.trials
-        ],
+        best_trial=_trial_result(best),
+        all_trials=[_trial_result(t) for t in study.trials],
     )
 
     split_path = conventions.get_split_results_path(
@@ -168,7 +177,7 @@ def save_optimization_results(cfg: GlobalConfig, study: optuna.Study) -> None:
         split=cfg.inference.split,
         dataset_name=cfg.dataset.name,
     )
-    results_path = conventions.get_optimization_results_path(split_path)
+    results_path = conventions.get_optimization_results_path(split_path, study.study_name)
     results.save(results_path)
     logger.info(f'Optimization results saved to "{results_path}".')
 
@@ -177,6 +186,20 @@ def _run_optimize_inner(cfg: GlobalConfig) -> None:
     assert cfg.optimizer is not None, 'optimizer config is required'
     optim_cfg = cfg.optimizer
     search_space = optim_cfg.search_space
+
+    split_path = conventions.get_split_results_path(
+        master_path=cfg.path.master,
+        dataset_type=cfg.dataset.type,
+        experiment_name=cfg.experiment,
+        split=cfg.inference.split,
+        dataset_name=cfg.dataset.name,
+    )
+    optimization_dir = conventions.get_optimization_path(split_path, optim_cfg.study_name)
+    if os.path.exists(optimization_dir):
+        raise FileExistsError(
+            f'Optimization "{optim_cfg.study_name}" already exists at "{optimization_dir}". '
+            f'Choose a different study_name to avoid overwriting previous results.'
+        )
 
     if cfg.object_detection.cache_path is None:
         logger.warning(

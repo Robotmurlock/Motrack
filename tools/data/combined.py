@@ -3,7 +3,7 @@ Collectors that aggregate all tool outputs for an experiment.
 """
 import os
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from motrack.common import conventions
 from tools.data.eval import EvalResults
@@ -37,7 +37,7 @@ class TrackerRunResult:
 
 @dataclass
 class ExperimentResults:
-    """All runs under an experiment/split, with optional optimization results.
+    """All runs under an experiment/split, with optimization results.
 
     This is the top-level collector the Streamlit frontend will consume.
     """
@@ -45,7 +45,7 @@ class ExperimentResults:
     dataset_name: str
     split: str
     runs: List[TrackerRunResult] = field(default_factory=list)
-    optimization: Optional[OptimizationResults] = None
+    optimizations: Dict[str, OptimizationResults] = field(default_factory=dict)
 
     @classmethod
     def collect(cls, split_path: str) -> 'ExperimentResults':
@@ -56,30 +56,37 @@ class ExperimentResults:
             split_path: ``{master}/{dataset}/{experiment}/{split}/``
 
         Returns:
-            Populated ``ExperimentResults`` with all runs and optional
-            optimization results.
+            Populated ``ExperimentResults`` with all runs and optimization
+            results.
         """
         split = os.path.basename(split_path)
         experiment_name = os.path.basename(os.path.dirname(split_path))
         dataset_name = os.path.basename(os.path.dirname(os.path.dirname(split_path)))
 
         runs: List[TrackerRunResult] = []
-        for entry in sorted(os.listdir(split_path)):
-            entry_path = os.path.join(split_path, entry)
-            if not os.path.isdir(entry_path):
-                continue
-            inference_output_path = conventions.get_run_meta_path(entry_path)
-            if not os.path.exists(inference_output_path):
-                continue
-            runs.append(TrackerRunResult.load(entry_path))
+        inference_path = conventions.get_inference_path(split_path)
+        if os.path.isdir(inference_path):
+            for entry in sorted(os.listdir(inference_path)):
+                entry_path = os.path.join(inference_path, entry)
+                if not os.path.isdir(entry_path):
+                    continue
+                inference_output_path = conventions.get_run_meta_path(entry_path)
+                if not os.path.exists(inference_output_path):
+                    continue
+                runs.append(TrackerRunResult.load(entry_path))
 
-        optim_path = conventions.get_optimization_results_path(split_path)
-        optimization = OptimizationResults.load(optim_path) if os.path.exists(optim_path) else None
+        optimizations: Dict[str, OptimizationResults] = {}
+        optimizations_dir = conventions.get_optimizations_path(split_path)
+        if os.path.isdir(optimizations_dir):
+            for entry in sorted(os.listdir(optimizations_dir)):
+                results_path = conventions.get_optimization_results_path(split_path, entry)
+                if os.path.exists(results_path):
+                    optimizations[entry] = OptimizationResults.load(results_path)
 
         return cls(
             experiment_name=experiment_name,
             dataset_name=dataset_name,
             split=split,
             runs=runs,
-            optimization=optimization,
+            optimizations=optimizations,
         )
