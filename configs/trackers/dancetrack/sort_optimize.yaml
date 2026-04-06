@@ -3,7 +3,7 @@ defaults:
   - dataset: dancetrack.yaml
   - inference: val.yaml
   - eval: default.yaml
-  - object_detection: mmdet_yolox_dancetrack.yaml
+  - object_detection: mmdet_yolox_low_conf_dancetrack.yaml
   - algorithm: sort.yaml
   - postprocess: dancetrack.yaml
   - path: default.yaml
@@ -12,21 +12,47 @@ defaults:
 
 experiment: 'sort-optuna'
 
+inference:
+  postprocess: true
+
+eval:
+  eval_output: 'offline'
+
 optimizer:
-  n_trials: 10
+  n_trials: 100
   sampler: tpe
   direction: maximize
   study_name: dancetrack_sort_optuna
   search_space:
+    # --- Algorithm: Core tracking params ---
     algorithm.params.initialization_threshold:
       type: int
-      low: 1
-      high: 10
+      low: 0
+      high: 3
     algorithm.params.remember_threshold:
       type: int
       low: 1
       high: 60
-    algorithm.params.filter_params.override_std_weight_position:
+    algorithm.params.new_tracklet_detection_threshold:
+      type: float
+      low: 0.3
+      high: 0.8
+    algorithm.params.use_observation_if_lost:
+      type: categorical
+      choices: [true, false]
+    algorithm.params.duplicate_iou_threshold:
+      type: float
+      low: 0.5
+      high: 1.0
+
+    # --- Algorithm: Matcher params ---
+    algorithm.params.matcher.params.match_threshold:
+      type: float
+      low: 0.10
+      high: 0.50
+
+    # --- Algorithm: Filter (motion model) params ---
+    algorithm.params.filter.params.override_std_weight_position:
       type: float
       low: 0.01
       high: 0.20
