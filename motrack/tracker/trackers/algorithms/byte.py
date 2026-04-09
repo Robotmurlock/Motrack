@@ -34,7 +34,6 @@ class ByteTrackerConfig(MotionReIDTrackerConfig):
     new_matcher: FactoryConfig = Field(
         default_factory=lambda: FactoryConfig(name='iou', params={'match_threshold': 0.3, 'fuse_score': True})
     )
-    detection_threshold: float = Field(default=0.6, ge=0.0, le=1.0)
     duplicate_iou_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
     appearance_ema_momentum: float = Field(default=0.95, ge=0.0, le=1.0)
     appearance_buffer: int = Field(default=0, ge=0)

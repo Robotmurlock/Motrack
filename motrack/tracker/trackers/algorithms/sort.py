@@ -73,6 +73,9 @@ class SortTracker(MotionReIDBasedTracker):
         objects_features: Optional[np.ndarray] = None,
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
+        # Filter detections
+        detections = self._filter_detections(detections)
+
         # Perform matching
         matches, unmatched_tracklets, unmatched_detections = self._matcher(prior_tracklet_bboxes, detections,
                                                                            object_features=objects_features, tracklets=tracklets)

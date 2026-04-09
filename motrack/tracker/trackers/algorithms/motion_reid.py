@@ -25,6 +25,7 @@ class MotionReIDTrackerConfig(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
+    detection_threshold: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     filter: 'FactoryConfig' = Field(default_factory=lambda: FactoryConfig(name='bot-sort'))
     cmc: Optional['FactoryConfig'] = None
     reid: Optional['FactoryConfig'] = None
@@ -143,6 +144,14 @@ class MotionReIDBasedTracker(Tracker, ABC):
         # State
         self._filter_states = {}
         self._next_id = 0
+
+    def _filter_detections(self, detections: List[PredBBox]) -> List[PredBBox]:
+        """
+        Filters detections based on the detection threshold.
+        """
+        if self._detection_threshold is None:
+            return detections
+        return [d for d in detections if d.conf >= self._detection_threshold]
 
     @staticmethod
     def _raw_to_bbox(tracklet: Tracklet, raw: np.ndarray, conf: Optional[float] = None) -> PredBBox:
