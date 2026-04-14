@@ -72,7 +72,6 @@ class ByteTracker(MotionReIDBasedTracker):
         self._new_match = association_factory(config.new_matcher.name, config.new_matcher.params)
 
         # Parameters
-        self._detection_threshold = config.detection_threshold
         self._use_reid_for_low_matching = config.use_reid_for_low_matching
 
     def _track(

@@ -21,33 +21,57 @@ from tools.inference import _run_inference_inner
 logger = logging.getLogger('Tool-Optimize')
 
 
-def create_sampler(name: str) -> optuna.samplers.BaseSampler:
+def create_sampler(name: str, sampler_params: dict) -> optuna.samplers.BaseSampler:
     """Create an Optuna sampler by name."""
     if name == 'random':
         return optuna.samplers.RandomSampler()
     if name in ('tpe', 'warm_tpe'):
-        return optuna.samplers.TPESampler()
+        params = dict(sampler_params)
+        if isinstance(params.get('gamma'), float):
+            gamma_ratio = params['gamma']
+            params['gamma'] = lambda x, _r=gamma_ratio: max(1, int(np.ceil(_r * x)))
+        return optuna.samplers.TPESampler(**params)
     raise ValueError(f'Unknown sampler: {name}')
 
 
 def sample_params(trial: optuna.Trial, search_space: Dict[str, SearchSpaceParam]) -> Dict[str, Any]:
-    """Sample parameters from search space using an Optuna trial."""
+    """Sample parameters from search space using an Optuna trial.
+
+    Parameters with ``min_param`` are sampled after the param they depend on,
+    using the already-sampled value as their effective lower bound.
+    """
+    # Split into independent and dependent params to ensure dependencies are resolved first
+    independent = {k: v for k, v in search_space.items() if v.min_param is None and v.max_param is None}
+    dependent = {k: v for k, v in search_space.items() if v.min_param is not None or v.max_param is not None}
+
     params: Dict[str, Any] = {}
-    for dotpath, spec in search_space.items():
+
+    def _sample(dotpath: str, spec: SearchSpaceParam) -> Any:
+        low = spec.low
+        high = spec.high
+        if spec.min_param is not None:
+            assert spec.min_param in params, (
+                f'min_param "{spec.min_param}" for "{dotpath}" must appear earlier in search_space'
+            )
+            low = max(low, params[spec.min_param]) if low is not None else params[spec.min_param]
+        if spec.max_param is not None:
+            assert spec.max_param in params, (
+                f'max_param "{spec.max_param}" for "{dotpath}" must appear earlier in search_space'
+            )
+            high = min(high, params[spec.max_param]) if high is not None else params[spec.max_param]
         if spec.type == 'int':
-            params[dotpath] = trial.suggest_int(
-                dotpath, int(spec.low), int(spec.high),
-                step=int(spec.step) if spec.step is not None else 1,
-            )
-        elif spec.type == 'float':
-            params[dotpath] = trial.suggest_float(
-                dotpath, spec.low, spec.high,
-                step=spec.step, log=spec.log,
-            )
-        elif spec.type == 'categorical':
-            params[dotpath] = trial.suggest_categorical(dotpath, spec.choices)
-        else:
-            raise ValueError(f'Unknown search space param type: {spec.type}')
+            return trial.suggest_int(dotpath, int(low), int(high), step=int(spec.step) if spec.step is not None else 1)
+        if spec.type == 'float':
+            return trial.suggest_float(dotpath, low, high, step=spec.step, log=spec.log)
+        if spec.type == 'categorical':
+            return trial.suggest_categorical(dotpath, spec.choices)
+        raise ValueError(f'Unknown search space param type: {spec.type}')
+
+    for dotpath, spec in independent.items():
+        params[dotpath] = _sample(dotpath, spec)
+    for dotpath, spec in dependent.items():
+        params[dotpath] = _sample(dotpath, spec)
+
     return params
 
 
@@ -73,7 +97,7 @@ def create_study(cfg: GlobalConfig) -> optuna.Study:
     optim_cfg = cfg.optimizer
     search_space = optim_cfg.search_space
 
-    sampler = create_sampler(optim_cfg.sampler)
+    sampler = create_sampler(optim_cfg.sampler, optim_cfg.sampler_params)
     study = optuna.create_study(
         study_name=optim_cfg.study_name,
         sampler=sampler,
@@ -115,20 +139,23 @@ def create_objective(
         config_hash = trial_cfg.hash
         trial.set_user_attr('config_hash', config_hash)
 
+        optuna_data = OptunaOutputData(
+            study_name=optim_cfg.study_name,
+            trial_number=trial.number,
+            trial_params=params,
+        )
+
         eval_path = conventions.get_eval_results_path(trial_cfg.experiment_path)
         if os.path.exists(eval_path):
             eval_results = EvalResults.load(eval_path)
             hota = float(np.mean(eval_results.combined['HOTA']['HOTA']))
             logger.info(f'Trial {trial.number}: HOTA={hota:.4f} (cached, hash={config_hash}), params={params}')
+            _log_trial_to_mlflow(trial_cfg, optuna_data)
             return hota
 
         inference_output = InferenceOutputData(
             created_at=datetime.now().isoformat(),
-            optuna=OptunaOutputData(
-                study_name=optim_cfg.study_name,
-                trial_number=trial.number,
-                trial_params=params,
-            ),
+            optuna=optuna_data,
         )
 
         _run_inference_inner(trial_cfg, inference_output=inference_output)
@@ -136,9 +163,16 @@ def create_objective(
 
         hota = float(np.mean(results['combined']['HOTA']['HOTA']))
         logger.info(f'Trial {trial.number}: HOTA={hota:.4f}, params={params}')
+        _log_trial_to_mlflow(trial_cfg, optuna_data)
         return hota
 
     return objective
+
+
+def _log_trial_to_mlflow(cfg: GlobalConfig, optuna_info: OptunaOutputData) -> None:
+    """Log an optimization trial to MLflow (no-op if mlflow not installed)."""
+    from motrack.tools.mlflow_logger import load_and_log_run
+    load_and_log_run(cfg, optuna_info=optuna_info)
 
 
 def save_optimization_results(cfg: GlobalConfig, study: optuna.Study) -> None:
@@ -215,7 +249,7 @@ def _run_optimize_inner(cfg: GlobalConfig) -> None:
     save_optimization_results(cfg, study)
 
 
-@hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='sort_optimize', version_base='1.1')
+@hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='optimize_sort', version_base='1.1')
 @pipeline.task('optimize')
 def main(cfg: GlobalConfig) -> None:
     _run_optimize_inner(cfg)

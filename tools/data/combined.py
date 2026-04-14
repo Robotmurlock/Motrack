@@ -1,9 +1,12 @@
 """
 Collectors that aggregate all tool outputs for an experiment.
 """
+import json
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+import yaml
 
 from motrack.common import conventions
 from tools.data.eval import EvalResults
@@ -15,12 +18,42 @@ from tools.data.inference import InferenceOutputData
 class TrackerRunResult:
     """Complete result for a single tracker run (one config-hash directory)."""
     config_hash: str
+    run_dir: str
     inference_output: InferenceOutputData
     eval_results: Optional[EvalResults] = None
+    _fps_stats: Optional[Dict[str, Any]] = field(default=None, repr=False)
+    _config_snapshot: Optional[Dict[str, Any]] = field(default=None, repr=False)
+    _fps_loaded: bool = field(default=False, repr=False)
+    _config_loaded: bool = field(default=False, repr=False)
+
+    @property
+    def fps_stats(self) -> Optional[Dict[str, Any]]:
+        """Lazily load fps_stats.json on first access."""
+        if not self._fps_loaded:
+            fps_path = conventions.get_fps_stats_path(self.run_dir)
+            if os.path.exists(fps_path):
+                with open(fps_path, 'r', encoding='utf-8') as f:
+                    self._fps_stats = json.load(f)
+            self._fps_loaded = True
+        return self._fps_stats
+
+    @property
+    def config_snapshot(self) -> Optional[Dict[str, Any]]:
+        """Lazily load config.yaml on first access."""
+        if not self._config_loaded:
+            config_path = conventions.get_config_snapshot_path(self.run_dir)
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    self._config_snapshot = yaml.safe_load(f)
+            self._config_loaded = True
+        return self._config_snapshot
 
     @classmethod
     def load(cls, run_dir: str) -> 'TrackerRunResult':
-        """Load all artifacts from a config-hash directory."""
+        """Load core artifacts from a config-hash directory.
+
+        FPS stats and config snapshots are loaded lazily on first access.
+        """
         config_hash = os.path.basename(run_dir)
 
         inference_output = InferenceOutputData.load(conventions.get_run_meta_path(run_dir))
@@ -30,6 +63,7 @@ class TrackerRunResult:
 
         return cls(
             config_hash=config_hash,
+            run_dir=run_dir,
             inference_output=inference_output,
             eval_results=eval_results,
         )
@@ -37,10 +71,7 @@ class TrackerRunResult:
 
 @dataclass
 class ExperimentResults:
-    """All runs under an experiment/split, with optimization results.
-
-    This is the top-level collector the Streamlit frontend will consume.
-    """
+    """All runs under an experiment/split, with optimization results."""
     experiment_name: str
     dataset_name: str
     split: str

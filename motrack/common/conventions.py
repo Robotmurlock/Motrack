@@ -25,6 +25,10 @@ inference was executed:
         optimizations/
             {optimization_name}/ - must be unique
                 optimization_results.json
+    reports/
+        {split}/
+            {report_name}.md
+            {report_name}_hota.png
 
 Definitions:
 - master_path: Root directory that contains all saved outputs.
@@ -62,7 +66,9 @@ OPTIMIZATIONS_DIRNAME = 'optimizations'
 CONFIG_FILENAME = 'config.yaml'
 RUN_META_FILENAME = 'run_meta.json'
 EVAL_RESULTS_FILENAME = 'eval_results.json'
+FPS_STATS_FILENAME = 'fps_stats.json'
 OPTIMIZATION_RESULTS_FILENAME = 'optimization_results.json'
+REPORTS_DIRNAME = 'reports'
 
 _OUTPUT_NAME_ALIASES = {
     'active': ONLINE_DIRNAME,
@@ -378,6 +384,19 @@ def get_eval_results_path(tracker_run_path: str) -> str:
     return os.path.join(tracker_run_path, EVAL_RESULTS_FILENAME)
 
 
+def get_fps_stats_path(tracker_run_path: str) -> str:
+    """
+    Gets the FPS statistics JSON path.
+
+    Args:
+        tracker_run_path: Root directory of the tracker run.
+
+    Returns:
+        Path to the FPS statistics file.
+    """
+    return os.path.join(tracker_run_path, FPS_STATS_FILENAME)
+
+
 def get_optimizations_path(split_results_path: str) -> str:
     """
     Gets the optimizations directory path under a split.
@@ -419,6 +438,34 @@ def get_optimization_results_path(split_results_path: str, optimization_name: st
     return os.path.join(
         get_optimization_path(split_results_path, optimization_name),
         OPTIMIZATION_RESULTS_FILENAME,
+    )
+
+
+def get_reports_path(
+    master_path: str,
+    dataset_type: str,
+    split: str,
+    dataset_name: Optional[str] = None,
+) -> str:
+    """
+    Gets the reports directory path for a dataset and split.
+
+    Reports live at the dataset level (not per-experiment) because they
+    may span multiple experiments.
+
+    Args:
+        master_path: Outputs master path.
+        dataset_type: Dataset type used by the pipeline.
+        split: Dataset split.
+        dataset_name: Optional dataset folder override.
+
+    Returns:
+        Reports directory path.
+    """
+    return os.path.join(
+        get_dataset_results_path(master_path, dataset_type, dataset_name),
+        REPORTS_DIRNAME,
+        split,
     )
 
 

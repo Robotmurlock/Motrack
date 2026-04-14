@@ -130,6 +130,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
             self._reid = reid_inference_factory(config.reid.name, config.reid.params)
 
         # Hyperparameters
+        self._detection_threshold = config.detection_threshold
         self._reid_detection_threshold = reid_detection_threshold
         self._new_tracklet_detection_threshold = config.new_tracklet_detection_threshold
         self._initialization_threshold = config.initialization_threshold

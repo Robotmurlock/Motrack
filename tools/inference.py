@@ -70,7 +70,7 @@ def _run_inference_inner(cfg: GlobalConfig, inference_output: Optional[Inference
         params=cfg.algorithm.params
     )
 
-    fps_output_path = os.path.join(cfg.experiment_path, 'fps_stats.json')
+    fps_output_path = conventions.get_fps_stats_path(cfg.experiment_path)
     run_tracker_inference(
         dataset=dataset,
         tracker=tracker,
