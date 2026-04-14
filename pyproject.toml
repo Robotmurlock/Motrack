@@ -42,6 +42,7 @@ dependencies = [
 yolov8 = ["ultralytics"]
 reid = ["onnxruntime"]
 optuna = ["optuna>=3.0"]
+mlflow = ["mlflow>=2.10"]
 
 [dependency-groups]
 dev = ["pytest"]

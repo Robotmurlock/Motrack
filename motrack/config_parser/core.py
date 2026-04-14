@@ -188,6 +188,8 @@ class SearchSpaceParam:
     step: Optional[float] = None
     log: bool = False
     choices: Optional[List[Union[bool, int, float, str]]] = None
+    min_param: Optional[str] = None  # dotpath of another param whose sampled value acts as the lower bound
+    max_param: Optional[str] = None  # dotpath of another param whose sampled value acts as the upper bound
 
 
 @dataclass
@@ -195,9 +197,17 @@ class TrackerOptimizerConfig:
     """Optuna optimization settings."""
     n_trials: int = 10
     sampler: str = 'tpe'  # 'random', 'tpe', 'warm_tpe'
+    sampler_params: Dict[str, Any] = field(default_factory=dict)
     direction: str = 'maximize'
     study_name: str = 'motrack_optuna'
     search_space: Dict[str, SearchSpaceParam] = field(default_factory=dict)
+
+
+@dataclass
+class MlflowConfig:
+    """MLflow experiment tracking settings."""
+    enabled: bool = False
+    tracking_uri: Optional[str] = None
 
 
 @dataclass
@@ -214,6 +224,7 @@ class GlobalConfig:
     eval: TrackerEvalConfig = field(default_factory=TrackerEvalConfig)
     utility: UtilityConfig = field(default_factory=UtilityConfig)
     optimizer: Optional[TrackerOptimizerConfig] = None
+    mlflow: MlflowConfig = field(default_factory=MlflowConfig)
 
     def resolve(self, dotpath: str) -> Any:
         """

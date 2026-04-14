@@ -67,6 +67,9 @@ def _run_eval_inner(cfg: GlobalConfig) -> Dict[str, Any]:
 def main(cfg: GlobalConfig) -> None:
     _run_eval_inner(cfg)
 
+    from motrack.tools.mlflow_logger import load_and_log_run
+    load_and_log_run(cfg)
+
 
 if __name__ == '__main__':
     main()
