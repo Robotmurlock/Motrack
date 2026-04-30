@@ -1,5 +1,10 @@
 """
-Collectors that aggregate all tool outputs for an experiment.
+Aggregators that load all tool outputs for an experiment.
+
+``TrackerRunResult`` collects the artifacts of a single config-hash run
+(``run_meta.json``, ``eval_results.json``, lazy-loaded ``fps_stats`` and
+config snapshot). ``ExperimentResults`` walks a split directory and loads
+every run plus all optimization studies under it.
 """
 import json
 import os
@@ -9,9 +14,9 @@ from typing import Any, Dict, List, Optional
 import yaml
 
 from motrack.common import conventions
-from tools.data.eval import EvalResults
-from tools.data.optimization import OptimizationResults
-from tools.data.inference import InferenceOutputData
+from motrack.eval.results import EvalResults
+from motrack.tools.inference import InferenceOutputData
+from motrack.tools.optimization import OptimizationResults
 
 
 @dataclass

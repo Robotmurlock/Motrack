@@ -1,23 +1,64 @@
 """
 Tracker inference tool.
 """
+import dataclasses
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 import json
 import logging
 import os
 import re
+import shutil
 import time
-from dataclasses import dataclass, field, asdict
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from tqdm import tqdm
+import yaml
 
+from motrack.common import conventions
+from motrack.config_parser import GlobalConfig
 from motrack.datasets import BaseDataset
 from motrack.inference.io import TrackerInferenceWriter
 from motrack.object_detection import DetectionManager
-from motrack.tracker import Tracker
+from motrack.tools.dataset_builder import DatasetBuilder, default_dataset_builder
+from motrack.tracker import Tracker, tracker_factory
 from motrack.tracker.tracklet import Tracklet, TrackletState
 
 logger = logging.getLogger('TrackerInference')
+
+
+@dataclass
+class OptunaOutputData:
+    """Optuna trial metadata attached to a tracker run."""
+    study_name: str
+    trial_number: int
+    trial_params: Dict[str, Any]
+
+
+@dataclass
+class InferenceOutputData:
+    """Metadata for a single tracker run (``run_meta.json``)."""
+    created_at: str
+    optuna: Optional[OptunaOutputData] = None
+
+    def to_dict(self) -> dict:
+        d: dict = {'created_at': self.created_at}
+        if self.optuna is not None:
+            d['optuna'] = dataclasses.asdict(self.optuna)
+        return d
+
+    def save(self, path: str) -> None:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(self.to_dict(), f, indent=2)
+
+    @classmethod
+    def load(cls, path: str) -> 'InferenceOutputData':
+        with open(path, 'r', encoding='utf-8') as f:
+            raw = json.load(f)
+        optuna_raw = raw.pop('optuna', None)
+        optuna = OptunaOutputData(**optuna_raw) if optuna_raw is not None else None
+        return cls(created_at=raw['created_at'], optuna=optuna)
 
 
 @dataclass
@@ -198,3 +239,105 @@ def run_tracker_inference(
         logger.info(f'FPS stats saved to "{fps_output_path}"')
 
     return fps_stats
+
+
+def run_inference(
+    cfg: GlobalConfig,
+    inference_output: Optional[InferenceOutputData] = None,
+    dataset_builder: DatasetBuilder = default_dataset_builder,
+) -> None:
+    """High-level inference orchestration.
+
+    Builds dataset/detector/tracker, runs the per-frame loop via
+    ``run_tracker_inference``, saves the config snapshot and run metadata,
+    and optionally postprocesses the output.
+
+    Args:
+        cfg: Global config.
+        inference_output: Optional pre-populated metadata; if None, a fresh
+            ``InferenceOutputData`` is created. Used by the optimizer to
+            attach Optuna trial info.
+        dataset_builder: Pluggable dataset construction. Defaults to
+            ``motrack.datasets.dataset_factory``.
+    """
+    # Lazy import to avoid circular dependency:
+    # motrack.tools.__init__ → optimization → inference. The
+    # postprocess module is independent and safe to import here.
+    from motrack.tools.postprocess import run_tracker_postprocess
+
+    if os.path.exists(cfg.experiment_path):
+        if cfg.inference.override:
+            user_input = 'yes'
+        else:
+            user_input = input(f'Experiment on path "{cfg.experiment_path}" already exists. '
+                               f'Are you sure you want to override it? [yes/no] ').lower()
+        if user_input in ['yes', 'y']:
+            shutil.rmtree(cfg.experiment_path)
+        else:
+            logger.info('Aborting!')
+            return
+
+    tracker_online_output = conventions.get_tracker_output_path(
+        cfg.experiment_path,
+        conventions.TrackerOutputType.ONLINE,
+    )
+    tracker_debug_output = conventions.get_tracker_output_path(
+        cfg.experiment_path,
+        conventions.TrackerOutputType.DEBUG,
+    )
+
+    logger.info(f'Saving tracker inference on path "{cfg.experiment_path}".')
+
+    dataset = dataset_builder(cfg)
+
+    detection_manager = DetectionManager(
+        inference_name=cfg.object_detection.type,
+        inference_params=cfg.object_detection.params,
+        lookup=cfg.object_detection.load_lookup() if cfg.object_detection.lookup_path is not None else None,
+        dataset=dataset,
+        cache_path=cfg.object_detection.cache_path,
+        oracle=cfg.object_detection.oracle,
+    )
+
+    tracker = tracker_factory(
+        name=cfg.algorithm.name,
+        params=cfg.algorithm.params,
+    )
+
+    fps_output_path = conventions.get_fps_stats_path(cfg.experiment_path)
+    run_tracker_inference(
+        dataset=dataset,
+        tracker=tracker,
+        detection_manager=detection_manager,
+        tracker_active_output=tracker_online_output,
+        tracker_all_output=tracker_debug_output,
+        clip=cfg.inference.clip,
+        scene_pattern=cfg.dataset_filter.scene_pattern,
+        load_image=cfg.inference.load_image,
+        fps_output_path=fps_output_path,
+    )
+
+    tracker_config_path = conventions.get_config_snapshot_path(cfg.experiment_path)
+    with open(tracker_config_path, 'w', encoding='utf-8') as f:
+        yaml.safe_dump(asdict(cfg), f)
+
+    inference_output_path = conventions.get_run_meta_path(cfg.experiment_path)
+    if inference_output is None:
+        inference_output = InferenceOutputData(created_at=datetime.now().isoformat())
+    inference_output.save(inference_output_path)
+
+    if cfg.inference.postprocess:
+        logger.info('Performing inference postprocessing...')
+        tracker_offline_output = conventions.get_tracker_output_path(
+            cfg.experiment_path,
+            conventions.TrackerOutputType.OFFLINE,
+        )
+        run_tracker_postprocess(
+            dataset=dataset,
+            tracker_active_output=tracker_online_output,
+            tracker_all_output=tracker_debug_output,
+            tracker_postprocess_output=tracker_offline_output,
+            postprocess_cfg=cfg.postprocess,
+            scene_pattern=cfg.dataset_filter.scene_pattern,
+            clip=cfg.inference.clip,
+        )

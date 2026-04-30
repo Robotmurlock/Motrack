@@ -25,6 +25,7 @@ from motrack.eval.metrics.count import Count
 from motrack.eval.metrics.hota import HOTA
 from motrack.eval.metrics.identity import Identity
 from motrack.eval.preprocessing import preprocess_sequence
+from motrack.eval.results import EvalResults
 from motrack.eval.similarity import compute_box_ious
 
 logger = logging.getLogger('Evaluation')

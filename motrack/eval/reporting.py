@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 import numpy as np
 
-from tools.data import EvalResults
+from motrack.eval.results import EvalResults
 
 logger = logging.getLogger('EvalReporting')
 

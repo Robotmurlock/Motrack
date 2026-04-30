@@ -14,8 +14,8 @@ from typing import Any, Dict, Optional
 
 from motrack.common import conventions
 from motrack.config_parser import GlobalConfig, MlflowConfig
-from tools.data.eval import EvalResults
-from tools.data.inference import OptunaOutputData
+from motrack.eval.results import EvalResults
+from motrack.tools.inference import OptunaOutputData
 
 logger = logging.getLogger('MlflowLogger')
 

@@ -26,8 +26,8 @@ from motrack.common.project import DANCETRACK_TRACKERS_CONFIG_PATH
 from motrack.config_parser import GlobalConfig
 from motrack.tools.mlflow_logger import mlflow, is_mlflow_enabled
 from motrack.utils import pipeline
-from tools.data.eval import EvalResults
-from tools.data.optimization import OptimizationResults, TrialResult
+from motrack.eval.results import EvalResults
+from motrack.tools.optimization import OptimizationResults, TrialResult
 
 logger = logging.getLogger('ReportOptimization')
 
