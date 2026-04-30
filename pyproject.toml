@@ -47,6 +47,11 @@ mlflow = ["mlflow>=2.10"]
 [dependency-groups]
 dev = ["pytest"]
 
+[project.scripts]
+motrack-inference = "motrack.cli.inference:main"
+motrack-eval = "motrack.cli.eval:main"
+motrack-optimize = "motrack.cli.optimize:main"
+
 [project.urls]
 Homepage = "https://github.com/Robotmurlock/Motrack"
 
