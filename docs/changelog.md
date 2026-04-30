@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (unreleased)
+## 0.7.0 - 2026-05-01
 
 ### Features
 - Added mmdetection-based YOLOX inference with ByteTrack checkpoint weight remapping
@@ -10,6 +10,12 @@
 - Added integrated evaluation module (`motrack/eval`) with HOTA, CLEAR, Identity, and Count metrics — replaces external TrackEval CLI dependency
 - Added `tools/eval.py` entrypoint for evaluating tracker outputs with JSON result export
 - Added configurable eval/distractor class IDs per dataset for evaluation preprocessing
+- Added Optuna-based hyperparameter optimization with TPE / warm-start TPE / random samplers, dependent search-space parameters (`min_param` / `max_param`), and config-hash-based caching across trials
+- Added MLflow experiment tracking integration (optional via `motrack[mlflow]` extra)
+- Exposed inference / eval / optimize as a library API: `motrack.tools.run_inference`, `motrack.tools.run_eval`, `motrack.tools.run_optimize` are importable and usable from external tracker libraries
+- Added pluggable dataset construction via `motrack.tools.DatasetBuilder` — pass a custom builder to `run_inference` / `run_eval` / `run_optimize` to integrate datasets that aren't in `dataset_factory`
+- Added `motrack.cli` subpackage with thin Hydra wrappers; registered `motrack-inference`, `motrack-eval`, `motrack-optimize` as console scripts via `[project.scripts]` (runnable from any directory after install)
+- Promoted result schemas to public API: `motrack.eval.results.EvalResults`, `motrack.tools.{InferenceOutputData, OptunaOutputData, OptimizationResults, TrialResult, ExperimentResults, TrackerRunResult}`
 
 ### Refactor
 - Restructured configs into `trackers/`, `od/`, and `deprecated/` standalone directories
@@ -19,10 +25,13 @@
 - Renamed `motrack/evaluation` package to `motrack/inference` (IO module)
 - Renamed `TrackerEvalConfig` to `TrackerInferenceConfig` and config group `eval` to `inference` (the previous name conflicted with the new evaluation module)
 - Switched run directory naming from `{datetime}_{hash}` to hash-only for deterministic path lookup
+- Lifted orchestration logic out of `tools/` into the `motrack` package so it can be imported by external libraries; `tools/{inference,eval,optimize}.py` are now 1-line forwarders to `motrack.cli.*`
+- Removed `tools/data/`; its contents moved to their natural homes in the package (`motrack/eval/results.py`, `motrack/tools/inference.py`, `motrack/tools/optimization.py`, `motrack/tools/results.py`)
 
 ### Fixes
 - Fixed pandas `drop()` compatibility with newer versions
 - Added explicit dataset output names to tracker and deprecated configs so MOT-family datasets no longer share the same `mot` result directory
+- Fixed stale `tools.data` imports in `motrack.eval.reporting` and `motrack.tools.mlflow_logger` that would have broken any external import of those modules
 
 ## 0.6.0 - 2026-03-29
 
