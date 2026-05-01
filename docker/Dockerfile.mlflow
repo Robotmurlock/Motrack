@@ -1,0 +1,10 @@
+# Tiny extension of the upstream MLflow image with the two drivers our
+# stack needs:
+#   - psycopg2-binary  → Postgres backend store
+#   - boto3            → S3-compatible artifact upload (MinIO)
+#
+# Baking them in avoids a PyPI fetch on every container start.
+
+FROM ghcr.io/mlflow/mlflow:v3.11.1
+
+RUN pip install --no-cache-dir psycopg2-binary boto3

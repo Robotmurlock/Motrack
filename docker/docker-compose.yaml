@@ -2,7 +2,11 @@
 version: "3.9"
 
 networks:
+  # Shared bridge network. Created once via `docker network create motrack-net`
+  # so additional compose files (e.g. postgres / minio for MLflow) can attach
+  # to it via `external: true` + `name: motrack-net`.
   motrack-net:
+    external: true
     name: motrack-net
 
 services:
@@ -37,28 +41,10 @@ services:
     environment:
       - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI:-http://motrack-mlflow:5000}
 
-  motrack-mlflow:
-    container_name: ${MLFLOW_CONT_NAME:-motrack-mlflow}
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    image: motrack-env
-    command: >
-      mlflow server
-      --host 0.0.0.0
-      --port 5000
-      --backend-store-uri sqlite:///media/home/mlflow/mlflow.db
-      --default-artifact-root /media/home/mlflow/artifacts
-      --allowed-hosts *
-    ports:
-      - '${MLFLOW_PORT:-5000}:5000'
-
-    volumes:
-      - '${DATA}:/media/home'
-      - '${CODE:-$PWD}:/motrack'
-
-    networks:
-      - motrack-net
+  # MLflow tracking server moved to docker/mlflow-stack.compose.yaml
+  # (Postgres backend store + MinIO artifact store, replacing SQLite +
+  # bind-mount). Bring it up with:
+  #   docker compose -f docker/mlflow-stack.compose.yaml up -d
 
   motrack-env-yolox:  # deprecated: back-compatibility
     container_name: ${YOLOX_CONT_NAME:-motrack-env-yolox}
