@@ -8,4 +8,7 @@ from motrack.config_parser.core import (
     TrackerVisualizeConfig,
     TrackerOptimizerConfig,
     SearchSpaceParam,
+    FactorySpec,
+    MFGCSConfig,
+    MFGCSShrinkConfig,
 )

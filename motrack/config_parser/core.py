@@ -193,14 +193,72 @@ class SearchSpaceParam:
 
 
 @dataclass
+class FactorySpec:
+    """Generic factory selector: variant name + variant-specific params.
+
+    Used by pluggable subsystems (e.g. MFGCS scene sampler / coordinate
+    optimizer) so YAML configs only declare params relevant to the chosen
+    variant. The receiving factory is responsible for validating ``params``
+    against the variant's expected schema.
+    """
+    type: str
+    params: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class MFGCSShrinkConfig:
+    """Search-space shrinking settings for MFGCS.
+
+    After accepting a coordinate move, the parameter's window is narrowed
+    around the accepted value to focus subsequent sweeps.
+    """
+    enabled: bool = True
+    radius_frac: float = 0.25      # numeric: ±r·(B−A); log floats: same in log space
+    window_size: int = 3           # ordered-discrete: ±k indices around accepted index
+
+
+@dataclass
+class MFGCSConfig:
+    """Multi-Fidelity Greedy Coordinate Search settings.
+
+    Pluggable components use the project's standard ``{type, params}``
+    factory shape so variant-specific knobs stay self-contained.
+    """
+    # Defaults intentionally carry no ``params`` keys — Hydra deep-merges the
+    # structured-config default into user overrides, which would inject
+    # variant-mismatched keys (e.g. ``grid`` leaking into the random
+    # optimizer). Per-variant defaults live in the variant param dataclass.
+    scene_sampler: FactorySpec = field(
+        default_factory=lambda: FactorySpec(type='random', params={})
+    )
+    coordinate_optimizer: FactorySpec = field(
+        default_factory=lambda: FactorySpec(type='coarse_to_fine', params={})
+    )
+    max_sweeps: int = 10
+    bootstrap_full_eval: bool = True
+    shrink: MFGCSShrinkConfig = field(default_factory=MFGCSShrinkConfig)
+
+
+@dataclass
 class TrackerOptimizerConfig:
-    """Optuna optimization settings."""
+    """Tracker hyperparameter optimization settings.
+
+    Selects the optimization algorithm via ``sampler``:
+    - ``'random' | 'tpe' | 'warm_tpe'`` — Optuna-driven (uses ``sampler_params``).
+    - ``'mfgcs'`` — Multi-Fidelity Greedy Coordinate Search (requires ``mfgcs``).
+    """
     n_trials: int = 10
-    sampler: str = 'tpe'  # 'random', 'tpe', 'warm_tpe'
+    sampler: str = 'tpe'  # 'random', 'tpe', 'warm_tpe', 'mfgcs'
     sampler_params: Dict[str, Any] = field(default_factory=dict)
     direction: str = 'maximize'
     study_name: str = 'motrack_optuna'
     search_space: Dict[str, SearchSpaceParam] = field(default_factory=dict)
+    mfgcs: Optional[MFGCSConfig] = None
+
+    def __post_init__(self) -> None:
+        if self.sampler == 'mfgcs':
+            assert self.mfgcs is not None, \
+                "optimizer.mfgcs must be set when sampler == 'mfgcs'"
 
 
 @dataclass
