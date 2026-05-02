@@ -13,12 +13,20 @@ from typing import Any, Dict, List, Optional
 
 @dataclass
 class TrialResult:
-    """Summary of a single optimization trial."""
+    """Summary of a single optimization trial.
+
+    ``scenes_evaluated`` and ``wall_time_s`` are *deltas* for this trial: the
+    number of (scene-evaluation) units and the wall-clock seconds the trial
+    cost. The offline reporter computes cumulative budget by summing trials in
+    order. Old results files lacking these fields default to zero.
+    """
     number: int
     value: float
     params: Dict[str, Any]
     state: str
     config_hash: str
+    scenes_evaluated: int = 0
+    wall_time_s: float = 0.0
 
 
 @dataclass

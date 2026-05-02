@@ -27,7 +27,7 @@ optimizer:
     coordinate_optimizer:
       type: ternary
       params:
-        n_steps: 8
+        n_steps: 5
     max_sweeps: 6
     bootstrap_full_eval: true
     shrink:

@@ -109,7 +109,7 @@ It optimizes one parameter while keeping all other parameters fixed.
 Possible implementations:
 
 - `TernaryCoordinateOptimizer`
-- `CoarseToFineCoordinateOptimizer`
+- `GridCoordinateOptimizer`
 - `RandomCoordinateOptimizer`
 - `GridCoordinateOptimizer`
 
@@ -139,11 +139,7 @@ For each parameter:
 
 8. Continue with the next parameter.
 
-The algorithm stops when a full sweep over all parameters gives no accepted improvement.
-
-Important detail:
-
-> Failure to improve one parameter should not stop the entire algorithm. The algorithm should stop only when no parameter improves after a complete sweep.
+The algorithm has three stopping criteria, whichever fires first: (a) a full sweep over all parameters produces no accepted move (greedy-coordinate convergence; can be disabled via `early_stop=False`); (b) `max_sweeps` reached; (c) `max_trials` full-fidelity evaluations completed (bootstrap counts as 1). `max_trials` is a hard cap useful when the search space is large enough that `max_sweeps` × `n_params` would exceed the desired budget.
 
 ---
 
@@ -334,7 +330,7 @@ Scene sampler:
 Coordinate optimizer variants:
 
 - `TernaryCoordinateOptimizer`
-- `CoarseToFineCoordinateOptimizer`
+- `GridCoordinateOptimizer`
 - `RandomCoordinateOptimizer`
 
 Validation:
@@ -343,10 +339,10 @@ sampled scenes -> full dataset
 
 Stopping rule:
 
-> Stop only after a full sweep over all parameters gives no accepted improvement.
+> Stop after a full sweep with no accepted improvement, when `max_sweeps` is reached, or when `max_trials` full-fidelity evals have been spent — whichever fires first.
 
 The most robust first version is probably:
 
-**RandomSceneSampler + CoarseToFineCoordinateOptimizer + full-dataset acceptance gate**
+**RandomSceneSampler + GridCoordinateOptimizer + full-dataset acceptance gate**
 
 The random coordinate optimizer should be included as a baseline because it provides a simple, less biased comparison.

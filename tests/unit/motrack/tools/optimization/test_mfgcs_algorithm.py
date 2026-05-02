@@ -81,9 +81,15 @@ class MFGCSAlgorithmTest(unittest.TestCase):
         # Coarse-to-fine + random sampler → deterministic enough for an end-to-end check.
         self.mfgcs_cfg = MFGCSConfig(
             scene_sampler=FactorySpec(type='random', params={'n': 2, 'seed': 0}),
-            coordinate_optimizer=FactorySpec(type='coarse_to_fine', params={'grid': 5, 'rounds': 2}),
+            coordinate_optimizer=FactorySpec(type='grid', params={'grid': 5, 'rounds': 2}),
             max_sweeps=3,
             bootstrap_full_eval=True,
+            # Tests use accept_threshold=0 so any strict improvement counts; the
+            # production default 1e-2 filters MOT-eval noise but here we want
+            # exact accept/reject behaviour. Dropout off so sweep counts are
+            # deterministic regardless of barren-sweep heuristics.
+            accept_threshold=0.0,
+            drop_after_barren_sweeps=0,
             shrink=MFGCSShrinkConfig(enabled=False),  # turn off shrinking to keep windows simple
         )
         self.cfg = _stub_cfg(self.search_space, self.mfgcs_cfg, self.base)
@@ -112,7 +118,8 @@ class MFGCSAlgorithmTest(unittest.TestCase):
         return algo
 
     def test_accept_only_on_strict_improvement(self) -> None:
-        # Low-fidelity always returns 0; full-fidelity returns:
+        # Low-fidelity returns 1.0 for any non-default candidate so the
+        # coord-optimizer prefers it over the current value; full-fidelity:
         #   - 0.5 for the bootstrap (current state),
         #   - 0.6 when 'a' is being moved (accepted),
         #   - 0.4 when 'b' is being moved (rejected).
@@ -120,12 +127,22 @@ class MFGCSAlgorithmTest(unittest.TestCase):
 
         def side_effect(_cfg, overrides, scenes=None, **kwargs):
             if scenes is not None:
+                # Subset prefers any move off the default; moves on 'b' rank
+                # strictly above 'a' moves so each coord-search picks a
+                # candidate that's not its current value (forces full-eval).
+                if overrides.get('b') != 1:
+                    return 1.0
+                if overrides.get('a') != 0.1:
+                    return 0.7
                 return 0.0
             full_calls.append(dict(overrides))
             # Bootstrap is the first call where overrides equal the base values.
             if overrides == {'a': 0.1, 'b': 1}:
                 return 0.5
-            return 0.6 if 'a' in overrides and overrides['a'] != 0.1 else 0.4
+            # 'b' moves are bad regardless of 'a'; 'a' moves with 'b' at default are good.
+            if overrides.get('b', 1) != 1:
+                return 0.4
+            return 0.6
 
         algo = self._run_with_scripted_scores(side_effect)
         self.assertEqual(algo._best_trial.value, 0.6)
@@ -145,8 +162,22 @@ class MFGCSAlgorithmTest(unittest.TestCase):
             return 0.9 if overrides == {'a': 0.1, 'b': 1} else 0.0
 
         algo = self._run_with_scripted_scores(side_effect, max_sweeps=5)
-        self.assertEqual(len(self.history), 1, 'should stop after the first no-improvement sweep')
+        self.assertEqual(len(self.history), 1, 'early_stop=True should stop after a barren sweep')
         self.assertEqual(self.history[0].accepted_count, 0)
+        self.assertEqual(algo._best_trial.value, 0.9)
+
+    def test_no_improvement_runs_all_sweeps_when_early_stop_disabled(self) -> None:
+        self.mfgcs_cfg.early_stop = False
+
+        def side_effect(_cfg, overrides, scenes=None, **kwargs):
+            if scenes is not None:
+                return 0.0
+            return 0.9 if overrides == {'a': 0.1, 'b': 1} else 0.0
+
+        algo = self._run_with_scripted_scores(side_effect, max_sweeps=4)
+        self.assertEqual(len(self.history), 4, 'early_stop=False should run all max_sweeps')
+        for sweep in self.history:
+            self.assertEqual(sweep.accepted_count, 0)
         self.assertEqual(algo._best_trial.value, 0.9)
 
     def test_history_shape(self) -> None:
@@ -172,7 +203,7 @@ class MFGCSDependentParamTest(unittest.TestCase):
         base = {'a': 0.7, 'b': 0.8}
         mfgcs_cfg = MFGCSConfig(
             scene_sampler=FactorySpec(type='random', params={'n': 2, 'seed': 0}),
-            coordinate_optimizer=FactorySpec(type='coarse_to_fine', params={'grid': 5, 'rounds': 1}),
+            coordinate_optimizer=FactorySpec(type='grid', params={'grid': 5, 'rounds': 1}),
             max_sweeps=1,
             # Bootstrap with a high score so subsequent 0-scoring full evals all reject —
             # 'a' stays at 0.7, so the min_param constraint for 'b' is well-defined.

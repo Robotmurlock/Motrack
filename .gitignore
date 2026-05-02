@@ -1,5 +1,8 @@
+
+
 # Worktrees
 worktrees/
+.claude
 
 # Secret
 *secret*

@@ -5,7 +5,7 @@ Each ``CoordinateOptimizer`` searches a single search-space parameter while
 all others are held fixed. Three variants are shipped:
 
 - ``RandomCoordinateOptimizer`` — unbiased baseline.
-- ``CoarseToFineCoordinateOptimizer`` — robust default for ordered params.
+- ``GridCoordinateOptimizer`` — robust default for ordered params (grid search with interval shrinking each round).
 - ``TernaryCoordinateOptimizer`` — efficient on smooth continuous floats.
 
 Variants gracefully fall back when a parameter type does not match their
@@ -205,21 +205,33 @@ class RandomCoordinateOptimizer(CoordinateOptimizer):
 
 
 @dataclass
-class _CoarseToFineCoordinateOptimizerParams:
-    grid: int = 5
-    rounds: int = 3
+class _GridCoordinateOptimizerParams:
+    grid: int = 3
+    rounds: int = 2
 
 
-class CoarseToFineCoordinateOptimizer(CoordinateOptimizer):
+class GridCoordinateOptimizer(CoordinateOptimizer):
     """Repeated grid search with the interval shrunk around each round's best.
 
     For categorical params with no natural ordering, falls back to a single
     full enumeration (no shrinking).
+
+    Note on ``grid``: the round-to-round shrink is ``±step`` around the
+    round's best, where ``step = (high - low) / (grid - 1)``. With ``grid=3``
+    there is an *exact* centre lattice point and ``step`` equals half the
+    window — so when the centre wins, the next round's window is identical
+    to the current one and round 2 is wasted. **Use ``grid >= 4``**;
+    ``grid=4`` has no centre point so round 2 always asymmetrically refines.
     """
 
-    def __init__(self, grid: int = 5, rounds: int = 3) -> None:
+    def __init__(self, grid: int = 3, rounds: int = 2) -> None:
         if grid < 2:
             raise ValueError(f'grid must be >= 2, got {grid}')
+        if grid == 3:
+            logger.warning(
+                'GridCoordinateOptimizer: grid=3 is degenerate when the centre '
+                'point wins a round (window does not shrink). Prefer grid >= 4.'
+            )
         if rounds < 1:
             raise ValueError(f'rounds must be >= 1, got {rounds}')
         self._grid = grid
@@ -234,8 +246,12 @@ class CoarseToFineCoordinateOptimizer(CoordinateOptimizer):
 
         low = float(window.low)
         high = float(window.high)
+        # Anchor the search at ``current_value`` so the optimizer can choose
+        # to keep the current value when no grid point beats it on the subset.
+        # Without this anchor, Grid would always pick the best grid point and
+        # trigger a full-eval that's frequently worse than the default.
         best_value: Any = current_value
-        best_score: Optional[float] = None
+        best_score: Optional[float] = float(low_eval(current_value))
 
         for round_idx in range(self._rounds):
             points = _grid_points(spec, low, high, self._grid)
@@ -265,7 +281,7 @@ class _TernaryCoordinateOptimizerParams:
 class TernaryCoordinateOptimizer(CoordinateOptimizer):
     """Ternary search for continuous floats.
 
-    Falls back to ``CoarseToFineCoordinateOptimizer`` for ints (small lattice
+    Falls back to ``GridCoordinateOptimizer`` for ints (small lattice
     where ternary section is unreliable) and to ``RandomCoordinateOptimizer``
     for categoricals (no order). The fallbacks share this optimizer's
     ``n_steps`` budget by mapping to ``rounds`` / ``n_candidates``.
@@ -286,8 +302,11 @@ class TernaryCoordinateOptimizer(CoordinateOptimizer):
             return fallback.optimize(spec, current_value, low_eval, window=window)
 
         if spec.type == 'int':
-            logger.warning('TernaryCoordinateOptimizer: falling back to CoarseToFine for int')
-            fallback = CoarseToFineCoordinateOptimizer(grid=4, rounds=self._n_steps)
+            logger.warning('TernaryCoordinateOptimizer: falling back to Grid for int')
+            # grid=3 with int quantization can stall on parity — the midpoint
+            # rounds to a single lattice point and shrinking cannot escape.
+            # Use grid=4 for the int fallback specifically.
+            fallback = GridCoordinateOptimizer(grid=4, rounds=max(2, self._n_steps))
             return fallback.optimize(spec, current_value, low_eval, window=window)
 
         # Continuous float — proper ternary search (in log space if requested).
@@ -309,8 +328,12 @@ class TernaryCoordinateOptimizer(CoordinateOptimizer):
                 return x
 
         best_value: float = float(current_value)
-        best_score: Optional[float] = None
+        # Anchor at ``current_value`` so an inferior pair of section points
+        # cannot dislodge it. Without this anchor, ternary section's best can
+        # be worse than the starting value and a doomed full-eval is launched.
         evaluated: Dict[float, float] = {}
+        best_score: Optional[float] = float(low_eval(current_value))
+        evaluated[best_value] = best_score
 
         def eval_at(x: float) -> float:
             v = to_param(x)
@@ -385,7 +408,7 @@ def _pick_best(current_value: Any, candidates: List[Any], low_eval: LowEval) -> 
 
 _COORDINATE_REGISTRY: Dict[str, Any] = {
     'random': (RandomCoordinateOptimizer, _RandomCoordinateOptimizerParams),
-    'coarse_to_fine': (CoarseToFineCoordinateOptimizer, _CoarseToFineCoordinateOptimizerParams),
+    'grid': (GridCoordinateOptimizer, _GridCoordinateOptimizerParams),
     'ternary': (TernaryCoordinateOptimizer, _TernaryCoordinateOptimizerParams),
 }
 

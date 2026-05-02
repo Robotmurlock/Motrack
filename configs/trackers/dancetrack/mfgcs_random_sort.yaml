@@ -27,7 +27,7 @@ optimizer:
     coordinate_optimizer:
       type: random
       params:
-        n_candidates: 10
+        n_candidates: 5
         seed: 42
     max_sweeps: 6
     bootstrap_full_eval: true

@@ -232,10 +232,30 @@ class MFGCSConfig:
         default_factory=lambda: FactorySpec(type='random', params={})
     )
     coordinate_optimizer: FactorySpec = field(
-        default_factory=lambda: FactorySpec(type='coarse_to_fine', params={})
+        default_factory=lambda: FactorySpec(type='grid', params={})
     )
     max_sweeps: int = 10
+    # Hard cap on full-fidelity trials (bootstrap counts as 1). Provides a
+    # complementary stopping criterion to ``max_sweeps`` when the search space
+    # is large — sweeping every coord at ``max_sweeps`` would otherwise blow
+    # the budget. Set to ``0`` to disable.
+    max_trials: int = 100
     bootstrap_full_eval: bool = True
+    # Terminate as soon as a full sweep produces no accepted move. Default-on:
+    # for greedy coordinate search, a barren sweep means the windows weren't
+    # shrunk and ``current`` is unchanged, so subsequent sweeps would mostly
+    # rerun the same exploration with only the scene subset varying. Set to
+    # ``False`` to force exactly ``max_sweeps`` sweeps for ablation purposes.
+    early_stop: bool = True
+    # Minimum HOTA improvement on the full-fidelity gate to count as an accept.
+    # Set just above numerical-noise floor so genuine small accepts (~1e-3 to
+    # 1e-4 range observed on SORT/DanceTrack) are kept. ``1e-2`` is too strict
+    # — empirically rejects every accept and the algorithm makes no progress.
+    accept_threshold: float = 1e-4
+    # Drop a parameter from the active search space after this many consecutive
+    # sweeps with no accepted move on it. ``0`` disables the dropout. Reduces
+    # wasted budget on parameters that have converged or are insensitive.
+    drop_after_barren_sweeps: int = 2
     shrink: MFGCSShrinkConfig = field(default_factory=MFGCSShrinkConfig)
 
 
@@ -269,6 +289,17 @@ class MlflowConfig:
 
 
 @dataclass
+class ReportConfig:
+    """Settings for tools.analysis.report_optimization.
+
+    ``groups`` maps a group name to the list of optimization study display
+    names to bundle into a single chart-set / report section. Empty (default)
+    means: render one chart-set covering every discovered study.
+    """
+    groups: Dict[str, List[str]] = field(default_factory=dict)
+
+
+@dataclass
 class GlobalConfig:
     experiment: str
     dataset: DatasetConfig
@@ -283,6 +314,7 @@ class GlobalConfig:
     utility: UtilityConfig = field(default_factory=UtilityConfig)
     optimizer: Optional[TrackerOptimizerConfig] = None
     mlflow: MlflowConfig = field(default_factory=MlflowConfig)
+    report: ReportConfig = field(default_factory=ReportConfig)
 
     def resolve(self, dotpath: str) -> Any:
         """

@@ -13,8 +13,9 @@ cache keys via ``cfg.hash`` because ``scene_pattern`` is part of the hash.
 import logging
 import os
 import re
+import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -82,6 +83,66 @@ def evaluate(
     return float(np.mean(results['combined']['HOTA']['HOTA']))
 
 
+def is_eval_cached(
+    cfg: GlobalConfig,
+    overrides: Dict[str, Any],
+    scenes: Optional[List[str]] = None,
+) -> bool:
+    """Probe whether :func:`evaluate` will short-circuit to the on-disk cache.
+
+    Mirrors the path-resolution :func:`evaluate` performs. Wrapped in
+    ``try / except`` so stub configs in unit tests fall through to ``False``
+    rather than break the budget counters.
+    """
+    full_overrides: Dict[str, Any] = dict(overrides)
+    if scenes is not None:
+        full_overrides['dataset_filter.scene_pattern'] = scenes_to_pattern(scenes)
+    try:
+        trial_cfg = cfg.override(full_overrides)
+        eval_path = conventions.get_eval_results_path(trial_cfg.experiment_path)
+        return os.path.exists(eval_path)
+    except Exception:  # pragma: no cover — defensive; stub cfgs in tests
+        return False
+
+
+def evaluate_with_metrics(
+    cfg: GlobalConfig,
+    overrides: Dict[str, Any],
+    scenes: Optional[List[str]] = None,
+    *,
+    optuna_data: Optional[OptunaOutputData] = None,
+    dataset_builder: DatasetBuilder = default_dataset_builder,
+    n_full_scenes: Optional[int] = None,
+) -> Tuple[float, int, float]:
+    """Like :func:`evaluate` but also returns budget metrics.
+
+    Returns ``(hota, scenes_evaluated, wall_time_s)``. ``scenes_evaluated`` is
+    **zero on cache hits** so the budget axis reports only newly computed work
+    — re-runs and resumed studies don't double-count previously paid scenes.
+    ``wall_time_s`` is the actual elapsed time around the call (cache hits
+    naturally measure as near-zero).
+    """
+    cache_hit = is_eval_cached(cfg, overrides, scenes=scenes)
+    if cache_hit:
+        n_scenes = 0
+    elif scenes is not None:
+        n_scenes = len(scenes)
+    elif n_full_scenes is not None:
+        n_scenes = int(n_full_scenes)
+    else:
+        n_scenes = len(dataset_builder(cfg).scenes)
+
+    t0 = time.perf_counter()
+    score = evaluate(
+        cfg,
+        overrides,
+        scenes=scenes,
+        optuna_data=optuna_data,
+        dataset_builder=dataset_builder,
+    )
+    return score, n_scenes, time.perf_counter() - t0
+
+
 def bootstrap_detection_cache(
     cfg: GlobalConfig,
     dataset_builder: DatasetBuilder = default_dataset_builder,
@@ -136,7 +197,17 @@ def guard_optimization_dir(cfg: GlobalConfig, study_name: str) -> str:
     return split_path
 
 
-def log_trial_to_mlflow(cfg: GlobalConfig, optuna_info: OptunaOutputData) -> None:
-    """Log a trial to MLflow (no-op if the integration is disabled)."""
+def log_trial_to_mlflow(
+    cfg: GlobalConfig,
+    optuna_info: OptunaOutputData,
+    *,
+    extra_metrics: Optional[Dict[str, float]] = None,
+) -> None:
+    """Log a trial to MLflow (no-op if the integration is disabled).
+
+    ``extra_metrics`` is merged with the eval/FPS metrics so callers can attach
+    optimizer-specific values (e.g. ``scenes_evaluated``, ``trial_wall_time_s``)
+    without needing to know the MLflow plumbing.
+    """
     from motrack.tools.mlflow_logger import load_and_log_run
-    load_and_log_run(cfg, optuna_info=optuna_info)
+    load_and_log_run(cfg, optuna_info=optuna_info, extra_metrics=extra_metrics)

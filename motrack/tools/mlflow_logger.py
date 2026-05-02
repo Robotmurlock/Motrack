@@ -69,6 +69,8 @@ def log_run(
     eval_results: EvalResults,
     fps_stats: Optional[Dict[str, Any]] = None,
     optuna_info: Optional[OptunaOutputData] = None,
+    *,
+    extra_metrics: Optional[Dict[str, float]] = None,
 ) -> None:
     """Log a completed tracker run to MLflow.
 
@@ -81,6 +83,9 @@ def log_run(
         eval_results: Evaluation results to log as metrics.
         fps_stats: Optional FPS statistics dict.
         optuna_info: Optional Optuna trial metadata.
+        extra_metrics: Optional optimizer-specific metrics (e.g.
+            ``scenes_evaluated``, ``trial_wall_time_s``) merged into the
+            metrics block.
     """
     if not is_mlflow_enabled(cfg.mlflow):
         return
@@ -117,6 +122,9 @@ def log_run(
         metrics = _extract_metrics(eval_results)
         if fps_stats is not None and 'e2e_fps' in fps_stats:
             metrics['e2e_fps'] = float(fps_stats['e2e_fps'])
+        if extra_metrics:
+            for k, v in extra_metrics.items():
+                metrics[k] = float(v)
         mlflow.log_metrics(metrics)
 
         config_path = conventions.get_config_snapshot_path(cfg.experiment_path)
@@ -134,6 +142,8 @@ def log_run(
 def load_and_log_run(
     cfg: GlobalConfig,
     optuna_info: Optional[OptunaOutputData] = None,
+    *,
+    extra_metrics: Optional[Dict[str, float]] = None,
 ) -> None:
     """Load eval results and FPS stats from disk and log to MLflow.
 
@@ -143,6 +153,8 @@ def load_and_log_run(
     Args:
         cfg: The GlobalConfig used for this run.
         optuna_info: Optional Optuna trial metadata.
+        extra_metrics: Optional optimizer-specific metrics passed through to
+            :func:`log_run` (e.g. ``scenes_evaluated``, ``trial_wall_time_s``).
     """
     if not is_mlflow_enabled(cfg.mlflow):
         return
@@ -158,7 +170,13 @@ def load_and_log_run(
         with open(fps_path, 'r', encoding='utf-8') as f:
             fps_stats = json.load(f)
 
-    log_run(cfg, eval_results, fps_stats=fps_stats, optuna_info=optuna_info)
+    log_run(
+        cfg,
+        eval_results,
+        fps_stats=fps_stats,
+        optuna_info=optuna_info,
+        extra_metrics=extra_metrics,
+    )
 
 
 def _find_existing_run(experiment_name: str, config_hash: str) -> Optional[str]:

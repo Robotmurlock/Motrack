@@ -5,7 +5,7 @@ import unittest
 
 from motrack.config_parser import FactorySpec, SearchSpaceParam
 from motrack.tools.optimization.mfgcs.coordinate import (
-    CoarseToFineCoordinateOptimizer,
+    GridCoordinateOptimizer,
     CoordinateOptimizer,
     RandomCoordinateOptimizer,
     SearchWindow,
@@ -33,8 +33,8 @@ class CoordinateOptimizerFloatTest(unittest.TestCase):
         best = opt.optimize(self.spec, current_value=0.1, low_eval=self.f, window=self.window)
         self.assertLess(abs(best - self.peak), 0.1)
 
-    def test_coarse_to_fine_converges(self) -> None:
-        opt = CoarseToFineCoordinateOptimizer(grid=5, rounds=4)
+    def test_grid_converges(self) -> None:
+        opt = GridCoordinateOptimizer(grid=5, rounds=4)
         best = opt.optimize(self.spec, current_value=0.1, low_eval=self.f, window=self.window)
         self.assertLess(abs(best - self.peak), 0.05)
 
@@ -45,7 +45,7 @@ class CoordinateOptimizerFloatTest(unittest.TestCase):
 
 
 class CoordinateOptimizerIntTest(unittest.TestCase):
-    """Integer params: coarse-to-fine and ternary fallback both work."""
+    """Integer params: grid and ternary fallback both work."""
 
     def setUp(self) -> None:
         self.spec = SearchSpaceParam(type='int', low=1, high=20)
@@ -53,8 +53,8 @@ class CoordinateOptimizerIntTest(unittest.TestCase):
         self.target = 13
         self.f = _quadratic(self.target)
 
-    def test_coarse_to_fine_int(self) -> None:
-        opt = CoarseToFineCoordinateOptimizer(grid=5, rounds=4)
+    def test_grid_int(self) -> None:
+        opt = GridCoordinateOptimizer(grid=5, rounds=4)
         best = opt.optimize(self.spec, current_value=1, low_eval=self.f, window=self.window)
         self.assertEqual(best, self.target)
         self.assertIsInstance(best, int)
@@ -66,7 +66,7 @@ class CoordinateOptimizerIntTest(unittest.TestCase):
 
 
 class CoordinateOptimizerCategoricalTest(unittest.TestCase):
-    """Categorical params: ternary/c2f fall back; random enumerates."""
+    """Categorical params: ternary/grid fall back; random enumerates."""
 
     def setUp(self) -> None:
         self.spec = SearchSpaceParam(type='categorical', choices=['a', 'b', 'c', 'd', 'e'])
@@ -78,8 +78,8 @@ class CoordinateOptimizerCategoricalTest(unittest.TestCase):
         best = opt.optimize(self.spec, current_value='a', low_eval=lambda v: self.scores[v], window=self.window)
         self.assertEqual(best, 'c')
 
-    def test_coarse_to_fine_enumerates_all(self) -> None:
-        opt = CoarseToFineCoordinateOptimizer(grid=5, rounds=2)
+    def test_grid_enumerates_all(self) -> None:
+        opt = GridCoordinateOptimizer(grid=5, rounds=2)
         best = opt.optimize(self.spec, current_value='a', low_eval=lambda v: self.scores[v], window=self.window)
         self.assertEqual(best, 'c')
 
@@ -96,7 +96,7 @@ class CoordinateOptimizerEdgeCasesTest(unittest.TestCase):
     def test_degenerate_float_returns_current(self) -> None:
         spec = SearchSpaceParam(type='float', low=0.5, high=0.5)
         window = SearchWindow(low=0.5, high=0.5)
-        opt = CoarseToFineCoordinateOptimizer(grid=5, rounds=3)
+        opt = GridCoordinateOptimizer(grid=5, rounds=3)
         called = []
         best = opt.optimize(spec, current_value=0.5, low_eval=lambda v: called.append(v) or 0.0, window=window)
         self.assertEqual(best, 0.5)
@@ -124,7 +124,7 @@ class CoordinateOptimizerFactoryTest(unittest.TestCase):
     def test_builds_each_variant(self) -> None:
         for variant, params in (
             ('random', {'n_candidates': 3, 'seed': 1}),
-            ('coarse_to_fine', {'grid': 4, 'rounds': 2}),
+            ('grid', {'grid': 4, 'rounds': 2}),
             ('ternary', {'n_steps': 5}),
         ):
             opt = coordinate_optimizer_factory(FactorySpec(type=variant, params=params))

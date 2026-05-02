@@ -25,12 +25,16 @@ optimizer:
         n: 3
         seed: 42
     coordinate_optimizer:
-      type: coarse_to_fine
+      type: grid
       params:
         grid: 5
         rounds: 3
     max_sweeps: 6
+    max_trials: 100
     bootstrap_full_eval: true
+    early_stop: true
+    accept_threshold: 1.0e-4
+    drop_after_barren_sweeps: 2
     shrink:
       enabled: true
       radius_frac: 0.25

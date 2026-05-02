@@ -15,7 +15,7 @@ from motrack.config_parser import GlobalConfig, SearchSpaceParam
 from motrack.tools.dataset_builder import DatasetBuilder, default_dataset_builder
 from motrack.tools.inference import OptunaOutputData
 from motrack.tools.optimization.common import (
-    evaluate,
+    evaluate_with_metrics,
     extract_base_params,
     guard_optimization_dir,
     log_trial_to_mlflow,
@@ -107,6 +107,7 @@ def create_objective(
 ) -> Callable[[optuna.Trial], float]:
     """Build the Optuna objective function for HOTA maximization."""
     optim_cfg = cfg.optimizer
+    n_full_scenes = len(dataset_builder(cfg).scenes)
 
     def objective(trial: optuna.Trial) -> float:
         params = sample_params(trial, search_space)
@@ -120,14 +121,27 @@ def create_objective(
             trial_params=params,
         )
 
-        hota = evaluate(
+        hota, scenes_evaluated, wall_time_s = evaluate_with_metrics(
             cfg,
             params,
             optuna_data=optuna_data,
             dataset_builder=dataset_builder,
+            n_full_scenes=n_full_scenes,
         )
-        logger.info(f'Trial {trial.number}: HOTA={hota:.4f}, params={params}')
-        log_trial_to_mlflow(trial_cfg, optuna_data)
+        trial.set_user_attr('scenes_evaluated', scenes_evaluated)
+        trial.set_user_attr('wall_time_s', wall_time_s)
+        logger.info(
+            f'Trial {trial.number}: HOTA={hota:.4f}, '
+            f'scenes={scenes_evaluated}, wall_time={wall_time_s:.1f}s, params={params}'
+        )
+        log_trial_to_mlflow(
+            trial_cfg,
+            optuna_data,
+            extra_metrics={
+                'scenes_evaluated': float(scenes_evaluated),
+                'trial_wall_time_s': float(wall_time_s),
+            },
+        )
         return hota
 
     return objective
@@ -145,6 +159,8 @@ def save_optimization_results(cfg: GlobalConfig, study: optuna.Study) -> None:
             params=t.params,
             state=t.state.name,
             config_hash=t.user_attrs['config_hash'],
+            scenes_evaluated=int(t.user_attrs.get('scenes_evaluated', 0)),
+            wall_time_s=float(t.user_attrs.get('wall_time_s', 0.0)),
         )
 
     results = OptimizationResults(
