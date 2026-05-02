@@ -16,6 +16,8 @@ experiment: 'sparsetrack-tpe'
 
 optimizer:
   study_name: dancetrack_sparsetrack_tpe
+  sampler_params:
+    gamma: 0.2
   search_space:
 
     algorithm.params.new_tracklet_detection_threshold:

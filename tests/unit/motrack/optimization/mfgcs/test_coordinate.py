@@ -1,10 +1,10 @@
 """
-Tests for ``motrack.tools.optimization.mfgcs.coordinate``.
+Tests for ``motrack.optimization.mfgcs.coordinate``.
 """
 import unittest
 
 from motrack.config_parser import FactorySpec, SearchSpaceParam
-from motrack.tools.optimization.mfgcs.coordinate import (
+from motrack.optimization.mfgcs.coordinate import (
     GridCoordinateOptimizer,
     CoordinateOptimizer,
     RandomCoordinateOptimizer,

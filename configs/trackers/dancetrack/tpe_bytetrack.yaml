@@ -16,6 +16,8 @@ experiment: 'bytetrack-tpe'
 
 optimizer:
   study_name: dancetrack_bytetrack_tpe
+  sampler_params:
+    gamma: 0.2
   search_space:
 
     algorithm.params.new_tracklet_detection_threshold:

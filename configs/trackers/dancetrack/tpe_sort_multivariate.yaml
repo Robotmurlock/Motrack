@@ -16,6 +16,7 @@ experiment: 'sort-tpe-multivariate'
 
 optimizer:
   sampler_params:
+    gamma: 0.2
     multivariate: true
   study_name: dancetrack_sort_tpe
   search_space:

@@ -17,6 +17,8 @@ experiment: 'sort-tpe-prior'
 optimizer:
   study_name: dancetrack_sort_tpe_prior
   sampler: warm_tpe
+  sampler_params:
+    gamma: 0.2
   search_space:
 
     algorithm.params.new_tracklet_detection_threshold:

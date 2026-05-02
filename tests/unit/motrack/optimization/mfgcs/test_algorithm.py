@@ -1,5 +1,5 @@
 """
-Smoke / contract tests for ``MFGCSAlgorithm``.
+Smoke / contract tests for ``MFGCSPipeline``.
 
 The full algorithm runs inference + eval, so these tests stub the
 inference/eval boundary (``evaluate``) and supporting I/O. Goals:
@@ -17,28 +17,28 @@ from unittest import mock
 
 from motrack.config_parser import (
     FactorySpec,
-    MFGCSConfig,
-    MFGCSShrinkConfig,
     SearchSpaceParam,
 )
-from motrack.tools.optimization.mfgcs import algorithm as algorithm_module
-from motrack.tools.optimization.mfgcs.algorithm import MFGCSAlgorithm
-from motrack.tools.optimization.mfgcs.coordinate import SearchWindow
+from motrack.optimization.mfgcs import algorithm as algorithm_module
+from motrack.optimization.mfgcs.algorithm import MFGCSPipeline
+from motrack.optimization.mfgcs.coordinate import SearchWindow
+from motrack.optimization.mfgcs.params import MFGCSParams, MFGCSShrinkConfig
 
 
-def _stub_cfg(search_space: Dict[str, SearchSpaceParam], mfgcs_cfg: MFGCSConfig, base: Dict[str, Any]):
+def _stub_cfg(search_space: Dict[str, SearchSpaceParam], base: Dict[str, Any]):
     """Build a minimal cfg-like SimpleNamespace for the algorithm.
 
     The algorithm only needs:
-    - ``cfg.optimizer.mfgcs`` (typed)
     - ``cfg.optimizer.search_space`` (dict)
     - ``cfg.optimizer.study_name``
     - ``cfg.inference.override`` (writable)
     - ``cfg.resolve(dotpath)`` for base-param extraction
     - ``cfg.override(dict)`` returning a stand-in trial_cfg with ``.hash`` and writable ``inference.override``
+
+    The MFGCS params dataclass is now passed straight to the pipeline
+    constructor; ``cfg.optimizer.mfgcs`` no longer exists.
     """
     optimizer = types.SimpleNamespace(
-        mfgcs=mfgcs_cfg,
         search_space=search_space,
         study_name='test_study',
         sampler='mfgcs',
@@ -69,7 +69,7 @@ def _stub_dataset_builder(scenes: List[str]):
     return builder
 
 
-class MFGCSAlgorithmTest(unittest.TestCase):
+class MFGCSPipelineTest(unittest.TestCase):
     """Algorithm contract tests with mocked I/O boundary."""
 
     def setUp(self) -> None:
@@ -79,7 +79,7 @@ class MFGCSAlgorithmTest(unittest.TestCase):
         }
         self.base = {'a': 0.1, 'b': 1}
         # Coarse-to-fine + random sampler → deterministic enough for an end-to-end check.
-        self.mfgcs_cfg = MFGCSConfig(
+        self.mfgcs_cfg = MFGCSParams(
             scene_sampler=FactorySpec(type='random', params={'n': 2, 'seed': 0}),
             coordinate_optimizer=FactorySpec(type='grid', params={'grid': 5, 'rounds': 2}),
             max_sweeps=3,
@@ -92,17 +92,17 @@ class MFGCSAlgorithmTest(unittest.TestCase):
             drop_after_barren_sweeps=0,
             shrink=MFGCSShrinkConfig(enabled=False),  # turn off shrinking to keep windows simple
         )
-        self.cfg = _stub_cfg(self.search_space, self.mfgcs_cfg, self.base)
+        self.cfg = _stub_cfg(self.search_space, self.base)
         self.dataset_builder = _stub_dataset_builder(['s1', 's2', 's3', 's4', 's5'])
 
     def _run_with_scripted_scores(
         self,
         evaluate_side_effect,
         max_sweeps: Optional[int] = None,
-    ) -> MFGCSAlgorithm:
+    ) -> MFGCSPipeline:
         """Run the algorithm with a scripted ``evaluate`` and capture state.
 
-        Returns the constructed algorithm so the caller can inspect trials.
+        Returns the constructed pipeline so the caller can inspect trials.
         """
         if max_sweeps is not None:
             self.mfgcs_cfg.max_sweeps = max_sweeps
@@ -111,8 +111,8 @@ class MFGCSAlgorithmTest(unittest.TestCase):
              mock.patch.object(algorithm_module, 'bootstrap_detection_cache'), \
              mock.patch.object(algorithm_module, 'guard_optimization_dir', return_value='/tmp/test_split'), \
              mock.patch.object(algorithm_module, 'log_trial_to_mlflow'), \
-             mock.patch.object(MFGCSAlgorithm, '_save_results') as save_mock:
-            algo = MFGCSAlgorithm(self.cfg, dataset_builder=self.dataset_builder)
+             mock.patch.object(MFGCSPipeline, '_save_results') as save_mock:
+            algo = MFGCSPipeline(self.cfg, dataset_builder=self.dataset_builder, params=self.mfgcs_cfg)
             algo.run()
             self.history = save_mock.call_args[0][0]  # list[MFGCSSweepRecord]
         return algo
@@ -201,7 +201,7 @@ class MFGCSDependentParamTest(unittest.TestCase):
             'b': SearchSpaceParam(type='float', low=0.0, high=1.0, min_param='a'),
         }
         base = {'a': 0.7, 'b': 0.8}
-        mfgcs_cfg = MFGCSConfig(
+        mfgcs_cfg = MFGCSParams(
             scene_sampler=FactorySpec(type='random', params={'n': 2, 'seed': 0}),
             coordinate_optimizer=FactorySpec(type='grid', params={'grid': 5, 'rounds': 1}),
             max_sweeps=1,
@@ -210,7 +210,7 @@ class MFGCSDependentParamTest(unittest.TestCase):
             bootstrap_full_eval=True,
             shrink=MFGCSShrinkConfig(enabled=False),
         )
-        cfg = _stub_cfg(search_space, mfgcs_cfg, base)
+        cfg = _stub_cfg(search_space, base)
         evaluated_b_inputs: List[float] = []
 
         def side_effect(_cfg, overrides, scenes=None, **kwargs):
@@ -226,8 +226,12 @@ class MFGCSDependentParamTest(unittest.TestCase):
              mock.patch.object(algorithm_module, 'bootstrap_detection_cache'), \
              mock.patch.object(algorithm_module, 'guard_optimization_dir', return_value='/tmp/x'), \
              mock.patch.object(algorithm_module, 'log_trial_to_mlflow'), \
-             mock.patch.object(MFGCSAlgorithm, '_save_results'):
-            algo = MFGCSAlgorithm(cfg, dataset_builder=_stub_dataset_builder(['s1', 's2', 's3']))
+             mock.patch.object(MFGCSPipeline, '_save_results'):
+            algo = MFGCSPipeline(
+                cfg,
+                dataset_builder=_stub_dataset_builder(['s1', 's2', 's3']),
+                params=mfgcs_cfg,
+            )
             algo.run()
 
         # All evaluated values for 'b' must respect min_param=a (currently 0.7)

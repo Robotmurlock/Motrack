@@ -1,10 +1,10 @@
 """
-Tests for ``motrack.tools.optimization.mfgcs.scene_sampler``.
+Tests for ``motrack.optimization.mfgcs.scene_sampler``.
 """
 import unittest
 
 from motrack.config_parser import FactorySpec
-from motrack.tools.optimization.mfgcs.scene_sampler import (
+from motrack.optimization.mfgcs.scene_sampler import (
     RandomSceneSampler,
     SceneSampler,
     scene_sampler_factory,

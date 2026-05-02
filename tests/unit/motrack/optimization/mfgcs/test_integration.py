@@ -3,7 +3,7 @@ Integration test for MFGCS that runs the *real* algorithm against a *real*
 ``GlobalConfig`` composed via Hydra, with only the inference + eval I/O
 stubbed. Validates:
 
-- the dispatcher routes ``sampler='mfgcs'`` to ``MFGCSAlgorithm.run()``,
+- the dispatcher routes ``sampler='mfgcs'`` to ``MFGCSPipeline.run()``,
 - ``cfg.override`` works for every dotpath the algorithm touches,
 - ``cfg.hash`` cleanly separates subset and full-split caches,
 - ``run_eval(scenes=...)`` is wired in,
@@ -49,10 +49,10 @@ class MFGCSEndToEndTest(unittest.TestCase):
                 config_name='mfgcs_sort',
                 overrides=[
                     # Keep the run tiny: 1 sweep, small grid, no shrinking complexity.
-                    'optimizer.mfgcs.max_sweeps=1',
-                    'optimizer.mfgcs.coordinate_optimizer.params.grid=3',
-                    'optimizer.mfgcs.coordinate_optimizer.params.rounds=1',
-                    'optimizer.mfgcs.scene_sampler.params.n=2',
+                    'optimizer.sampler_params.max_sweeps=1',
+                    'optimizer.sampler_params.coordinate_optimizer.params.grid=3',
+                    'optimizer.sampler_params.coordinate_optimizer.params.rounds=1',
+                    'optimizer.sampler_params.scene_sampler.params.n=2',
                     'mlflow.enabled=false',
                 ],
             )
@@ -76,7 +76,7 @@ class MFGCSEndToEndTest(unittest.TestCase):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_run_optimize_dispatches_to_mfgcs_and_writes_results(self) -> None:
-        from motrack.tools.optimization.mfgcs import algorithm as algorithm_module
+        from motrack.optimization.mfgcs import algorithm as algorithm_module
 
         ran_inference: List[Dict[str, Any]] = []
         ran_eval: List[Optional[List[str]]] = []
@@ -116,8 +116,8 @@ class MFGCSEndToEndTest(unittest.TestCase):
             )
             return results
 
-        with mock.patch('motrack.tools.optimization.common.run_inference', side_effect=fake_run_inference), \
-             mock.patch('motrack.tools.optimization.common.run_eval', side_effect=fake_run_eval), \
+        with mock.patch('motrack.optimization.common.run_inference', side_effect=fake_run_inference), \
+             mock.patch('motrack.optimization.common.run_eval', side_effect=fake_run_eval), \
              mock.patch.object(algorithm_module, 'log_trial_to_mlflow'):
             run_optimize(self.cfg, dataset_builder=fake_dataset_builder)
 

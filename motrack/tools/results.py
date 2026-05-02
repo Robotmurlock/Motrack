@@ -16,7 +16,7 @@ import yaml
 from motrack.common import conventions
 from motrack.eval.results import EvalResults
 from motrack.tools.inference import InferenceOutputData
-from motrack.tools.optimization import OptimizationResults
+from motrack.optimization.results import OptimizationResults
 
 
 @dataclass

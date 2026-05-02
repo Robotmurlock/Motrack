@@ -10,6 +10,4 @@ from motrack.config_parser.core import (
     TrackerOptimizerConfig,
     SearchSpaceParam,
     FactorySpec,
-    MFGCSConfig,
-    MFGCSShrinkConfig,
 )

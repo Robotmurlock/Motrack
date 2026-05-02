@@ -1,12 +1,13 @@
 """
-Tests for ``motrack.tools.optimization.mfgcs.shrinking``.
+Tests for ``motrack.optimization.mfgcs.shrinking``.
 """
 import math
 import unittest
 
-from motrack.config_parser import MFGCSShrinkConfig, SearchSpaceParam
-from motrack.tools.optimization.mfgcs.coordinate import SearchWindow
-from motrack.tools.optimization.mfgcs.shrinking import SearchSpaceShrinker
+from motrack.config_parser import SearchSpaceParam
+from motrack.optimization.mfgcs.coordinate import SearchWindow
+from motrack.optimization.mfgcs.params import MFGCSShrinkConfig
+from motrack.optimization.mfgcs.shrinking import SearchSpaceShrinker
 
 
 class ShrinkerTest(unittest.TestCase):

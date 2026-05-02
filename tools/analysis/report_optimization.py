@@ -126,6 +126,22 @@ def _load_trial_metrics(run_dir: str, hota: float) -> TrialMetrics:
     return metrics
 
 
+def _extract_sampler_params(opt: dict) -> dict:
+    """Read ``optimizer.sampler_params`` with a fallback for legacy snapshots.
+
+    Studies optimized before the sampler-instantiation refactor stored
+    MFGCS knobs under a separate ``optimizer.mfgcs`` block instead of
+    ``optimizer.sampler_params``. When loading those snapshots, fold the
+    legacy block in so downstream readers see a single shape.
+    """
+    sampler_params = dict(opt.get('sampler_params') or {})
+    if opt.get('sampler') == 'mfgcs' and not sampler_params:
+        legacy = opt.get('mfgcs')
+        if legacy:
+            return dict(legacy)
+    return sampler_params
+
+
 def _load_n_startup_trials(split_path: str, results: OptimizationResults) -> Optional[int]:
     """Read n_startup_trials from the first trial's config snapshot."""
     completed = [t for t in results.all_trials if t.state == 'COMPLETE']
@@ -146,7 +162,7 @@ def _load_n_startup_trials(split_path: str, results: OptimizationResults) -> Opt
     if sampler not in ('tpe', 'warm_tpe'):
         return None
 
-    return opt.get('sampler_params', {}).get('n_startup_trials', DEFAULT_N_STARTUP_TRIALS)
+    return _extract_sampler_params(opt).get('n_startup_trials', DEFAULT_N_STARTUP_TRIALS)
 
 
 def load_study_data(result_path: str) -> StudyData:

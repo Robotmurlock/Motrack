@@ -18,7 +18,7 @@ optimizer:
   sampler: mfgcs
   direction: maximize
   study_name: dancetrack_sort_mfgcs_random
-  mfgcs:
+  sampler_params:
     scene_sampler:
       type: random
       params:

@@ -10,8 +10,9 @@ import logging
 import math
 from typing import Any
 
-from motrack.config_parser import MFGCSShrinkConfig, SearchSpaceParam
-from motrack.tools.optimization.mfgcs.coordinate import SearchWindow
+from motrack.config_parser import SearchSpaceParam
+from motrack.optimization.mfgcs.coordinate import SearchWindow
+from motrack.optimization.mfgcs.params import MFGCSShrinkConfig
 
 logger = logging.getLogger('MFGCS-Shrink')
 

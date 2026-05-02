@@ -12,9 +12,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from motrack.common import conventions
 from motrack.config_parser import GlobalConfig, SearchSpaceParam
-from motrack.tools.dataset_builder import DatasetBuilder, default_dataset_builder
+from motrack.tools.dataset_builder import DatasetBuilder
 from motrack.tools.inference import OptunaOutputData
-from motrack.tools.optimization.common import (
+from motrack.optimization.base import OptimizationPipeline
+from motrack.optimization.common import (
     bootstrap_detection_cache,
     evaluate,
     extract_base_params,
@@ -22,17 +23,18 @@ from motrack.tools.optimization.common import (
     is_eval_cached,
     log_trial_to_mlflow,
 )
-from motrack.tools.optimization.mfgcs.coordinate import (
+from motrack.optimization.mfgcs.coordinate import (
     SearchWindow,
     coordinate_optimizer_factory,
 )
-from motrack.tools.optimization.mfgcs.results import (
+from motrack.optimization.mfgcs.params import MFGCSParams
+from motrack.optimization.mfgcs.results import (
     MFGCSCoordinateRecord,
     MFGCSSweepRecord,
 )
-from motrack.tools.optimization.mfgcs.scene_sampler import scene_sampler_factory
-from motrack.tools.optimization.mfgcs.shrinking import SearchSpaceShrinker
-from motrack.tools.optimization.results import OptimizationResults, TrialResult
+from motrack.optimization.mfgcs.scene_sampler import scene_sampler_factory
+from motrack.optimization.mfgcs.shrinking import SearchSpaceShrinker
+from motrack.optimization.results import OptimizationResults, TrialResult
 
 logger = logging.getLogger('Tool-Optimize-MFGCS')
 
@@ -47,19 +49,17 @@ def _values_equal(a: Any, b: Any) -> bool:
     return a == b
 
 
-class MFGCSAlgorithm:
+class MFGCSPipeline(OptimizationPipeline):
     """Driver for one MFGCS optimization run."""
 
     def __init__(
         self,
         cfg: GlobalConfig,
-        dataset_builder: DatasetBuilder = default_dataset_builder,
+        dataset_builder: DatasetBuilder,
+        params: MFGCSParams,
     ) -> None:
-        assert cfg.optimizer is not None, 'optimizer config is required'
-        assert cfg.optimizer.mfgcs is not None, "optimizer.mfgcs is required for sampler='mfgcs'"
-        self._cfg = cfg
-        self._dataset_builder = dataset_builder
-        self._mfgcs_cfg = cfg.optimizer.mfgcs
+        super().__init__(cfg, dataset_builder, params)
+        self._mfgcs_cfg: MFGCSParams = params
         self._search_space: Dict[str, SearchSpaceParam] = cfg.optimizer.search_space
         self._scene_sampler = scene_sampler_factory(self._mfgcs_cfg.scene_sampler)
         self._coord_optimizer = coordinate_optimizer_factory(self._mfgcs_cfg.coordinate_optimizer)
