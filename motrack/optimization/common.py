@@ -58,13 +58,23 @@ def evaluate(
     those scenes is injected as ``dataset_filter.scene_pattern`` so inference
     only tracks the subset, and ``run_eval`` is restricted to the same list.
 
+    Special case: if ``scenes`` already covers every scene in the dataset,
+    skip the pattern injection so the on-disk eval cache aligns with
+    ``scenes=None`` calls. This makes ``MFGCS`` with ``scene_sampler.n =
+    |D|`` behave as plain coordinate descent without paying for a redundant
+    full eval at the acceptance gate (the gate becomes a cache hit).
+
     The on-disk eval cache (``eval_results.json`` at the trial's experiment
     path) is reused when present; ``cfg.hash`` already separates subset and
     full-split caches because it includes ``scene_pattern``.
     """
     full_overrides: Dict[str, Any] = dict(overrides)
     if scenes is not None:
-        full_overrides['dataset_filter.scene_pattern'] = scenes_to_pattern(scenes)
+        full_scenes = dataset_builder(cfg).scenes
+        if len(scenes) >= len(full_scenes):
+            scenes = None  # full-coverage subset → identical to a full eval
+        else:
+            full_overrides['dataset_filter.scene_pattern'] = scenes_to_pattern(scenes)
 
     trial_cfg = cfg.override(full_overrides)
     trial_cfg.inference.override = True
@@ -87,22 +97,24 @@ def is_eval_cached(
     cfg: GlobalConfig,
     overrides: Dict[str, Any],
     scenes: Optional[List[str]] = None,
+    *,
+    dataset_builder: DatasetBuilder = default_dataset_builder,
 ) -> bool:
     """Probe whether :func:`evaluate` will short-circuit to the on-disk cache.
 
-    Mirrors the path-resolution :func:`evaluate` performs. Wrapped in
-    ``try / except`` so stub configs in unit tests fall through to ``False``
-    rather than break the budget counters.
+    Mirrors the path-resolution :func:`evaluate` performs, including the
+    full-coverage subset short-circuit (subset equal to the entire dataset
+    is treated as ``scenes=None`` so caches align between MFGCS coord-search
+    and the acceptance gate).
     """
     full_overrides: Dict[str, Any] = dict(overrides)
+    if scenes is not None and len(scenes) >= len(dataset_builder(cfg).scenes):
+        scenes = None
     if scenes is not None:
         full_overrides['dataset_filter.scene_pattern'] = scenes_to_pattern(scenes)
-    try:
-        trial_cfg = cfg.override(full_overrides)
-        eval_path = conventions.get_eval_results_path(trial_cfg.experiment_path)
-        return os.path.exists(eval_path)
-    except Exception:  # pragma: no cover — defensive; stub cfgs in tests
-        return False
+    trial_cfg = cfg.override(full_overrides)
+    eval_path = conventions.get_eval_results_path(trial_cfg.experiment_path)
+    return os.path.exists(eval_path)
 
 
 def evaluate_with_metrics(

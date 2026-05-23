@@ -108,6 +108,7 @@ class MFGCSPipelineTest(unittest.TestCase):
             self.mfgcs_cfg.max_sweeps = max_sweeps
 
         with mock.patch.object(algorithm_module, 'evaluate', side_effect=evaluate_side_effect), \
+             mock.patch.object(algorithm_module, 'is_eval_cached', return_value=False), \
              mock.patch.object(algorithm_module, 'bootstrap_detection_cache'), \
              mock.patch.object(algorithm_module, 'guard_optimization_dir', return_value='/tmp/test_split'), \
              mock.patch.object(algorithm_module, 'log_trial_to_mlflow'), \
@@ -223,6 +224,7 @@ class MFGCSDependentParamTest(unittest.TestCase):
             return 0.0
 
         with mock.patch.object(algorithm_module, 'evaluate', side_effect=side_effect), \
+             mock.patch.object(algorithm_module, 'is_eval_cached', return_value=False), \
              mock.patch.object(algorithm_module, 'bootstrap_detection_cache'), \
              mock.patch.object(algorithm_module, 'guard_optimization_dir', return_value='/tmp/x'), \
              mock.patch.object(algorithm_module, 'log_trial_to_mlflow'), \

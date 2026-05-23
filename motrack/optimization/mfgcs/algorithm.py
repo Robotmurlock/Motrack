@@ -268,7 +268,7 @@ class MFGCSPipeline(OptimizationPipeline):
         def low_eval(value: Any) -> float:
             nonlocal scenes_used, time_used
             params = {**current, dotpath: value}
-            cache_hit = is_eval_cached(self._cfg, params, scenes=subset)
+            cache_hit = is_eval_cached(self._cfg, params, scenes=subset, dataset_builder=self._dataset_builder)
             t0 = time.perf_counter()
             score = evaluate(
                 self._cfg,
@@ -310,7 +310,7 @@ class MFGCSPipeline(OptimizationPipeline):
             trial_params=params,
         )
         full_scenes = self._n_full_scenes if self._n_full_scenes is not None else 0
-        cache_hit = is_eval_cached(cfg, full_params, scenes=None)
+        cache_hit = is_eval_cached(cfg, full_params, scenes=None, dataset_builder=self._dataset_builder)
         t0 = time.perf_counter()
         score = evaluate(
             cfg,
