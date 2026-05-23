@@ -4,6 +4,7 @@ Momentum based association.
 from typing import Optional, List, Tuple
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict
 
 from motrack.library.cv.bbox import PredBBox, Point
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
@@ -12,15 +13,49 @@ from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 from motrack.tracker.tracklet import Tracklet
 
 
+@ASSOCIATION_CATALOG.register_config('ocm')
+class OCMConfig(BaseModel):
+    """
+    Config for OCM.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    delta_t: int = 3
+    fast_linear_assignment: bool = False
+
+
+@ASSOCIATION_CATALOG.register_config('robust-ocm')
+class RobustOCMConfig(BaseModel):
+    """
+    Config for robust OCM.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    momentum: int = 3
+    fast_linear_assignment: bool = False
+
+
+@ASSOCIATION_CATALOG.register_config('ecm')
+class ECMConfig(OCMConfig):
+    """
+    Config for ECM.
+    """
+
+
+@ASSOCIATION_CATALOG.register_config('robust-ecm')
+class RobustECMConfig(RobustOCMConfig):
+    """
+    Config for robust ECM.
+    """
+
+
 class MomentumAssociation(AssociationAlgorithm):
     """
     Standard negative IoU association with gating.
     """
-    def __init__(
-        self,
-        momentum: int = 1,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, momentum: int = 1, fast_linear_assignment: bool = False):
         """
         Args:
             momentum: Number of latest boxes (history) to consider for momentum association
@@ -126,19 +161,15 @@ class OCM(MomentumAssociation):
     """
     Observation Centric Momentum. Reference: https://arxiv.org/pdf/2203.14360.pdf
     """
-    def __init__(
-        self,
-        delta_t: int = 3,
-        fast_linear_assignment: bool = False,
-    ):
+    def __init__(self, config: OCMConfig):
         """
         Args:
             delta_t: Time step between tracker bounding boxes to estimate the speed vector
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(fast_linear_assignment=fast_linear_assignment, momentum=1)
-        self._delta_t = delta_t
+        super().__init__(fast_linear_assignment=config.fast_linear_assignment, momentum=1)
+        self._delta_t = config.delta_t
 
     def _calc_momentum(self, tracklet: Tracklet, tracklet_bbox: PredBBox, det_bbox: PredBBox, momentum: int) -> float:
         observation_history = filter_observations(tracklet.history)
@@ -165,18 +196,14 @@ class RobustOCM(MomentumAssociation):
     """
     Robust OCM. Reference: https://arxiv.org/pdf/2308.00783.pdf
     """
-    def __init__(
-        self,
-        momentum: int = 3,
-        fast_linear_assignment: bool = False,
-    ):
+    def __init__(self, config: RobustOCMConfig):
         """
         Args:
             momentum: Number of latest boxes (history) to consider for momentum association
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(fast_linear_assignment=fast_linear_assignment, momentum=momentum)
+        super().__init__(fast_linear_assignment=config.fast_linear_assignment, momentum=config.momentum)
 
     @staticmethod
     def _get_corner_points(bbox: PredBBox) -> List[Point]:

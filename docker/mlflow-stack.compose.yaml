@@ -1,0 +1,118 @@
+# MLflow tracking stack: Postgres backend store + MinIO artifact store.
+#
+# Brought up with:
+#   docker compose -f docker/mlflow-stack.compose.yaml up -d
+#
+# Replaces the legacy SQLite-backed `motrack-mlflow` service in
+# docker-compose.yaml.  Stop that service first to avoid a container-name
+# conflict on `motrack-mlflow`:
+#   docker stop motrack-mlflow && docker rm motrack-mlflow
+#
+# Required env vars (see .env.example):
+#   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+#   MINIO_ROOT_USER, MINIO_ROOT_PASSWORD
+# Optional:
+#   MLFLOW_PORT (default 5000), MINIO_API_PORT (9000), MINIO_CONSOLE_PORT (9001)
+#
+# Clients (motrack-env, etc.) keep using MLFLOW_TRACKING_URI=http://motrack-mlflow:5000.
+# Because the server runs with --serve-artifacts, clients never need MinIO creds.
+version: "3.9"
+
+networks:
+  motrack-net:
+    external: true
+    name: motrack-net
+
+volumes:
+  motrack-mlflow-pgdata:
+  motrack-mlflow-artifacts:
+
+services:
+  motrack-mlflow-postgres:
+    image: postgres:16-alpine
+    container_name: motrack-mlflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mlflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-mlflow}
+    volumes:
+      - motrack-mlflow-pgdata:/var/lib/postgresql/data
+    networks: [motrack-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  motrack-mlflow-minio:
+    image: minio/minio:latest
+    container_name: motrack-mlflow-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set in .env}
+    volumes:
+      - motrack-mlflow-artifacts:/data
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    networks: [motrack-net]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-shot: create the artifact bucket so MLflow can write to it on first run.
+  motrack-mlflow-minio-init:
+    image: minio/mc:latest
+    container_name: motrack-mlflow-minio-init
+    depends_on:
+      motrack-mlflow-minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set in .env}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://motrack-mlflow-minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+      mc mb -p local/mlflow-artifacts || true &&
+      echo 'Bucket mlflow-artifacts ready.'
+      "
+    networks: [motrack-net]
+    restart: "no"
+
+  motrack-mlflow:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.mlflow
+    image: motrack-mlflow
+    container_name: motrack-mlflow
+    restart: unless-stopped
+    depends_on:
+      motrack-mlflow-postgres:
+        condition: service_healthy
+      motrack-mlflow-minio-init:
+        condition: service_completed_successfully
+    # Postgres creds interpolated from .env at compose time (not via shell
+    # expansion in the container — we no longer wrap the command in bash -c).
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql+psycopg2://${POSTGRES_USER:-mlflow}:${POSTGRES_PASSWORD:?set in .env}@motrack-mlflow-postgres:5432/${POSTGRES_DB:-mlflow}
+      --artifacts-destination s3://mlflow-artifacts/
+      --serve-artifacts
+      --allowed-hosts *
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mlflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-mlflow}
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?set in .env}
+      MLFLOW_S3_ENDPOINT_URL: http://motrack-mlflow-minio:9000
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    networks: [motrack-net]

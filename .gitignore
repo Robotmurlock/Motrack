@@ -1,8 +1,15 @@
+
+
+# Worktrees
+worktrees/
+.claude
+
 # Secret
 *secret*
 
 outputs/
 old-configs/
+mlruns/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -10,3 +10,4 @@ tqdm
 ultralytics
 torch
 motrack-motion>=0.2.4
+pydantic>=2.12.5

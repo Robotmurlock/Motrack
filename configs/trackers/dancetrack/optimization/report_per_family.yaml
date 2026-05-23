@@ -1,0 +1,49 @@
+# @package _global_
+defaults:
+  - /global_config
+  - /dataset: dancetrack.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_dancetrack.yaml
+  - /algorithm: sort.yaml
+  - /postprocess: dancetrack.yaml
+  - /path: default.yaml
+  - /mlflow: default.yaml
+  - _self_
+
+
+experiment: 'sort-tpe'
+
+report:
+  groups:
+    # Each family includes its non-pruner variants and the matching
+    # HyperbandPruner-augmented run (so within-family with/without pruner
+    # comparisons sit on the same chart).
+    tpe:
+      - sort-tpe
+      - sort-tpe-gamma030
+      - sort-tpe-multivariate
+      - sort-tpe-neic64
+      - sort-tpe-neic64-gamma010
+      - sort-tpe-prior
+      - sort-bohb                       # TPE + HyperbandPruner
+    random:
+      - sort-random
+      - sort-hyperband-random           # Random + HyperbandPruner
+    mfgcs:
+      - sort-mfgcs-g4r2-n3-s6
+      - sort-mfgcs-g5r2-n6-s6
+      - sort-mfgcs-g5r3-n3-s6
+      - sort-mfgcs-g5r3-n6-s6
+      - sort-mfgcs-g5r3-n9-s6
+      - sort-mfgcs-g7r2-n6-s6
+      - sort-mfgcs-g7r3-n6-s6
+      - sort-mfgcs-rand20-n6-s6
+      - sort-mfgcs-rand5-n3-s6
+      - sort-mfgcs-tern5-n3-s6
+      - sort-mfgcs-tern5-n6-s6
+      - sort-gcs-no-mf-g5r3-n25-s6      # MFGCS w/o multi-fidelity (full-eval gate)
+    gp:
+      - sort-gp
+      - sort-gp-warmup20
+      - sort-gp-prior

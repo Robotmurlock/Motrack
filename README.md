@@ -78,14 +78,14 @@ Evaluation of these methods on different datasets can be found in [evaluation.md
 | YOLOX       | [arxiv: Simple Online and Realtime Tracking](https://arxiv.org/pdf/1602.00763.pdf) | 
 | YOLOv8      | [github: Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics)                             |
 
-Use `motrack/create_yolo_format.py` to create YOLOv8 training dataset and `motrack/create_coco_format.py` 
-to create YOLOX training dataset.
+Use `tools/detection/create_yolo_format.py` to create a YOLOv8 training dataset and
+`tools/detection/create_coco_format.py` to create a YOLOX training dataset.
 
 ### FastReID integration
 
 Any [FastReID](https://github.com/JDAI-CV/fast-reid) model for appearance matching can be used.
 Model has to be exported in ONNX. Please check [deploy documentation](https://github.com/JDAI-CV/fast-reid/tree/master/tools/deploy) for mode info.
-Use `scrips/create_fastreid_patches.py` to create fast-reid dataset in order to train an appearance model.
+Use `tools/reid/create_fastreid_patches.py` to create a FastReID dataset for training an appearance model.
 
 ### Supported datasets
 
@@ -95,19 +95,82 @@ Any custom dataset can be added by extending the base dataset.
 
 ### Tools
 
-List of script tools:
+After installation, three console scripts are available from any directory:
 
-  - Inference: Perform any tracker inference that can directly evaluated with TrackEval framework.
-  - Postprocess: Perform offline postprocessing (linear interpolation, etc...) for more accuracy tracklets.
-  - Visualize: Visualize tracker inference.
+  - **`motrack-inference`**: Run tracker inference. Outputs are stored under a deterministic hash-based directory.
+  - **`motrack-eval`**: Evaluate tracker outputs with HOTA, CLEAR, Identity, and Count metrics. Results are logged and saved as JSON.
+  - **`motrack-optimize`**: Run hyperparameter optimization over a tracker's search space. Supports Optuna samplers (`random`, `tpe`, `warm_tpe`, `gp`, `warm_gp`) with optional HyperbandPruner rungs, plus the in-house MFGCS multi-fidelity optimizer.
+
+Equivalent invocations:
+
+```bash
+uv run motrack-inference                   # console script via uv
+uv run python -m motrack.cli.inference     # module run via uv
+python tools/inference.py                  # legacy (still works)
+```
+
+If your venv is already activated (`source .venv/bin/activate`), drop the `uv run` prefix.
+
+Two additional tools are available as scripts in the repo:
+
+  - **Postprocess** (`tools/postprocess.py`): Offline postprocessing (linear interpolation, etc.).
+  - **Visualize** (`tools/visualize_inference.py`): Visualize tracker inference.
+
+Optimization study comparison and figures: `python -m tools.analysis.report_optimization --config-name optimization/report_per_family` (see `docs/optimization/report.md`).
+
+### Library API
+
+The CLI is a thin Hydra wrapper around the library API. Anything the CLI does can be called directly:
+
+```python
+from motrack.tools import run_inference, run_eval, run_optimize
+
+run_inference(cfg)                   # build dataset/detector/tracker and run
+results = run_eval(cfg)              # HOTA / CLEAR / Identity / Count
+run_optimize(cfg)                    # full Optuna study
+```
+
+Dataset construction is pluggable — pass a custom builder if your library wraps a different dataset layer:
+
+```python
+from motrack.tools import run_optimize, DatasetBuilder
+from motrack.datasets import BaseDataset
+
+def my_dataset_builder(cfg) -> BaseDataset:
+    return MyCustomDataset(cfg.dataset.params)
+
+run_optimize(cfg, dataset_builder=my_dataset_builder)
+```
 
 ### Evaluation
+
+Motrack includes a built-in evaluation module (`motrack/eval`) that computes
+HOTA, CLEAR (MOTA/MOTP), Identity (IDF1), and Count metrics — no external
+TrackEval installation required. Run evaluation after inference:
+
+```bash
+uv run motrack-eval
+```
+
+Results are saved as `eval_results.json` inside the tracker run directory.
 
 Evaluation of different supported methods can be found [here](https://github.com/Robotmurlock/Motrack/blob/main/docs/evaluation.md).
 
 ## Installation
 
-Run these commands to install package within your virtual environment or docker container.
+Motrack is developed and tested with [uv](https://docs.astral.sh/uv/). Adding it to a uv-managed project:
+
+```bash
+uv add motrack
+```
+
+Or installing into the current environment:
+
+```bash
+uv pip install motrack
+```
+
+Pip works too if you prefer:
 
 ```bash
 pip install motrack
@@ -115,36 +178,39 @@ pip install motrack
 
 Package page can be found on [PyPI](https://pypi.org/project/motrack/).
 
-### Extensions
-
-In order to use `YOLOv8` for inference, please install `ultralytics` library:
+### Working from a clone
 
 ```bash
-pip install ultralytics
+git clone https://github.com/Robotmurlock/Motrack.git
+cd Motrack
+uv sync
 ```
 
-or install extras `motrack['yolov8']`:
+This installs all runtime dependencies and registers the `motrack-inference`, `motrack-eval`, and `motrack-optimize` console scripts in the project venv.
+
+### Optional extras
+
+| Extra | Provides |
+|---|---|
+| `yolov8` | `ultralytics` (YOLOv8 inference) |
+| `reid`   | `onnxruntime` (FastReID inference) |
+| `optuna` | `optuna` (hyperparameter search) |
+| `mlflow` | `mlflow` (experiment tracking) |
+
+Install one or more:
 
 ```bash
-pip install `motrack['yolov8']`
+uv add 'motrack[yolov8,reid]'
+# or
+uv pip install 'motrack[yolov8,reid]'
+# or (pip)
+pip install 'motrack[yolov8,reid]'
 ```
 
-For `FastReID` inference, please install `onnxruntime` for CPU:
+For GPU `onnxruntime`, replace the `reid` extra with a direct install:
 
 ```bash
-pip install onnxruntime
-```
-
-or GPU:
-
-```bash
-pip install onnxruntime-gpu
-```
-
-In order to use `motrack-motion` filters, use:
-
-```bash
-pip install `motrack['motion']`
+uv add onnxruntime-gpu     # or: pip install onnxruntime-gpu
 ```
 
 ## Changelog

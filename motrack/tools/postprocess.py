@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from motrack.config_parser import TrackerPostprocessConfig
 from motrack.datasets import BaseDataset
-from motrack.evaluation.io import TrackerInferenceWriter, TrackerInferenceReader
+from motrack.inference.io import TrackerInferenceWriter, TrackerInferenceReader
 from motrack.library.cv.bbox import PredBBox, Point
 from motrack.tracker.tracklet import Tracklet
 

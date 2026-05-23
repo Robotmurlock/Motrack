@@ -1,7 +1,7 @@
 """
 Dynamic filter catalog.
 """
-from motrack.utils.patterns import DynamicCatalog
+from motrack.utils.patterns import DynamicConfigBasedCatalog
 
 
-FILTER_CATALOG = DynamicCatalog()
+FILTER_CATALOG = DynamicConfigBasedCatalog()

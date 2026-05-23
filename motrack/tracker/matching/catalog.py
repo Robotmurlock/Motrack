@@ -1,7 +1,7 @@
 """
 Dynamic tracker association catalog.
 """
-from motrack.utils.patterns import DynamicCatalog
+from motrack.utils.patterns import DynamicConfigBasedCatalog
 
 
-ASSOCIATION_CATALOG = DynamicCatalog()
+ASSOCIATION_CATALOG = DynamicConfigBasedCatalog()

@@ -1,0 +1,49 @@
+# @package _global_
+defaults:
+  - /global_config
+  - /dataset: sportsmot.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_sportsmot.yaml
+  - /algorithm: movesort.yaml
+  - /postprocess: sportsmot.yaml
+  - /path: default.yaml
+  - optimize_base
+  - /mlflow: default.yaml
+  - _self_
+
+
+experiment: 'sportsmot-movesort-tpe-v2'
+
+optimizer:
+  study_name: sportsmot_movesort_tpe_v2
+  sampler_params:
+    gamma: 0.2
+  search_space:
+
+    algorithm.params.filter.params.override_std_weight_position:
+      type: float
+      low: 0.01
+      high: 0.10
+
+    algorithm.params.new_tracklet_detection_threshold:
+      type: float
+      low: 0.1
+      high: 0.9
+      min_param: algorithm.params.detection_threshold
+
+    algorithm.params.matcher.params.match_threshold:
+      type: float
+      low: 0.01
+      high: 0.30
+    algorithm.params.matcher.params.fuse_score:
+      type: categorical
+      choices: [true, false]
+    algorithm.params.matcher.params.motion_lambda:
+      type: float
+      low: 1.0
+      high: 15.0
+      log: true
+    algorithm.params.matcher.params.distance_name:
+      type: categorical
+      choices: [l1, l2]

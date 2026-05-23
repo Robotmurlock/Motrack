@@ -5,6 +5,7 @@ Reference: https://arxiv.org/pdf/2308.00783.pdf
 from typing import List, Optional
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict
 from scipy.spatial.distance import cdist
 
 from motrack.library.cv import PredBBox
@@ -15,6 +16,25 @@ from motrack.tracker.tracklet import Tracklet, TrackletState
 from motrack.tracker.matching.algorithms.utils import filter_observations
 
 
+@ASSOCIATION_CATALOG.register_config('hybrid-conf')
+class HybridConfidenceAssociationConfig(BaseModel):
+    """
+    Config for hybrid confidence association.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    initial_P_conf: float = 10.0
+    Q_conf: float = 1.0
+    Q_conf_velocity: float = 1e-3
+    R_conf: float = 100.0
+    linear_prediction: bool = False
+    lower_bound: float = 0.1
+    upper_bound: float = 0.9
+    fast_linear_assignment: bool = False
+    adaptive: bool = False
+
+
 @ASSOCIATION_CATALOG.register('hybrid-conf')
 class HybridConfidenceAssociation(AssociationAlgorithm):
     """
@@ -22,18 +42,7 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
     """
     DATA_KF_KEY = 'kf-conf-est'
 
-    def __init__(
-        self,
-        initial_P_conf: float = 10.0,
-        Q_conf: float = 1.0,
-        Q_conf_velocity: float = 1e-3,
-        R_conf: float = 100.0,
-        linear_prediction: bool = False,
-        lower_bound: float = 0.1,
-        upper_bound: float = 0.9,
-        fast_linear_assignment: bool = False,
-        adaptive: bool = False
-    ):
+    def __init__(self, config: HybridConfidenceAssociationConfig):
         """
         Args:
             initial_P_conf: Initial confidence uncertainty (std)
@@ -46,17 +55,17 @@ class HybridConfidenceAssociation(AssociationAlgorithm):
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(fast_linear_assignment=fast_linear_assignment)
+        super().__init__(fast_linear_assignment=config.fast_linear_assignment)
         self._kf = ConfidenceKalmanFilter(
-            initial_P_conf=initial_P_conf,
-            Q_conf=Q_conf,
-            Q_conf_velocity=Q_conf_velocity,
-            R_conf=R_conf,
-            adaptive=adaptive
+            initial_P_conf=config.initial_P_conf,
+            Q_conf=config.Q_conf,
+            Q_conf_velocity=config.Q_conf_velocity,
+            R_conf=config.R_conf,
+            adaptive=config.adaptive
         )
-        self._linear_prediction = linear_prediction
-        self._lower_bound = lower_bound
-        self._upper_bound = upper_bound
+        self._linear_prediction = config.linear_prediction
+        self._lower_bound = config.lower_bound
+        self._upper_bound = config.upper_bound
 
     def _postprocess_conf(self, conf: float) -> float:
         return max(self._lower_bound, min(self._upper_bound, conf))

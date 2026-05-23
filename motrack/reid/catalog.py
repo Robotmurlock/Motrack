@@ -1,7 +1,7 @@
 """
 Dynamic ReID catalog.
 """
-from motrack.utils.patterns import DynamicCatalog
+from motrack.utils.patterns import DynamicConfigBasedCatalog
 
 
-REID_CATALOG = DynamicCatalog()
+REID_CATALOG = DynamicConfigBasedCatalog()

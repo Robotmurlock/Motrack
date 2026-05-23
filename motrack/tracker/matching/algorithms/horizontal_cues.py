@@ -4,11 +4,26 @@ Height and bottom position distance
 from typing import Optional, List
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict
 
 from motrack.library.cv.bbox import PredBBox
 from motrack.tracker.matching.algorithms.base import AssociationAlgorithm
 from motrack.tracker.matching.catalog import ASSOCIATION_CATALOG
 from motrack.tracker.tracklet import Tracklet
+
+
+@ASSOCIATION_CATALOG.register_config('hvc')
+class HorizontalViewCuesConfig(BaseModel):
+    """
+    Config for horizontal view cues.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    bottom_position_factor: float = 1.0
+    height_factor: float = 1.0
+    center_position_factor: float = 0.0
+    fast_linear_assignment: bool = False
 
 
 @ASSOCIATION_CATALOG.register('hvc')
@@ -20,13 +35,7 @@ class HorizontalViewCues(AssociationAlgorithm):
         and bounding box center
         2323become important cues.
     """
-    def __init__(
-        self,
-        bottom_position_factor: float = 1.0,
-        height_factor: float = 1.0,
-        center_position_factor: float = 0.0,
-        fast_linear_assignment: bool = False
-    ):
+    def __init__(self, config: HorizontalViewCuesConfig):
         """
         Args:
             bottom_position_factor: Bottom position factor
@@ -35,10 +44,10 @@ class HorizontalViewCues(AssociationAlgorithm):
             fast_linear_assignment: Use greedy algorithm for linear assignment
                 - This might be more efficient in case of large cost matrix
         """
-        super().__init__(fast_linear_assignment=fast_linear_assignment)
-        self._bottom_position_factor = bottom_position_factor
-        self._height_factor = height_factor
-        self._center_position_factor = center_position_factor
+        super().__init__(fast_linear_assignment=config.fast_linear_assignment)
+        self._bottom_position_factor = config.bottom_position_factor
+        self._height_factor = config.height_factor
+        self._center_position_factor = config.center_position_factor
 
     def form_cost_matrix(
         self,

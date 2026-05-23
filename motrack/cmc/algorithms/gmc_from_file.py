@@ -5,9 +5,21 @@ import os
 from typing import Optional, Dict
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict
 
 from motrack.cmc.algorithms.base import CameraMotionCompensation
 from motrack.cmc.catalog import CMC_CATALOG
+
+
+@CMC_CATALOG.register_config('gmc-from-file')
+class GmcFromFileConfig(BaseModel):
+    """
+    Config for file-backed GMC.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    dirpath: str
 
 
 @CMC_CATALOG.register('gmc-from-file')
@@ -17,12 +29,12 @@ class GMCFromFile(CameraMotionCompensation):
     """
     LINE_SEP = '\t'
 
-    def __init__(self, dirpath: str):
+    def __init__(self, config: GmcFromFileConfig):
         """
         Args:
             dirpath: Path to directory where precalculated GMC warps are stored.
         """
-        self._gmc_lookup = self._parse_gmc_directory(dirpath)
+        self._gmc_lookup = self._parse_gmc_directory(config.dirpath)
 
     @staticmethod
     def _get_gmc_filename(scene: str) -> str:

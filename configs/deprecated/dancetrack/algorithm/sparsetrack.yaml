@@ -1,0 +1,21 @@
+# SparseTrack = ByteTrack + DCM
+name: sparse
+params:
+  filter:
+    name: bot-sort
+    params:
+      override_std_weight_position: 0.05
+  initialization_threshold: 3
+  remember_threshold: 30
+  new_tracklet_detection_threshold: 0.7
+  detection_threshold: 0.6
+  high_matcher:
+    name: dcm
+    params:
+      levels: 12
+      match_threshold: 0.3
+  low_matcher:
+    name: dcm
+    params:
+      levels: 12
+      match_threshold: 0.50

@@ -1,0 +1,38 @@
+# @package _global_
+defaults:
+  - /global_config
+  - /dataset: dancetrack.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_dancetrack.yaml
+  - /algorithm: sort.yaml
+  - /postprocess: dancetrack.yaml
+  - /path: default.yaml
+  - optimize_base
+  - /mlflow: default.yaml
+  - _self_
+
+
+experiment: 'sort-tpe-prior'
+
+optimizer:
+  study_name: dancetrack_sort_tpe_prior
+  sampler: warm_tpe
+  sampler_params:
+    gamma: 0.2
+  search_space:
+
+    algorithm.params.new_tracklet_detection_threshold:
+      type: float
+      low: 0.3
+      high: 0.9
+      min_param: algorithm.params.detection_threshold
+
+    # --- Algorithm: Matcher params ---
+    algorithm.params.matcher.params.match_threshold:
+      type: float
+      low: 0.10
+      high: 0.50
+    algorithm.params.matcher.params.fuse_score:
+      type: categorical
+      choices: [true, false]
