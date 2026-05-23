@@ -5,10 +5,13 @@ params:
     params:
       override_std_weight_position: 0.05
   initialization_threshold: 3
+  detection_threshold: 0.6
+  new_tracklet_detection_threshold: 0.7
   matcher:
     name: move
     params:
       distance_name: l1
       match_threshold: 0.2
       motion_lambda: 5
+      fuse_score: false
   remember_threshold: 30

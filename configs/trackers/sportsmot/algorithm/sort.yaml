@@ -1,8 +1,15 @@
 name: sort
 params:
+  detection_threshold: 0.6
+  new_tracklet_detection_threshold: 0.6
   filter:
     name: bot-sort
     params:
       override_std_weight_position: 0.05
+  matcher:
+    name: iou
+    params:
+      match_threshold: 0.30
+      fuse_score: false
   initialization_threshold: 3
   remember_threshold: 30

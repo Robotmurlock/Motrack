@@ -13,11 +13,14 @@ params:
     name: iou
     params:
       match_threshold: 0.25
+      fuse_score: false
   low_matcher:
     name: iou
     params:
       match_threshold: 0.50
+      fuse_score: false
   new_matcher:
     name: iou
     params:
       match_threshold: 0.25
+      fuse_score: false
