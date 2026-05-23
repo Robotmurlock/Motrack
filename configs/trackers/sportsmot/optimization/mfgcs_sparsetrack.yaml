@@ -1,0 +1,88 @@
+# @package _global_
+defaults:
+  - /global_config
+  - /dataset: sportsmot.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_sportsmot.yaml
+  - /algorithm: sparsetrack.yaml
+  - /postprocess: sportsmot.yaml
+  - /path: default.yaml
+  - optimize_base
+  - /mlflow: default.yaml
+  - _self_
+
+
+experiment: 'sportsmot-sparsetrack-mfgcs-g5r3-n6-s6'
+
+optimizer:
+  sampler: mfgcs
+  direction: maximize
+  study_name: sportsmot_sparsetrack_mfgcs_g5r3_n6_s6
+  sampler_params:
+    scene_sampler:
+      type: random
+      params:
+        n: 6
+        seed: 42
+    coordinate_optimizer:
+      type: grid
+      params:
+        grid: 5
+        rounds: 3
+    max_sweeps: 6
+    max_trials: 100
+    bootstrap_full_eval: true
+    early_stop: true
+    accept_threshold: 1.0e-4
+    drop_after_barren_sweeps: 2
+    shrink:
+      enabled: true
+      radius_frac: 0.25
+      window_size: 3
+  search_space:
+
+    algorithm.params.new_tracklet_detection_threshold:
+      type: float
+      low: 0.1
+      high: 0.9
+      min_param: algorithm.params.detection_threshold
+    algorithm.params.duplicate_iou_threshold:
+      type: float
+      low: 0.5
+      high: 1.0
+
+    # --- Algorithm: High matcher params (DCM) ---
+    algorithm.params.high_matcher.params.match_threshold:
+      type: float
+      low: 0.10
+      high: 0.50
+    algorithm.params.high_matcher.params.fuse_score:
+      type: categorical
+      choices: [true, false]
+    algorithm.params.high_matcher.params.levels:
+      type: int
+      low: 6
+      high: 20
+
+    # --- Algorithm: Low matcher params (DCM) ---
+    algorithm.params.low_matcher.params.match_threshold:
+      type: float
+      low: 0.30
+      high: 0.70
+    algorithm.params.low_matcher.params.fuse_score:
+      type: categorical
+      choices: [true, false]
+    algorithm.params.low_matcher.params.levels:
+      type: int
+      low: 6
+      high: 20
+
+    # --- Algorithm: New matcher params (IoU) ---
+    algorithm.params.new_matcher.params.match_threshold:
+      type: float
+      low: 0.10
+      high: 0.50
+    algorithm.params.new_matcher.params.fuse_score:
+      type: categorical
+      choices: [true, false]

@@ -1,0 +1,31 @@
+# @package _global_
+defaults:
+  - /global_config
+  - /dataset: sportsmot.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_sportsmot.yaml
+  - /algorithm: sort.yaml
+  - /postprocess: sportsmot.yaml
+  - /path: default.yaml
+  - /mlflow: default.yaml
+  - _self_
+
+
+experiment: 'sportsmot-sort-tpe'
+
+report:
+  groups:
+    # §3.2 SportsMOT cross-tracker: per-tracker TPE-vanilla vs MFGCS-Grid g5r3-n6-s6
+    sport_sort:
+      - sportsmot-sort-tpe
+      - sportsmot-sort-mfgcs-g5r3-n6-s6
+    sport_bytetrack:
+      - sportsmot-bytetrack-tpe
+      - sportsmot-bytetrack-mfgcs-g5r3-n6-s6
+    sport_sparsetrack:
+      - sportsmot-sparsetrack-tpe
+      - sportsmot-sparsetrack-mfgcs-g5r3-n6-s6
+    sport_movesort:
+      - sportsmot-movesort-tpe
+      - sportsmot-movesort-mfgcs-g5r3-n6-s6

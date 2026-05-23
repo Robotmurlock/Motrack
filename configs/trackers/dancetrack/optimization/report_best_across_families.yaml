@@ -1,0 +1,28 @@
+# @package _global_
+defaults:
+  - /global_config
+  - /dataset: dancetrack.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_dancetrack.yaml
+  - /algorithm: sort.yaml
+  - /postprocess: dancetrack.yaml
+  - /path: default.yaml
+  - /mlflow: default.yaml
+  - _self_
+
+
+experiment: 'sort-tpe'
+
+report:
+  groups:
+    # Best representative per family, paired with its with-pruner / without-MF
+    # counterpart so the cross-family comparison shows both variants side-by-side.
+    best_across_families:
+      - sort-tpe-prior                  # TPE family winner (HOTA 0.5335)
+      - sort-bohb                       # TPE + HyperbandPruner (HOTA 0.5300)
+      - sort-mfgcs-g5r3-n6-s6           # MFGCS family winner (HOTA 0.5369)
+      - sort-gcs-no-mf-g5r3-n25-s6      # MFGCS w/o multi-fidelity (HOTA 0.5359)
+      - sort-gp-warmup20                # GP family best (HOTA 0.5250)
+      - sort-random                     # Random baseline (HOTA 0.5228)
+      - sort-hyperband-random           # Random + HyperbandPruner (HOTA 0.5206)

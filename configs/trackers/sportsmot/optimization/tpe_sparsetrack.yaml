@@ -1,0 +1,67 @@
+# @package _global_
+defaults:
+  - /global_config
+  - /dataset: sportsmot.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_sportsmot.yaml
+  - /algorithm: sparsetrack.yaml
+  - /postprocess: sportsmot.yaml
+  - /path: default.yaml
+  - optimize_base
+  - /mlflow: default.yaml
+  - _self_
+
+
+experiment: 'sportsmot-sparsetrack-tpe'
+
+optimizer:
+  study_name: sportsmot_sparsetrack_tpe
+  sampler_params:
+    gamma: 0.2
+  search_space:
+
+    algorithm.params.new_tracklet_detection_threshold:
+      type: float
+      low: 0.1
+      high: 0.9
+      min_param: algorithm.params.detection_threshold
+    algorithm.params.duplicate_iou_threshold:
+      type: float
+      low: 0.5
+      high: 1.0
+
+    # --- Algorithm: High matcher params (DCM) ---
+    algorithm.params.high_matcher.params.match_threshold:
+      type: float
+      low: 0.10
+      high: 0.50
+    algorithm.params.high_matcher.params.fuse_score:
+      type: categorical
+      choices: [true, false]
+    algorithm.params.high_matcher.params.levels:
+      type: int
+      low: 6
+      high: 20
+
+    # --- Algorithm: Low matcher params (DCM) ---
+    algorithm.params.low_matcher.params.match_threshold:
+      type: float
+      low: 0.30
+      high: 0.70
+    algorithm.params.low_matcher.params.fuse_score:
+      type: categorical
+      choices: [true, false]
+    algorithm.params.low_matcher.params.levels:
+      type: int
+      low: 6
+      high: 20
+
+    # --- Algorithm: New matcher params (IoU) ---
+    algorithm.params.new_matcher.params.match_threshold:
+      type: float
+      low: 0.10
+      high: 0.50
+    algorithm.params.new_matcher.params.fuse_score:
+      type: categorical
+      choices: [true, false]

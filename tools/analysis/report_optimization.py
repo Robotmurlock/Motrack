@@ -502,7 +502,15 @@ def plot_hota_vs_walltime(studies: List[StudyData], output_path: str) -> None:
 
 
 def plot_hota_vs_fps(studies: List[StudyData], output_path: str) -> None:
-    """HOTA vs association FPS scatter with best trial marked."""
+    """HOTA vs association FPS, one point per study (the best-HOTA trial).
+
+    Per-trial association FPS is sensitive to transient machine load
+    during the run (e.g. background processes pulling CPU), which can
+    introduce per-trial outliers that are not properties of the
+    algorithm. Plotting only the best-HOTA trial removes that noise and
+    keeps the comparison about the configuration each method actually
+    selected.
+    """
     has_fps = any(
         m.association_fps is not None
         for s in studies for m in s.trial_metrics.values()
@@ -514,30 +522,18 @@ def plot_hota_vs_fps(studies: List[StudyData], output_path: str) -> None:
     fig, ax = plt.subplots(figsize=(10, 5))
 
     for s in studies:
-        xs, ys = [], []
-        best_x, best_y = None, None
-        for t in s.completed_trials:
-            m = s.trial_metrics.get(t.number)
-            if m is None or m.association_fps is None:
-                continue
-            xs.append(m.association_fps)
-            ys.append(m.hota)
-            if t.number == s.results.best_trial.number:
-                best_x, best_y = m.association_fps, m.hota
-        if not xs:
+        m = s.trial_metrics.get(s.results.best_trial.number)
+        if m is None or m.association_fps is None:
             continue
-
-        color = ax.scatter(xs, ys, s=18, alpha=0.4, label=s.display_name).get_facecolors()[0]
-        if best_x is not None:
-            ax.scatter(
-                [best_x], [best_y],
-                s=120, color=color, edgecolors='black',
-                linewidths=1.5, zorder=5, marker='*',
-            )
+        ax.scatter(
+            [m.association_fps], [m.hota],
+            s=140, edgecolors='black', linewidths=1.2,
+            marker='*', label=s.display_name, zorder=5,
+        )
 
     ax.set_xlabel("Association FPS")
     ax.set_ylabel("HOTA")
-    ax.set_title("HOTA vs FPS (best trial marked with star)")
+    ax.set_title("HOTA vs FPS (best-HOTA trial per study)")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 

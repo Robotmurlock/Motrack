@@ -1,0 +1,31 @@
+# @package _global_
+defaults:
+  - /global_config
+  - /dataset: dancetrack.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_dancetrack.yaml
+  - /algorithm: sort.yaml
+  - /postprocess: dancetrack.yaml
+  - /path: default.yaml
+  - /mlflow: default.yaml
+  - _self_
+
+
+experiment: 'sort-tpe'
+
+report:
+  groups:
+    # §3.5 DanceTrack cross-tracker: per-tracker TPE-vanilla vs MFGCS-Grid g5r3-n6-s6
+    sort:
+      - sort-tpe
+      - sort-mfgcs-g5r3-n6-s6
+    bytetrack:
+      - bytetrack-tpe
+      - bytetrack-mfgcs-g5r3-n6-s6
+    sparsetrack:
+      - sparsetrack-tpe
+      - sparsetrack-mfgcs-g5r3-n6-s6
+    movesort:
+      - movesort-tpe
+      - movesort-mfgcs-g5r3-n6-s6
