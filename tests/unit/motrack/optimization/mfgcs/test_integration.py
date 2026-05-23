@@ -46,7 +46,7 @@ class MFGCSEndToEndTest(unittest.TestCase):
         # Hydra composes the real mfgcs_sort.yaml — same path the CLI takes.
         with initialize_config_dir(config_dir=DANCETRACK_TRACKERS_CONFIG_PATH, version_base='1.1'):
             cfg = compose(
-                config_name='mfgcs_sort',
+                config_name='optimization/mfgcs_sort',
                 overrides=[
                     # Keep the run tiny: 1 sweep, small grid, no shrinking complexity.
                     'optimizer.sampler_params.max_sweeps=1',

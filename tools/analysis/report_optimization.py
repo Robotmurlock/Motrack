@@ -7,7 +7,7 @@ settings are inherited automatically.
 
 Usage:
     python -m tools.analysis.report_optimization \
-        --config-name optimize_sort
+        --config-name optimization/report_per_family
 """
 import glob
 import hashlib
@@ -766,7 +766,7 @@ def _run_report_inner(cfg: GlobalConfig) -> None:
     log_to_mlflow(cfg, studies, artifact_paths=[report_path, *fs_artifacts])
 
 
-@hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='optimize_sort', version_base='1.1')
+@hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='optimization/report_per_family', version_base='1.1')
 @pipeline.task('report_optimization')
 def main(cfg: GlobalConfig) -> None:
     _run_report_inner(cfg)

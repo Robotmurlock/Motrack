@@ -1,22 +1,25 @@
+# @package _global_
 defaults:
-  - global_config
-  - dataset: dancetrack.yaml
-  - inference: val.yaml
-  - eval: default.yaml
-  - object_detection: mmdet_yolox_low_conf_dancetrack.yaml
-  - algorithm: sort.yaml
-  - postprocess: dancetrack.yaml
-  - path: default.yaml
+  - /global_config
+  - /dataset: dancetrack.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_dancetrack.yaml
+  - /algorithm: sort.yaml
+  - /postprocess: dancetrack.yaml
+  - /path: default.yaml
   - optimize_base
-  - mlflow: default.yaml
+  - /mlflow: default.yaml
   - _self_
 
 
-experiment: 'sort-random'
+experiment: 'sort-tpe-neic64-gamma010'
 
 optimizer:
-  study_name: dancetrack_sort_random
-  sampler: random
+  sampler_params:
+    gamma: 0.1
+    n_ei_candidates: 64
+  study_name: dancetrack_sort_tpe
   search_space:
 
     algorithm.params.new_tracklet_detection_threshold:

@@ -1,23 +1,24 @@
+# @package _global_
 defaults:
-  - global_config
-  - dataset: dancetrack.yaml
-  - inference: val.yaml
-  - eval: default.yaml
-  - object_detection: mmdet_yolox_low_conf_dancetrack.yaml
-  - algorithm: sort.yaml
-  - postprocess: dancetrack.yaml
-  - path: default.yaml
+  - /global_config
+  - /dataset: dancetrack.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_dancetrack.yaml
+  - /algorithm: sort.yaml
+  - /postprocess: dancetrack.yaml
+  - /path: default.yaml
   - optimize_base
-  - mlflow: default.yaml
+  - /mlflow: default.yaml
   - _self_
 
 
-experiment: 'sort-mfgcs'
+experiment: 'sort-mfgcs-ternary'
 
 optimizer:
   sampler: mfgcs
   direction: maximize
-  study_name: dancetrack_sort_mfgcs
+  study_name: dancetrack_sort_mfgcs_ternary
   sampler_params:
     scene_sampler:
       type: random
@@ -25,16 +26,11 @@ optimizer:
         n: 3
         seed: 42
     coordinate_optimizer:
-      type: grid
+      type: ternary
       params:
-        grid: 5
-        rounds: 3
+        n_steps: 5
     max_sweeps: 6
-    max_trials: 100
     bootstrap_full_eval: true
-    early_stop: true
-    accept_threshold: 1.0e-4
-    drop_after_barren_sweeps: 2
     shrink:
       enabled: true
       radius_frac: 0.25

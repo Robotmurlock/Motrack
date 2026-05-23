@@ -7,7 +7,7 @@ from motrack.tools.optimization import run_optimize
 from motrack.utils import pipeline
 
 
-@hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='optimize_sort', version_base='1.1')
+@hydra.main(config_path=DANCETRACK_TRACKERS_CONFIG_PATH, config_name='optimization/tpe_sort', version_base='1.1')
 @pipeline.task('optimize')
 def main(cfg: GlobalConfig) -> None:
     run_optimize(cfg)

@@ -1,21 +1,22 @@
+# @package _global_
 defaults:
-  - global_config
-  - dataset: dancetrack.yaml
-  - inference: val.yaml
-  - eval: default.yaml
-  - object_detection: mmdet_yolox_low_conf_dancetrack.yaml
-  - algorithm: sparsetrack.yaml
-  - postprocess: dancetrack.yaml
-  - path: default.yaml
+  - /global_config
+  - /dataset: dancetrack.yaml
+  - /inference: val.yaml
+  - /eval: default.yaml
+  - /object_detection: mmdet_yolox_low_conf_dancetrack.yaml
+  - /algorithm: bytetrack.yaml
+  - /postprocess: dancetrack.yaml
+  - /path: default.yaml
   - optimize_base
-  - mlflow: default.yaml
+  - /mlflow: default.yaml
   - _self_
 
 
-experiment: 'sparsetrack-tpe'
+experiment: 'bytetrack-tpe'
 
 optimizer:
-  study_name: dancetrack_sparsetrack_tpe
+  study_name: dancetrack_bytetrack_tpe
   sampler_params:
     gamma: 0.2
   search_space:
@@ -30,7 +31,7 @@ optimizer:
       low: 0.5
       high: 1.0
 
-    # --- Algorithm: High matcher params (DCM) ---
+    # --- Algorithm: High matcher params ---
     algorithm.params.high_matcher.params.match_threshold:
       type: float
       low: 0.10
@@ -38,12 +39,8 @@ optimizer:
     algorithm.params.high_matcher.params.fuse_score:
       type: categorical
       choices: [true, false]
-    algorithm.params.high_matcher.params.levels:
-      type: int
-      low: 6
-      high: 20
 
-    # --- Algorithm: Low matcher params (DCM) ---
+    # --- Algorithm: Low matcher params ---
     algorithm.params.low_matcher.params.match_threshold:
       type: float
       low: 0.30
@@ -51,12 +48,8 @@ optimizer:
     algorithm.params.low_matcher.params.fuse_score:
       type: categorical
       choices: [true, false]
-    algorithm.params.low_matcher.params.levels:
-      type: int
-      low: 6
-      high: 20
 
-    # --- Algorithm: New matcher params (IoU) ---
+    # --- Algorithm: New matcher params ---
     algorithm.params.new_matcher.params.match_threshold:
       type: float
       low: 0.10
