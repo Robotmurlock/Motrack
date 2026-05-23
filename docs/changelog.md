@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.8.0 - 2026-05-23
+
+### Features
+- Added **Multi-Fidelity Greedy Coordinate Search (MFGCS)** optimizer (`motrack.optimization.mfgcs`): one-axis-at-a-time coordinate descent evaluated on a small scene subset, full-eval acceptance gate, shrinking-radius windows, barren-sweep early stop, and per-trial budget metrics (`scenes_evaluated`, `wall_time_s`)
+- Added **HyperbandPruner** rung schedule to the Optuna pipeline: a `pruner:` block on `RandomParams` / `TPEParams` switches the objective into rung-based multi-fidelity evaluation; trials report HOTA at each rung and weak trials are killed at low fidelity
+- Added **GP / WarmGP** samplers (`gp` / `warm_gp` pipelines) backed by Optuna's `GPSampler`, with the manually-tuned default enqueued as the warm-start trial for `warm_gp`
+- Added **StratifiedSceneSampler** for MFGCS: picks `n_per_group` scenes from each regex-defined group, yielding a balanced low-fidelity subset on multi-domain datasets (e.g. SportsMOT basketball / football / volleyball)
+- Added a grouped **optimization report** (`tools/analysis/report_optimization.py`): per-family, cross-tracker, and best-across-families groupings driven by Hydra config; HOTA vs trial / budget / wall-time / association-FPS plots; cumulative-budget summaries logged to MLflow
+- Added an **optional `scenes` filter** on `run_eval` so an evaluation can be restricted to a subset of scenes (used by MFGCS at the rung gate)
+- Exposed `fuse_score` on every IoU / move / DCM matcher and `duplicate_iou_threshold` on SparseTrack, making them tunable in the new MFGCS family configs
+- Migrated the MLflow stack to **Postgres + MinIO** (`docker/docker-compose.yaml`), replacing the SQLite + local-fs backend. New services: `motrack-mlflow`, `motrack-mlflow-postgres`, `motrack-mlflow-minio`
+- Added SportsMOT optimization configs (per-tracker TPE / MFGCS variants plus `_v2` / `_n10` ablations and a cross-tracker report grouping)
+- Added the `tools/migrate/backfill_pre_c2_budget.py` one-off tool to reconstruct `scenes_evaluated` / `wall_time_s` on pre-C2 trial records (and optionally re-log them to MLflow)
+
+### Refactor
+- Converted `motrack.tools.optimization` into a package and split the HPO *library* (samplers, pipelines, results) from the *driver* (CLI / Hydra glue) so external callers can build a study without going through Hydra
+- Unified sampler instantiation behind a factory keyed by `optimizer.sampler` so adding a new sampler is one entry, not one branch per call site
+- Restructured the DanceTrack optimization configs into an `optimization/` subdirectory with `# @package _global_` and absolute `/...` defaults so Hydra resolves them against the project root regardless of the entry-point's location
+- Aligned the MFGCS eval cache with full-coverage subsets: when `scene_sampler.n == |D|`, the rung-eval is short-circuited to a full-eval cache hit, making `n = |D|` behave as plain coordinate descent without a redundant gate eval
+
+### Docs
+- Added `docs/optimization/report.md` with the final HPO write-up comparing TPE / Random / GP / MFGCS families on DanceTrack and SportsMOT, plus 25 figures
+
 ## 0.7.0 - 2026-05-01
 
 ### Features

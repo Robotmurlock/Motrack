@@ -99,7 +99,7 @@ After installation, three console scripts are available from any directory:
 
   - **`motrack-inference`**: Run tracker inference. Outputs are stored under a deterministic hash-based directory.
   - **`motrack-eval`**: Evaluate tracker outputs with HOTA, CLEAR, Identity, and Count metrics. Results are logged and saved as JSON.
-  - **`motrack-optimize`**: Run Optuna hyperparameter optimization over a tracker's search space.
+  - **`motrack-optimize`**: Run hyperparameter optimization over a tracker's search space. Supports Optuna samplers (`random`, `tpe`, `warm_tpe`, `gp`, `warm_gp`) with optional HyperbandPruner rungs, plus the in-house MFGCS multi-fidelity optimizer.
 
 Equivalent invocations:
 
@@ -115,6 +115,8 @@ Two additional tools are available as scripts in the repo:
 
   - **Postprocess** (`tools/postprocess.py`): Offline postprocessing (linear interpolation, etc.).
   - **Visualize** (`tools/visualize_inference.py`): Visualize tracker inference.
+
+Optimization study comparison and figures: `python -m tools.analysis.report_optimization --config-name optimization/report_per_family` (see `docs/optimization/report.md`).
 
 ### Library API
 
