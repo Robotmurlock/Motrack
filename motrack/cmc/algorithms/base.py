@@ -2,23 +2,74 @@
 Camera motion compensation interface.
 """
 from abc import ABC, abstractmethod
-from typing import Optional
+from dataclasses import dataclass
+from typing import ClassVar, List, Optional, Tuple
 
 import numpy as np
 
+from motrack.library.cv.bbox import PredBBox
+
+
+@dataclass(frozen=True)
+class CMCContext:
+    """
+    Per-frame tracker state made available to a CMC algorithm.
+
+    The field set is closed rather than open-ended: at the point CMC runs there are exactly
+    three sources of information in the tracker - the raw image, the detector output and
+    the motion model output - plus the identifiers needed to address a frame.
+
+    Attributes:
+        frame_index: Zero-based index of the *current* frame.
+        scene: Scene name, when the tracker is running over a named scene.
+        frame: Current frame image (RGB, HxWx3). None when image loading is disabled.
+        image_size: Current frame (width, height). Always set when `frame` is set.
+        detections: Current frame detections in normalized coordinates. These are the raw
+            detector outputs, before the tracker applies its own detection threshold.
+        tracklet_bbox_predictions: Motion model predictions for the current frame, in
+            normalized coordinates, before this warp is applied to them.
+    """
+    frame_index: int
+    scene: Optional[str] = None
+    frame: Optional[np.ndarray] = None
+    image_size: Optional[Tuple[int, int]] = None
+    detections: Optional[List[PredBBox]] = None
+    tracklet_bbox_predictions: Optional[List[PredBBox]] = None
+
 
 class CameraMotionCompensation(ABC):
+    """
+    Camera motion compensation interface.
+
+    Attributes:
+        requires_image: Whether the algorithm needs `CMCContext.frame` to be set. Trackers
+            use this to fail fast when image loading is disabled.
+    """
+    requires_image: ClassVar[bool] = True
+
     @abstractmethod
-    def apply(self, frame: np.ndarray, frame_index: int, scene: Optional[str] = None) -> np.ndarray:
+    def apply(self, ctx: CMCContext) -> np.ndarray:
         """
-        Calculates approximated affine transformations applied
-        to the image between current and last frame.
+        Estimates the affine transformation the camera applied to the image between the
+        previous and the current frame.
+
+        The returned warp maps normalized [0, 1] coordinates expressed in frame
+        `ctx.frame_index - 1` into normalized coordinates of frame `ctx.frame_index`.
+
+        Implementations must never raise on degenerate input. When the transformation
+        cannot be estimated - the first frame of a scene, too few correspondences, a gap in
+        the frame sequence - an identity warp is returned instead.
 
         Args:
-            frame: Current video frame
-            frame_index: Frame index
-            scene: Scene name (optional)
+            ctx: Current frame context
 
         Returns:
-            Affine 2x3 matrix (includes translation)
+            Affine 2x3 matrix (includes translation) in normalized coordinates
+        """
+
+    def reset(self) -> None:
+        """
+        Drops per-scene state. Called by the tracker before every scene.
+
+        Stateless algorithms do not need to override this.
         """
