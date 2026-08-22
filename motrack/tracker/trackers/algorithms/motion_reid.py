@@ -146,6 +146,8 @@ class MotionReIDBasedTracker(Tracker, ABC):
         # State
         self._filter_states = {}
         self._next_id = 0
+        self._prev_frame: Optional[np.ndarray] = None
+        self._prev_frame_index: Optional[int] = None
 
     @property
     def requires_image(self) -> bool:
@@ -161,6 +163,8 @@ class MotionReIDBasedTracker(Tracker, ABC):
         change every output file without changing any metric.
         """
         self._filter_states = {}
+        self._prev_frame = None
+        self._prev_frame_index = None
         if self._cmc is not None:
             self._cmc.reset()
 
@@ -434,16 +438,24 @@ class MotionReIDBasedTracker(Tracker, ABC):
                 f'Enable `inference.load_image` in the config.'
             )
 
+        # The previous frame is cached here rather than inside every image based CMC: it is
+        # the same bookkeeping for all of them, and doing it once means an algorithm only has
+        # to handle `prev_frame is None`. A gap in the frame sequence is treated as no
+        # previous frame at all, since the two frames are then not adjacent.
+        is_continuous = self._prev_frame_index is not None and frame_index == self._prev_frame_index + 1
+
         ctx = CMCContext(
             frame_index=frame_index,
             scene=self._scene,
-            frame=frame,
+            prev_frame=self._prev_frame if is_continuous else None,
+            curr_frame=frame,
             image_size=image_size_from_frame(frame) if frame is not None else None,
             detections=detections,
             tracklet_bbox_predictions=bboxes
         )
 
         warp = self._cmc.apply(ctx)
+        self._prev_frame, self._prev_frame_index = frame, frame_index
         self._filter_states = {t_id: self._filter.affine_transform(state, warp) for t_id, state in self._filter_states.items()}
 
         corrected_bboxes: List[PredBBox] = []

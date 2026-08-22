@@ -7,6 +7,7 @@ the default reproduces today's behavior.
 """
 import logging
 import os
+import re
 from typing import Any, Dict, List, Optional
 
 from motrack.common import conventions
@@ -30,10 +31,10 @@ def run_eval(
             with tracker output already produced.
         dataset_builder: Pluggable dataset construction.
         scenes: Optional explicit list of scenes to evaluate. When ``None``
-            (default), the full dataset is evaluated. When provided, only
-            those scenes are scored — useful for low-fidelity evaluation in
-            multi-fidelity optimizers. Scenes must be a subset of
-            ``dataset.scenes``.
+            (default), the scenes selected by ``dataset_filter.scene_pattern``
+            are evaluated. When provided, only those scenes are scored — useful
+            for low-fidelity evaluation in multi-fidelity optimizers. Scenes
+            must be a subset of ``dataset.scenes``.
 
     Returns:
         Results dict with ``sequences`` and ``combined`` keys.
@@ -53,7 +54,11 @@ def run_eval(
     dataset = dataset_builder(cfg)
 
     if scenes is None:
-        eval_scenes = dataset.scenes
+        # Inference and postprocessing both filter on this pattern, so evaluation has to as
+        # well: otherwise a filtered run is scored against scenes it was never asked to track.
+        pattern = cfg.dataset_filter.scene_pattern
+        eval_scenes = [scene for scene in dataset.scenes if re.match(pattern, scene)]
+        assert eval_scenes, f'Scene pattern "{pattern}" matched none of the {len(dataset.scenes)} dataset scenes.'
     else:
         unknown = set(scenes) - set(dataset.scenes)
         assert not unknown, f'Unknown scenes requested: {sorted(unknown)}'
