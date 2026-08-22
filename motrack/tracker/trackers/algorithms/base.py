@@ -31,6 +31,19 @@ class Tracker(ABC):
     def get_scene(self) -> Optional[str]:
         return self._scene
 
+    @property
+    def requires_image(self) -> bool:
+        """
+        Whether the tracker needs the raw frame to be passed to `track`.
+
+        This is derived from the tracker's components rather than configured, so that
+        inference can fail fast instead of crashing on a `None` frame mid-run.
+
+        Returns:
+            True if the tracker requires frames
+        """
+        return False
+
     @abstractmethod
     def track(
         self,

@@ -160,7 +160,16 @@ def run_tracker_inference(
 
     Returns:
         FPS statistics
+
+    Raises:
+        ValueError: If the tracker requires frames but image loading is disabled.
     """
+    if tracker.requires_image and not load_image:
+        raise ValueError(
+            f'Tracker "{type(tracker).__name__}" requires video frames (CMC or ReID), '
+            f'but `inference.load_image` is disabled.'
+        )
+
     fps_stats = InferenceFPSStats()
 
     scene_names = dataset.scenes

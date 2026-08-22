@@ -13,7 +13,8 @@ from motrack.library.cv.bbox import PredBBox, BBox
 from motrack.tracker.trackers.algorithms.base import Tracker
 from motrack.tracker.trackers.utils import remove_duplicates
 from motrack.tracker.tracklet import Tracklet, TrackletState, TrackletCommonData
-from motrack.cmc import cmc_factory
+from motrack.cmc import cmc_factory, CMCContext
+from motrack.cmc.components.warp import image_size_from_frame
 from motrack.reid import reid_inference_factory
 from collections import deque
 
@@ -145,6 +146,23 @@ class MotionReIDBasedTracker(Tracker, ABC):
         # State
         self._filter_states = {}
         self._next_id = 0
+
+    @property
+    def requires_image(self) -> bool:
+        return self._reid is not None or (self._cmc is not None and self._cmc.requires_image)
+
+    def reset_state(self) -> None:
+        """
+        Resets all per-scene state.
+
+        Without this, motion filter states of every previously tracked object are kept
+        alive for the whole run: CMC would keep warping them and the per-frame cost would
+        grow from scene to scene. Tracklet ids are deliberately not reset, since that would
+        change every output file without changing any metric.
+        """
+        self._filter_states = {}
+        if self._cmc is not None:
+            self._cmc.reset()
 
     def _filter_detections(self, detections: List[PredBBox]) -> List[PredBBox]:
         """
@@ -382,22 +400,50 @@ class MotionReIDBasedTracker(Tracker, ABC):
                 tracklet_bbox, _, _ = self._missing(tracklet)
                 tracklet.update(tracklet_bbox, tracklet.frame_index, state=TrackletState.LOST)
 
-    def _perform_cmc(self, frame: np.ndarray, frame_index: int, bboxes: List[PredBBox]) -> List[PredBBox]:
+    def _perform_cmc(
+        self,
+        frame: Optional[np.ndarray],
+        frame_index: int,
+        bboxes: List[PredBBox],
+        detections: List[PredBBox]
+    ) -> List[PredBBox]:
         """
-        Performs CMC on detected bounding boxes and updates motion filter states.
+        Performs CMC on the motion model predictions and updates motion filter states.
+
+        Note that `detections` are the raw detector outputs: the tracker's own detection
+        threshold is applied later, inside `_track`.
 
         Args:
-            frame: Frame (image)
-            frame_index: Current frame index
-            bboxes: List of bounding boxes
+            frame: Frame (image), optional
+            frame_index: Current (zero-based) frame index
+            bboxes: Motion model bounding box predictions for the current frame
+            detections: Raw detections for the current frame
 
         Returns:
             Updated bounding boxes
+
+        Raises:
+            ValueError: If the configured CMC requires frames but none were loaded.
         """
         if self._cmc is None:
             return bboxes
 
-        warp = self._cmc.apply(frame, frame_index - 1, scene=self._scene)
+        if self._cmc.requires_image and frame is None:
+            raise ValueError(
+                f'CMC "{type(self._cmc).__name__}" requires video frames but none were loaded. '
+                f'Enable `inference.load_image` in the config.'
+            )
+
+        ctx = CMCContext(
+            frame_index=frame_index,
+            scene=self._scene,
+            frame=frame,
+            image_size=image_size_from_frame(frame) if frame is not None else None,
+            detections=detections,
+            tracklet_bbox_predictions=bboxes
+        )
+
+        warp = self._cmc.apply(ctx)
         self._filter_states = {t_id: self._filter.affine_transform(state, warp) for t_id, state in self._filter_states.items()}
 
         corrected_bboxes: List[PredBBox] = []
@@ -443,12 +489,18 @@ class MotionReIDBasedTracker(Tracker, ABC):
         frame: Optional[np.ndarray] = None
     ) -> List[Tracklet]:
         frame_index -= 1
-        tracklets, prior_tracklet_bboxes = self._track_predict(tracklets, frame_index, frame=frame)
+        tracklets, prior_tracklet_bboxes = self._track_predict(tracklets, detections, frame_index, frame=frame)
         objects_features = self._extract_reid_features(frame, frame_index, detections)
         return self._track(tracklets, prior_tracklet_bboxes, detections, frame_index,
                            objects_features=objects_features, frame=frame)
 
-    def _track_predict(self, tracklets: List[Tracklet], frame_index: int, frame: Optional[np.ndarray] = None):
+    def _track_predict(
+        self,
+        tracklets: List[Tracklet],
+        detections: List[PredBBox],
+        frame_index: int,
+        frame: Optional[np.ndarray] = None
+    ):
         """
         Performs tracker tracklet filtering motion prediction steps:
         - Removes DELETED trackelts
@@ -457,6 +509,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
 
         Args:
             tracklets: List of tracklets
+            detections: Raw detections for the current frame, forwarded to CMC
             frame_index: Current frame index
             frame: Current frame image (optional)
 
@@ -480,7 +533,7 @@ class MotionReIDBasedTracker(Tracker, ABC):
         else:
             prior_tracklet_bboxes = []
 
-        prior_tracklet_bboxes = self._perform_cmc(frame, frame_index, prior_tracklet_bboxes)
+        prior_tracklet_bboxes = self._perform_cmc(frame, frame_index, prior_tracklet_bboxes, detections)
 
         return tracklets, prior_tracklet_bboxes
 
