@@ -16,6 +16,7 @@ from dataclasses import dataclass
 import logging
 from typing import Tuple
 
+import cv2
 import numpy as np
 
 from motrack.cmc.components.warp import apply_warp_to_points, identity_warp
@@ -118,7 +119,8 @@ class WarpRANSACEstimator:
         max_iterations: int = 100,
         min_inliers: int = 10,
         max_skips: int = 10,
-        seed: int = 42
+        seed: int = 42,
+        implementation: str = 'custom'
     ) -> None:
         """
         Args:
@@ -127,7 +129,12 @@ class WarpRANSACEstimator:
             min_inliers: Minimum number of inliers required for a valid warp (int)
             max_skips: Maximum number of skips allowed (int)
             seed: Seed for the random number generator (int)
+            implementation: `custom` runs the search below, `opencv` delegates to
+                `cv2.estimateAffine2D`. The two agree to 0.002 px (Appendix B.1); the OpenCV path
+                exists so that a throughput comparison is not charged for this being Python.
         """
+        assert implementation in ('custom', 'opencv'), \
+            f'Unknown implementation "{implementation}", expected "custom" or "opencv"!'
         assert residual_threshold > 0, f'Residual threshold must be positive but got {residual_threshold}!'
         assert min_inliers >= MIN_SAMPLES, f'At least {MIN_SAMPLES} inliers are required but got {min_inliers}!'
         assert max_iterations >= 1, f'At least one iteration is required but got {max_iterations}!'
@@ -140,6 +147,34 @@ class WarpRANSACEstimator:
 
         self._seed = seed
         self._rng = np.random.default_rng(seed)
+        self._implementation = implementation
+
+    def _estimate_opencv(self, src: np.ndarray, dst: np.ndarray) -> AffineEstimate:
+        """
+        The same estimate from `cv2.estimateAffine2D`, in this class's return convention.
+
+        OpenCV returns the warp and an inlier mask but reports neither the iteration count nor the
+        degenerate-sample count, so those are reported as zero. Failure is signalled by a None warp
+        or by too little support, matching the `min_inliers` rule the custom path applies.
+        """
+        if len(src) < MIN_SAMPLES:
+            return AffineEstimate(identity_warp(), np.zeros(len(src), dtype=bool), 0, 0, 0, False)
+
+        warp, inliers = cv2.estimateAffine2D(
+            src.astype(np.float32).reshape(-1, 1, 2),
+            dst.astype(np.float32).reshape(-1, 1, 2),
+            method=cv2.RANSAC,
+            ransacReprojThreshold=self._residual_threshold,
+            maxIters=self._max_iterations
+        )
+        if warp is None or inliers is None:
+            return AffineEstimate(identity_warp(), np.zeros(len(src), dtype=bool), 0, 0, 0, False)
+
+        mask = inliers.reshape(-1).astype(bool)
+        n_inliers = int(mask.sum())
+        if n_inliers < self._min_inliers:
+            return AffineEstimate(identity_warp(), np.zeros(len(src), dtype=bool), n_inliers, 0, 0, False)
+        return AffineEstimate(warp.astype(np.float32), mask, n_inliers, 0, 0, True)
 
     def reset(self) -> None:
         """
@@ -198,6 +233,9 @@ class WarpRANSACEstimator:
         Returns:
             Affine estimate
         """
+        if self._implementation == 'opencv':
+            return self._estimate_opencv(src, dst)
+
         # Validation
         assert src.shape == dst.shape, f'Source and target points must have the same shape! Got {src.shape} and {dst.shape}.'
         assert src.ndim == 2 and src.shape[1] == 2, f'Expected points of shape (N, 2) but got {src.shape}!'

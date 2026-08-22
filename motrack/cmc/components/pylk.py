@@ -117,7 +117,8 @@ class PyLucasKanadeEstimator:
         iteration_convergence_threshold: float = 0.1,
         resize_interpolation_algorithm: int = cv2.INTER_NEAREST,
         min_eigenvalue_threshold: float = 1e-3,
-        gradient_gain: float = 32.0
+        gradient_gain: float = 32.0,
+        implementation: str = 'custom'
     ):
         """
         Args:
@@ -128,7 +129,12 @@ class PyLucasKanadeEstimator:
             resize_interpolation_algorithm: Interpolation algorithm to use for resizing the frame to the given level.
             min_eigenvalue_threshold: Threshold for the minimum eigenvalue of the gradient matrix.
             gradient_gain: Gain for the gradient calculation.
+            implementation: `custom` runs the code below, `opencv` delegates to
+                `cv2.calcOpticalFlowPyrLK`. The two agree to 0.004 px (Appendix B.1); the OpenCV
+                path exists so that a throughput comparison is not charged for this being Python.
         """
+        assert implementation in ('custom', 'opencv'), \
+            f'Unknown implementation "{implementation}", expected "custom" or "opencv"!'
         self._window_size = window_size if isinstance(window_size, tuple) else (window_size, window_size)
         self._max_level = max_level
         self._max_iterations = max_iterations
@@ -136,6 +142,7 @@ class PyLucasKanadeEstimator:
         self._resize_interpolation_algorithm = resize_interpolation_algorithm
         self._min_eigenvalue_threshold = min_eigenvalue_threshold
         self._gradient_gain = gradient_gain
+        self._implementation = implementation
 
     def estimate(self, prev_frame: np.ndarray, next_frame: np.ndarray, points: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -152,6 +159,9 @@ class PyLucasKanadeEstimator:
         Returns:
             Optical flows for each point and a boolean array indicating if the point is valid for tracking.
         """
+        if self._implementation == 'opencv':
+            return self._estimate_opencv(prev_frame, next_frame, points)
+
         if prev_frame.shape != next_frame.shape:
             raise ValueError("The previous and next frames must have the same shape.")
 
@@ -195,6 +205,33 @@ class PyLucasKanadeEstimator:
 
                 flows[point_idx, :] = flow  # update the flow for the current point
 
+        return flows, skips
+
+    def _estimate_opencv(self, prev_frame: np.ndarray, next_frame: np.ndarray,
+                         points: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """
+        The same estimate from `cv2.calcOpticalFlowPyrLK`, in this class's return convention.
+
+        OpenCV returns the tracked positions and a status flag; this class returns flows and a
+        skip mask, so the positions are differenced and the flag inverted. The termination
+        criteria and window are taken from this instance so both paths run the same settings.
+        """
+        if prev_frame.ndim == 3 and prev_frame.shape[2] == 3:
+            previous = cv2.cvtColor(prev_frame, cv2.COLOR_RGB2GRAY)
+            current = cv2.cvtColor(next_frame, cv2.COLOR_RGB2GRAY)
+        else:
+            previous, current = prev_frame, next_frame
+        tracked, status, _ = cv2.calcOpticalFlowPyrLK(
+            previous, current, points.astype(np.float32).reshape(-1, 1, 2), None,
+            winSize=self._window_size,
+            maxLevel=self._max_level,
+            criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,
+                      self._max_iterations, self._iteration_convergence_threshold),
+            minEigThreshold=self._min_eigenvalue_threshold
+        )
+        flows = (tracked.reshape(-1, 2) - points).astype(np.float32)
+        skips = status.reshape(-1) == 0
+        flows[skips] = 0.0
         return flows, skips
 
     def _scale_frame_to_level(self, frame: np.ndarray, level: int) -> np.ndarray:

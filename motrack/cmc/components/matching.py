@@ -16,6 +16,7 @@ keep = ratio < ratio_threshold
 
 Reference: https://www.cs.ubc.ca/~lowe/papers/ijcv04.pdf
 """
+import cv2
 import numpy as np
 
 from motrack.cmc.components.distances import DescriptorNorm, descriptor_distances
@@ -26,12 +27,45 @@ from motrack.cmc.components.distances import DescriptorNorm, descriptor_distance
 DEFAULT_BATCH_SIZE = 512
 
 
+def _match_descriptors_opencv(
+    desc_a: np.ndarray,
+    desc_b: np.ndarray,
+    norm: DescriptorNorm,
+    ratio_threshold: float
+) -> np.ndarray:
+    """
+    The same matching from `cv2.BFMatcher`, in this module's return convention.
+
+    OpenCV returns match objects; this module returns an index array sorted by query index, so the
+    pairs are extracted and sorted. The ratio test is applied here rather than by OpenCV, which has
+    no option for it, so both paths apply the identical rule.
+    """
+    cv_norm = cv2.NORM_HAMMING if norm == 'hamming' else cv2.NORM_L2
+    matcher = cv2.BFMatcher(cv_norm, crossCheck=False)
+    if len(desc_a) == 0 or len(desc_b) == 0:
+        return np.zeros((0, 2), dtype=np.int32)
+
+    pairs = []
+    for candidates in matcher.knnMatch(desc_a, desc_b, k=2):
+        if len(candidates) < 2:
+            continue
+        best, second = candidates[0], candidates[1]
+        if best.distance < ratio_threshold * second.distance:
+            pairs.append((best.queryIdx, best.trainIdx))
+
+    if not pairs:
+        return np.zeros((0, 2), dtype=np.int32)
+    matches = np.array(sorted(pairs), dtype=np.int32)
+    return matches
+
+
 def match_descriptors(
     desc_a: np.ndarray,
     desc_b: np.ndarray,
     norm: DescriptorNorm,
     ratio_threshold: float = 0.9,
-    batch_size: int = DEFAULT_BATCH_SIZE
+    batch_size: int = DEFAULT_BATCH_SIZE,
+    implementation: str = 'custom'
 ) -> np.ndarray:
     """
     Matches descriptors with a nearest-neighbour search plus Lowe's ratio test.
@@ -43,12 +77,21 @@ def match_descriptors(
         ratio_threshold: Keep a match when `best < ratio_threshold * second_best`. Lower is
             stricter. BoT-SORT uses 0.9; Lowe's original SIFT paper suggests 0.8.
         batch_size: How many query descriptors to process at a time
+        implementation: `custom` runs the search below, `opencv` delegates to
+            `cv2.BFMatcher.knnMatch`. The two return identical index pairs (Appendix B.1); the
+            OpenCV path exists so that a throughput comparison is not charged for this being
+            Python.
 
     Returns:
         Index pairs (M, 2) int32, where column 0 indexes `desc_a` and column 1 indexes
         `desc_b`. Sorted by query index, so the ordering is deterministic - RANSAC samples
         into this array, and a stable order keeps its results reproducible.
     """
+    assert implementation in ('custom', 'opencv'), \
+        f'Unknown implementation "{implementation}", expected "custom" or "opencv"!'
+    if implementation == 'opencv':
+        return _match_descriptors_opencv(desc_a, desc_b, norm, ratio_threshold)
+
     assert 0.0 < ratio_threshold <= 1.0, f'Ratio threshold must be in (0, 1] but got {ratio_threshold}!'
 
     if len(desc_a) < 2 or len(desc_b) < 2:

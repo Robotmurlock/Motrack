@@ -78,6 +78,51 @@ def exclude_points_in_detections(
     return keep
 
 
+def mask_detections_in_image(
+    frame: np.ndarray,
+    detections: Optional[List[PredBBox]],
+    image_size: tuple[int, int],
+    expansion_factor: float,
+    fill: int = 0
+) -> np.ndarray:
+    """
+    Fills detected objects in the frame with a constant, before feature detection runs.
+
+    This is the alternative to `exclude_points_in_detections`: instead of detecting features
+    everywhere and discarding the ones on objects, the objects are painted over so no feature
+    is found there in the first place. The two differ in what they leave behind. Painting a box
+    introduces a step edge along its border, and corner and blob detectors respond to step
+    edges, so features removed from the object's interior are partly replaced by features on
+    the object's outline - which move with the object, and so carry the object motion the
+    masking was meant to remove.
+
+    Args:
+        frame: Frame to mask
+        detections: Current frame detections, in normalized coordinates
+        image_size: Frame (width, height)
+        expansion_factor: Relative amount to grow each box by before filling
+        fill: Value written into the masked regions
+
+    Returns:
+        Masked copy of the frame; the input is left unchanged
+    """
+    if not detections:
+        return frame
+
+    width, height = image_size
+    masked = frame.copy()
+
+    for detection in detections:
+        bbox = detection.expand(expansion_factor, clip=True) if expansion_factor > 0 else detection
+        left = int(round(bbox.upper_left.x * width))
+        top = int(round(bbox.upper_left.y * height))
+        right = int(round(bbox.bottom_right.x * width))
+        bottom = int(round(bbox.bottom_right.y * height))
+        masked[max(top, 0):max(bottom, 0), max(left, 0):max(right, 0)] = fill
+
+    return masked
+
+
 def estimate_normalized_warp(
     src: np.ndarray,
     dst: np.ndarray,

@@ -12,7 +12,7 @@ Features are matched rather than tracked, so the detector has to produce descrip
 rules out Shi-Tomasi, which yields corner locations only - it can be tracked but not matched.
 """
 import logging
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
@@ -21,6 +21,7 @@ from motrack.cmc.algorithms.base import CMCContext, CameraMotionCompensation
 from motrack.cmc.algorithms.utils import (
     estimate_normalized_warp,
     exclude_points_in_detections,
+    mask_detections_in_image,
     to_grayscale,
 )
 from motrack.cmc.catalog import CMC_CATALOG
@@ -69,6 +70,12 @@ class ExclusionConfig(BaseModel):
 
     Attributes:
         enabled: Whether to exclude features that land on a detection.
+        mode: How the exclusion is applied. `points` detects features over the whole frame and
+            then discards the ones inside a detection. `image` fills the detections with black
+            before detection runs, so no feature is found there. The two are not equivalent:
+            filling a box introduces a step edge along its border, which corner and blob
+            detectors respond to, so features removed from the object's interior reappear on
+            its outline.
         expansion_factor: How much to grow each detection before testing. A bounding box
             rarely covers the whole object, so a feature just outside one often still sits
             on it. 0 keeps exclusion on without expanding.
@@ -77,6 +84,7 @@ class ExclusionConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     enabled: bool = False
+    mode: Literal['points', 'image'] = 'points'
     expansion_factor: float = Field(default=0.2, ge=0.0)
 
 
@@ -132,6 +140,8 @@ class FeatureMatchingCMCConfig(BaseModel):
     spatial_filter: SpatialFilterConfig = Field(default_factory=SpatialFilterConfig)
     ransac: RANSACConfig = Field(default_factory=RANSACConfig)
 
+    implementation: Literal['custom', 'opencv'] = 'custom'
+
     seed: int = Field(default=42)
 
 
@@ -170,7 +180,8 @@ class FeatureMatchingCMC(CameraMotionCompensation):
                 max_iterations=config.ransac.max_iterations,
                 min_inliers=config.ransac.min_inliers,
                 max_skips=config.ransac.max_skips,
-                seed=config.seed
+                seed=config.seed,
+                implementation=config.implementation
             )
 
     def reset(self) -> None:
@@ -196,14 +207,16 @@ class FeatureMatchingCMC(CameraMotionCompensation):
         Returns:
             Points and their descriptors
         """
+        exclusion = self._config.exclusion
+        if exclusion.enabled and exclusion.mode == 'image':
+            frame = mask_detections_in_image(frame, detections, image_size, exclusion.expansion_factor)
+
         points, descriptors = self._feature_detector.detect(to_grayscale(frame))
         if descriptors is None or points.shape[0] == 0:
             return points, descriptors
 
-        if self._config.exclusion.enabled:
-            keep = exclude_points_in_detections(
-                points, detections, image_size, self._config.exclusion.expansion_factor
-            )
+        if exclusion.enabled and exclusion.mode == 'points':
+            keep = exclude_points_in_detections(points, detections, image_size, exclusion.expansion_factor)
             points, descriptors = points[keep], descriptors[keep]
 
         return points, descriptors
@@ -237,7 +250,8 @@ class FeatureMatchingCMC(CameraMotionCompensation):
             prev_descriptors,
             curr_descriptors,
             norm=self._feature_detector.descriptor_norm,
-            ratio_threshold=self._config.matching.ratio_threshold
+            ratio_threshold=self._config.matching.ratio_threshold,
+            implementation=self._config.implementation
         )
         if pairs.shape[0] == 0:
             logger.debug(f'No descriptor matches in frame {ctx.frame_index}.')
