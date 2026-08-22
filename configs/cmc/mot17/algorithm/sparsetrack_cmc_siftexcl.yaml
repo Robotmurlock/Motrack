@@ -1,0 +1,37 @@
+name: sparse
+params:
+  filter:
+    name: bot-sort
+    params:
+      override_std_weight_position: 0.05
+  initialization_threshold: 2
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+
+  detection_threshold: 0.6
+  duplicate_iou_threshold: 0.85
+
+  high_matcher:
+    name: dcm
+    params:
+      levels: 12
+      match_threshold: 0.3
+      fuse_score: false
+  low_matcher:
+    name: dcm
+    params:
+      levels: 12
+      match_threshold: 0.50
+      fuse_score: false
+  new_matcher:
+    name: iou
+    params:
+      match_threshold: 0.30
+      fuse_score: true
+  cmc:
+    name: feature-matching
+    params:
+      feature_detector:
+        type: sift
+      exclusion:
+        enabled: true

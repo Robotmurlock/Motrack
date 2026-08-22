@@ -1,0 +1,23 @@
+name: sort
+params:
+  filter:
+    name: bot-sort
+    params:
+      override_std_weight_position: 0.05
+  initialization_threshold: 2
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+  matcher:
+    name: iou
+    params:
+      match_threshold: 0.20
+      fuse_score: true
+  # Control for "is RANSAC alone enough to reject correspondences on moving objects?".
+  # Neither exclusion nor RANSAC is active, so the fit sees every correspondence.
+  cmc:
+    name: pylk
+    params:
+      feature_detector:
+        type: shi-tomasi
+      ransac:
+        enabled: false

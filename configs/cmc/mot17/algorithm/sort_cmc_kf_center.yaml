@@ -1,0 +1,21 @@
+name: sort
+params:
+  filter:
+    name: bot-sort
+    params:
+      override_std_weight_position: 0.05
+  initialization_threshold: 2
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+  matcher:
+    name: iou
+    params:
+      match_threshold: 0.20
+      fuse_score: true
+
+  # No frames are decoded: correspondences come from the motion model.
+  cmc:
+    name: kf-residual
+    params:
+      motion_model: translation
+      points: center
