@@ -62,6 +62,6 @@ class NoMotionFilter(StateModelFilter):
     def affine_transform(self, state: State, warp: np.ndarray) -> State:
         measurement = state
         measurement[2:] = measurement[:2] + measurement[2:]  # xywh -> xyxy
-        warped_measurement = affine_transform(measurement, warp)
+        warped_measurement = affine_transform(warp, measurement)
         warped_measurement[2:] = warped_measurement[2:] - warped_measurement[:2]  # xyxy -> xywh
         return warped_measurement

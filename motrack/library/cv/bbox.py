@@ -120,6 +120,34 @@ class BBox:
         return np.array([self.upper_left.x, self.upper_left.y, self.bottom_right.x, self.bottom_right.y],
                         dtype=np.float32)
 
+    def expand(self, factor: float, clip: bool = False) -> 'BBox':
+        """
+        Grows the bbox around its center by the given factor.
+
+        A factor of 0.2 multiplies both width and height by 1.2, i.e. each side moves out by
+        10% of the corresponding dimension. A factor of 0 returns an equal bbox.
+
+        Args:
+            factor: Relative amount to grow by
+            clip: Clip the expanded coords to the [0, 1] range
+
+        Returns:
+            Expanded bbox
+
+        Raises:
+            AssertionError: If the factor would invert the bbox.
+        """
+        assert factor > -1, f'Expansion factor must be greater than -1 but got {factor}!'
+
+        margin_x, margin_y = factor * self.width / 2, factor * self.height / 2
+        return BBox.from_xyxy(
+            self.upper_left.x - margin_x,
+            self.upper_left.y - margin_y,
+            self.bottom_right.x + margin_x,
+            self.bottom_right.y + margin_y,
+            clip=clip
+        )
+
     def __eq__(self, other: 'BBox') -> bool:
         return self.upper_left == other.upper_left and self.bottom_right == other.bottom_right
 

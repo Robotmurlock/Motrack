@@ -2,13 +2,14 @@
 Load GMC results from file - pre-calculated.
 """
 import os
-from typing import Optional, Dict
+from typing import ClassVar, Dict
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict
 
-from motrack.cmc.algorithms.base import CameraMotionCompensation
+from motrack.cmc.algorithms.base import CameraMotionCompensation, CMCContext
 from motrack.cmc.catalog import CMC_CATALOG
+from motrack.cmc.components.warp import identity_warp, pixel_warp_to_normalized
 
 
 @CMC_CATALOG.register_config('gmc-from-file')
@@ -26,13 +27,21 @@ class GmcFromFileConfig(BaseModel):
 class GMCFromFile(CameraMotionCompensation):
     """
     Loads precalculated GMC warps from a directory for each scene.
+
+    The stored warps are in pixel coordinates, so they are converted to normalized
+    coordinates using the frame dimensions.
+
+    Pixels are never read, but the frame is still required because it is the only source
+    of the image dimensions needed for that conversion.
     """
     LINE_SEP = '\t'
+
+    requires_image: ClassVar[bool] = True
 
     def __init__(self, config: GmcFromFileConfig):
         """
         Args:
-            dirpath: Path to directory where precalculated GMC warps are stored.
+            config: Config with the path to the directory where precalculated GMC warps are stored.
         """
         self._gmc_lookup = self._parse_gmc_directory(config.dirpath)
 
@@ -45,7 +54,7 @@ class GMCFromFile(CameraMotionCompensation):
             scene: Scene name
 
         Returns:
-
+            GMC filename
         """
         filename = f'GMC-{scene}.txt'
 
@@ -86,11 +95,18 @@ class GMCFromFile(CameraMotionCompensation):
 
         return gmc_lookup
 
+    def apply(self, ctx: CMCContext) -> np.ndarray:
+        assert ctx.scene is not None, 'Scene name is required in order to load GMC warps from a file!'
+        assert ctx.image_size is not None, 'Image size is required in order to normalize GMC warps!'
 
-    def apply(self, frame: np.ndarray, frame_index: int, scene: Optional[str] = None) -> np.ndarray:
-        assert scene is not None, 'Scene name is required in order to load GMC warps from a file!'
-        scene_file = self._get_gmc_filename(scene)
-        warp = self._gmc_lookup[scene_file][frame_index, :, :]
-        warp[0, 2] /= frame.shape[1]
-        warp[1, 2] /= frame.shape[0]
-        return warp
+        if ctx.frame_index <= 0:
+            # The warp maps frame `frame_index - 1` to `frame_index`, which is undefined for the first frame.
+            return identity_warp()
+
+        scene_file = self._get_gmc_filename(ctx.scene)
+        # Warps are stored per frame transition, so frame `t` uses the warp on line `t - 1`.
+        # A copy is mandatory: the lookup is shared across calls and normalization must not mutate it.
+        warp = self._gmc_lookup[scene_file][ctx.frame_index - 1, :, :].copy()
+
+        width, height = ctx.image_size
+        return pixel_warp_to_normalized(warp, width=width, height=height)

@@ -4,6 +4,14 @@ Use `CMC_CATALOG.register` to extend supported CMC algorithms.
 """
 # noinspection PyUnresolvedReferences
 from motrack.cmc.algorithms.gmc_from_file import GMCFromFile  # pylint: disable=unused-import
+# noinspection PyUnresolvedReferences
+from motrack.cmc.algorithms.identity import IdentityCMC  # pylint: disable=unused-import
+# noinspection PyUnresolvedReferences
+from motrack.cmc.algorithms.pylk import PyLKCMC  # pylint: disable=unused-import
+# noinspection PyUnresolvedReferences
+from motrack.cmc.algorithms.feature_matching import FeatureMatchingCMC  # pylint: disable=unused-import
+# noinspection PyUnresolvedReferences
+from motrack.cmc.algorithms.kf_residual import KFResidualCMC  # pylint: disable=unused-import
 from motrack.cmc.algorithms.base import CameraMotionCompensation
 from motrack.cmc.catalog import CMC_CATALOG
 
