@@ -3,6 +3,7 @@ Unit tests for CMC factory config validation.
 """
 import unittest
 
+from motrack.cmc.algorithms.base import CameraMotionCompensation
 from motrack.cmc.catalog import CMC_CATALOG
 from motrack.cmc.factory import cmc_factory
 
@@ -32,6 +33,30 @@ class CmcFactoryTest(unittest.TestCase):
         """
         with self.assertRaisesRegex(ValueError, 'Invalid cmc'):
             CMC_CATALOG.create_config('gmc-from-file', {'dirpath': '/tmp', 'unknown': 1}, params_label='cmc')
+
+    def test_cmc_factory_creates_identity(self) -> None:
+        """
+        Validates that the identity CMC can be created without params.
+        """
+        cmc = cmc_factory('identity', {})
+        self.assertIsInstance(cmc, CameraMotionCompensation)
+        self.assertFalse(cmc.requires_image)
+
+    def test_identity_cmc_rejects_any_param(self) -> None:
+        """
+        Validates that the identity CMC takes no params.
+        """
+        with self.assertRaisesRegex(ValueError, 'Invalid cmc'):
+            CMC_CATALOG.create_config('identity', {'downscale': 2.0}, params_label='cmc')
+
+    def test_every_registered_cmc_declares_requires_image(self) -> None:
+        """
+        Validates that every registered CMC exposes the capability flag trackers rely on
+        to decide whether frames must be loaded.
+        """
+        for key in CMC_CATALOG.keys:
+            with self.subTest(key=key):
+                self.assertIsInstance(CMC_CATALOG[key].requires_image, bool)
 
 
 if __name__ == '__main__':

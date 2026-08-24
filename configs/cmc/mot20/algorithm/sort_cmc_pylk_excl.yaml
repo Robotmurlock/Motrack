@@ -1,0 +1,21 @@
+name: sort
+params:
+  filter:
+    name: bot-sort
+    params:
+      override_std_weight_position: 0.05
+  initialization_threshold: 2
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+  matcher:
+    name: iou
+    params:
+      match_threshold: 0.30
+      fuse_score: true
+  cmc:
+    name: pylk
+    params:
+      feature_detector:
+        type: shi-tomasi
+      exclusion:
+        enabled: true

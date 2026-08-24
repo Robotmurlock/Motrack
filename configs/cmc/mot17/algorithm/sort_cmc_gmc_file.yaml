@@ -1,0 +1,19 @@
+name: sort
+params:
+  filter:
+    name: bot-sort
+    params:
+      override_std_weight_position: 0.05
+  initialization_threshold: 2
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+  matcher:
+    name: iou
+    params:
+      match_threshold: 0.20
+      fuse_score: true
+  # Reference: BoT-SORT's precalculated warps for these sequences.
+  cmc:
+    name: gmc-from-file
+    params:
+      dirpath: /media/home/models/cmc/mot17_gmc

@@ -1,0 +1,21 @@
+name: sort
+params:
+  filter:
+    name: bot-sort
+    params:
+      override_std_weight_position: 0.05
+  initialization_threshold: 2
+  new_tracklet_detection_threshold: 0.7
+  remember_threshold: 30
+  matcher:
+    name: move
+    params:
+      distance_name: l1
+      match_threshold: 0.2
+      motion_lambda: 5
+      fuse_score: false
+  cmc:
+    name: kf-residual
+    params:
+      motion_model: translation
+      points: center
