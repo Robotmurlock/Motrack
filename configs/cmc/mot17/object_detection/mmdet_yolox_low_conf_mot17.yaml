@@ -1,0 +1,12 @@
+type: 'mmdet_yolox'
+params:
+  accelerator: cuda:0
+  conf: 0.1
+  min_bbox_area: 0
+  model_config: /motrack/configs/od/mmdet/yolox_x_bytetrack.py
+  # Model source: https://github.com/ifzhang/ByteTrack, ByteTrack_ablation
+  model_path: /media/home/models/detection/mot17.pth.tar
+  bytetrack_compat: true
+lookup_path: /media/home/models/detection/mot17.lookup.json
+oracle: false
+cache_path: '/workspace/motrack/mot17_mmdet_yolox_low_conf'
