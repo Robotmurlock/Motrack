@@ -452,12 +452,13 @@ per-track predictions. Here we consider the Kalman filter that SORT and its
 descendants use, and the implementation is registered as `kf-residual` (pseudo-code in
 [Appendix A.5](#sec-a-5)).
 
-The motion model already predicts where each tracked object should appear. That prediction
-extrapolates the object's own velocity and contains no information about the camera, so it
-describes where the object would be if the camera had not moved. The detection matched to it
-shows where the object actually appears. If the motion model were exact, the offset between the
-two would be the camera motion alone. In practice the model is not exact, so the offset also
-carries whatever it got wrong about the object.
+The motion model predicts where each tracked object should appear by extrapolating its state.
+CMC corrects that state at every earlier frame ([§2.2](#sec-2-2)), though we do not know how accurate those
+corrections are. The prediction should therefore account for the camera up to the previous
+frame, but not for the displacement between that frame and this one, which has not been
+estimated yet. The detection matched to the prediction shows where the object appears under the
+new camera pose, and the difference between the two is that displacement plus whatever the
+motion model gets wrong about the object's own motion.
 
 1. **Take the motion model's predictions** for the current frame, and the current detections above
    a confidence threshold.
