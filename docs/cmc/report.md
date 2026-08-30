@@ -458,7 +458,9 @@ corrections are. The prediction should therefore account for the camera up to th
 frame, but not for the displacement between that frame and this one, which has not been
 estimated yet. The detection matched to the prediction shows where the object appears under the
 new camera pose, and the difference between the two is that displacement plus whatever the
-motion model gets wrong about the object's own motion.
+motion model gets wrong about the object's own motion. MR-CMC reads that difference for every
+matched track and fits one transformation to the whole set, so the points it estimates from come
+from the tracker's own state rather than from the images. The steps are:
 
 1. **Take the motion model's predictions** for the current frame, and the current detections above
    a confidence threshold.
